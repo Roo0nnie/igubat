@@ -16,11 +16,31 @@ class AppRadii {
   static const double small = 8.0;
   static const double medium = 12.0;
   static const double pill = 24.0;
+  static const double glass = 24.0;
+  static const double xl = 32.0;
   static const double circle = 999.0;
 
   static final BorderRadius smallRadius = BorderRadius.circular(small);
   static final BorderRadius mediumRadius = BorderRadius.circular(medium);
   static final BorderRadius pillRadius = BorderRadius.circular(pill);
+  static final BorderRadius glassRadius = BorderRadius.circular(glass);
+  static final BorderRadius xlRadius = BorderRadius.circular(xl);
+}
+
+class AppLayout {
+  AppLayout._();
+  static const double navHeight = 68.0;
+  static const double navBottomInset = 16.0;
+  static const double navHorizontalMargin = 20.0;
+  static const double navBorderRadius = 24.0;
+
+  /// Scroll padding only — keeps content scrollable behind the floating nav.
+  static double scrollBottomPadding(BuildContext context) {
+    return navHeight +
+        navBottomInset +
+        MediaQuery.paddingOf(context).bottom +
+        24;
+  }
 }
 
 class AppShadows {
@@ -39,6 +59,9 @@ class AppMotion {
   AppMotion._();
   static const Duration durationFast = Duration(milliseconds: 200);
   static const Duration durationStandard = Duration(milliseconds: 300);
+  static const Duration navIndicatorDuration = Duration(milliseconds: 350);
   static const Curve enterCurve = Curves.easeOutCubic;
   static const Curve transitionCurve = Curves.easeInOutQuart;
+  static const Curve navIndicatorCurve = Curves.easeOutCubic;
+  static const Curve pageTransitionCurve = Curves.easeOutCubic;
 }

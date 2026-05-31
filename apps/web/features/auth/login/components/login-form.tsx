@@ -3,21 +3,18 @@
 import Image from "next/image"
 import Link from "next/link"
 import { useForm } from "@tanstack/react-form"
+import { Mail, Lock } from "lucide-react"
 
 import { Button, buttonVariants } from "@/core/components/ui/button"
 import { Card, CardContent } from "@/core/components/ui/card"
 import {
 	Field,
-	FieldDescription,
 	FieldError,
 	FieldGroup,
-	FieldLabel,
-	FieldSeparator,
 } from "@/core/components/ui/field"
 import { Input } from "@/core/components/ui/input"
 import { cn } from "@/core/lib/utils"
 import { PasswordInput } from "@/features/auth/components/password-input"
-import { SocialLoginButtons } from "@/features/auth/components/social-login-buttons"
 import { TermsPrivacyNote } from "@/features/auth/components/terms-privacy-note"
 
 import { useLoginMutation } from "../api/login.hooks"
@@ -40,20 +37,37 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
 	})
 
 	return (
-		<div className={cn("flex flex-col gap-6", className)} {...props}>
-			<Card className="overflow-hidden p-0">
-				<CardContent className="grid p-0 md:grid-cols-2">
+		<div className={cn("flex flex-col items-center justify-center gap-6", className)} {...props}>
+			<Card className="w-full max-w-md overflow-hidden p-6 sm:p-10 rounded-2xl shadow-xl">
+				<CardContent className="p-0">
 					<form
-						className="p-6 md:p-8"
 						onSubmit={e => {
 							e.preventDefault()
 							form.handleSubmit()
 						}}
 					>
-						<FieldGroup>
-							<div className="flex flex-col items-center gap-2 text-center">
-								<h1 className="text-2xl font-bold">Welcome back</h1>
-								<p className="text-muted-foreground text-balance">Login to your account</p>
+						<FieldGroup className="gap-8">
+							<div className="flex flex-col items-center gap-4 text-center">
+								<div className="flex justify-center mb-2">
+									<Image
+										src="/logo/lightmode_logo.png"
+										alt="iGubat Logo"
+										width={80}
+										height={80}
+										className="dark:hidden object-contain"
+									/>
+									<Image
+										src="/logo/darkmode_logo.png"
+										alt="iGubat Logo"
+										width={80}
+										height={80}
+										className="hidden dark:block object-contain"
+									/>
+								</div>
+								<div>
+									<h1 className="text-3xl font-bold text-foreground">Welcome Back</h1>
+									<p className="text-muted-foreground mt-2">Sign in to continue</p>
+								</div>
 							</div>
 
 							{isError && (
@@ -62,104 +76,86 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
 								</div>
 							)}
 
-							<form.Field
-								name="email"
-								children={field => {
-									const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
-									return (
-										<Field data-invalid={isInvalid}>
-											<FieldLabel htmlFor={field.name}>Email</FieldLabel>
-											<Input
-												id={field.name}
-												name={field.name}
-												type="email"
-												value={field.state.value}
-												onBlur={field.handleBlur}
-												onChange={e => field.handleChange(e.target.value)}
-												aria-invalid={isInvalid}
-												placeholder="m@example.com"
-												autoComplete="email"
-												required
-												disabled={isPending}
-											/>
-											{isInvalid && <FieldError errors={field.state.meta.errors} />}
-										</Field>
-									)
-								}}
-							/>
+							<div className="space-y-6">
+								<form.Field
+									name="email"
+									children={field => {
+										const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
+										return (
+											<Field data-invalid={isInvalid}>
+												<div className="flex items-center border-b-2 border-border/50 py-2 focus-within:border-primary transition-colors">
+													<Mail className="text-muted-foreground mr-4 h-5 w-5 shrink-0" />
+													<Input
+														id={field.name}
+														name={field.name}
+														type="email"
+														value={field.state.value}
+														onBlur={field.handleBlur}
+														onChange={e => field.handleChange(e.target.value)}
+														aria-invalid={isInvalid}
+														placeholder="Email"
+														autoComplete="email"
+														required
+														disabled={isPending}
+														className="border-0 bg-transparent px-0 shadow-none focus-visible:ring-0 h-auto text-base flex-1"
+													/>
+												</div>
+												{isInvalid && <FieldError errors={field.state.meta.errors} className="mt-1" />}
+											</Field>
+										)
+									}}
+								/>
 
-							<form.Field
-								name="password"
-								children={field => {
-									const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
-									return (
-										<Field data-invalid={isInvalid}>
-											<div className="flex items-center">
-												<FieldLabel htmlFor={field.name}>Password</FieldLabel>
-												<Link
-													href="#"
-													className={cn(
-														buttonVariants({ size: "sm", variant: "link" }),
-														"text-card-foreground ml-auto h-auto"
-													)}
-												>
-													Forgot your password?
-												</Link>
-											</div>
-											<PasswordInput
-												id={field.name}
-												name={field.name}
-												value={field.state.value}
-												onBlur={field.handleBlur}
-												onChange={e => field.handleChange(e.target.value)}
-												aria-invalid={isInvalid}
-												required
-												autoComplete="current-password"
-												disabled={isPending}
-											/>
-											{isInvalid && <FieldError errors={field.state.meta.errors} />}
-										</Field>
-									)
-								}}
-							/>
+								<form.Field
+									name="password"
+									children={field => {
+										const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
+										return (
+											<Field data-invalid={isInvalid}>
+												<div className="flex items-center border-b-2 border-border/50 py-2 focus-within:border-primary transition-colors">
+													<Lock className="text-muted-foreground mr-4 h-5 w-5 shrink-0" />
+													<div className="flex-1 w-full relative">
+														<PasswordInput
+															id={field.name}
+															name={field.name}
+															value={field.state.value}
+															onBlur={field.handleBlur}
+															onChange={e => field.handleChange(e.target.value)}
+															aria-invalid={isInvalid}
+															required
+															placeholder="Password"
+															autoComplete="current-password"
+															disabled={isPending}
+															className="border-0 bg-transparent px-0 shadow-none focus-visible:ring-0 h-auto text-base w-full pr-10"
+														/>
+													</div>
+												</div>
+												{isInvalid && <FieldError errors={field.state.meta.errors} className="mt-1" />}
+											</Field>
+										)
+									}}
+								/>
+							</div>
 
-							<Field>
-								<Button type="submit" disabled={isPending} className="w-full hover:cursor-pointer">
-									{isPending ? "Signing in..." : "Login"}
+							<Field className="pt-4">
+								<Button type="submit" disabled={isPending} className="w-full hover:cursor-pointer bg-primary text-primary-foreground hover:bg-primary/90 h-12 text-base rounded-xl font-medium">
+									{isPending ? "Signing in..." : "Sign In"}
 								</Button>
 							</Field>
 
-							<FieldSeparator className="*:data-[slot=field-separator-content]:bg-card">
-								Or continue with
-							</FieldSeparator>
-
-							<SocialLoginButtons action="login" />
-
-							<FieldDescription className="text-center">
-								Don&apos;t have an account?{" "}
+							<div className="text-center text-sm">
+								<span className="text-muted-foreground">Don&apos;t have an account?</span>{" "}
 								<Link
-									className={cn(
-										buttonVariants({ variant: "link" }),
-										"text-muted-foreground h-auto px-0"
-									)}
+									className="font-bold text-foreground hover:text-primary transition-colors ml-1"
 									href="/register"
 								>
-									Sign up
+									Sign Up
 								</Link>
-							</FieldDescription>
+							</div>
 						</FieldGroup>
 					</form>
-					<div className="bg-muted relative hidden md:block">
-						<Image
-							src="/placeholder.svg"
-							alt="Image"
-							fill
-							className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
-						/>
-					</div>
 				</CardContent>
 			</Card>
-			<TermsPrivacyNote />
 		</div>
 	)
 }

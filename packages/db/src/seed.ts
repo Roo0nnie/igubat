@@ -5,7 +5,7 @@ import { drizzle } from "drizzle-orm/node-postgres"
 import { randomBytes, scryptSync } from "node:crypto"
 import { Pool } from "pg"
 
-import { accounts, schema, tickets, todos, users } from "./schema.js"
+import { accounts, citizenReports, departments, emergencyDirectory, newsArticles, schema, serviceRequests, tickets, todos, users } from "./schema.js"
 
 async function hashPassword(password: string): Promise<string> {
 	const saltHex = randomBytes(16).toString("hex")
@@ -32,6 +32,12 @@ async function seedDatabase() {
 	const seedPassword = "password123"
 	const hashedSeedPassword = await hashPassword(seedPassword)
 
+	const seedDepartments: Array<typeof departments.$inferInsert> = [
+		{ name: "MSSD", description: "Municipal Social Services and Development", createdAt: now, updatedAt: now },
+		{ name: "BPLO", description: "Business Permits and Licensing Office", createdAt: now, updatedAt: now },
+		{ name: "Transport Office", description: "Transportation Office", createdAt: now, updatedAt: now },
+	]
+
 	const seedUsers: Array<typeof users.$inferInsert> = [
 		{
 			id: "seed-user-admin",
@@ -39,25 +45,38 @@ async function seedDatabase() {
 			email: "admin@turbo-template.local",
 			emailVerified: true,
 			image: null,
+			role: "super_admin",
 			createdAt: now,
 			updatedAt: now,
 		},
 		{
-			id: "seed-user-alex",
-			name: "Alex Johnson",
-			email: "alex@turbo-template.local",
+			id: "seed-user-juan",
+			name: "Juan Dela Cruz",
+			email: "juan@example.com",
 			emailVerified: true,
 			image: null,
-			createdAt: now,
+			role: "registered_citizen",
+			createdAt: new Date("2024-01-15T08:00:00Z"),
 			updatedAt: now,
 		},
 		{
-			id: "seed-user-sam",
-			name: "Sam Rivera",
-			email: "sam@turbo-template.local",
+			id: "seed-user-maria",
+			name: "Maria Santos",
+			email: "maria@example.com",
 			emailVerified: false,
 			image: null,
-			createdAt: now,
+			role: "registered_citizen",
+			createdAt: new Date("2024-02-20T10:30:00Z"),
+			updatedAt: now,
+		},
+		{
+			id: "seed-user-pedro",
+			name: "Pedro Penduko",
+			email: "pedro@example.com",
+			emailVerified: true,
+			image: null,
+			role: "registered_citizen",
+			createdAt: new Date("2024-03-05T14:15:00Z"),
 			updatedAt: now,
 		},
 	]
@@ -128,6 +147,116 @@ async function seedDatabase() {
 			updatedAt: now,
 		},
 	]
+	const seedNewsArticles: Array<typeof newsArticles.$inferInsert> = [
+		{
+			title: "Scheduled Power Interruption",
+			body: "Please be informed of a scheduled power interruption on May 30 due to line maintenance.",
+			category: "Utilities",
+			status: "published",
+			authorId: "seed-user-admin",
+			publishedAt: new Date("2024-05-26T08:00:00Z"),
+			createdAt: new Date("2024-05-26T08:00:00Z"),
+			updatedAt: now,
+		},
+		{
+			title: "Deadline for Business Permit Renewal",
+			body: "Reminder: Business permit renewal deadline is approaching. Avoid penalties by renewing early.",
+			category: "Announcements",
+			status: "published",
+			authorId: "seed-user-admin",
+			publishedAt: new Date("2024-05-20T10:00:00Z"),
+			createdAt: new Date("2024-05-20T10:00:00Z"),
+			updatedAt: now,
+		},
+	]
+
+	const seedCitizenReports: Array<typeof citizenReports.$inferInsert> = [
+		{
+			category: "Road Damage",
+			description: "Large pothole causing traffic at Mabini St., Brgy. Poblacion.",
+			status: "in_progress",
+			latitude: "13.9167",
+			longitude: "124.1167",
+			authorId: "seed-user-juan",
+			createdAt: new Date("2024-05-18T08:30:00Z"),
+			updatedAt: now,
+		},
+		{
+			category: "Waste Management",
+			description: "Uncollected garbage for 3 days at Bonifacio St., Brgy. San Juan.",
+			status: "received",
+			latitude: "13.9180",
+			longitude: "124.1180",
+			authorId: "seed-user-pedro",
+			createdAt: new Date("2024-05-25T16:00:00Z"),
+			updatedAt: now,
+		},
+	]
+
+	const seedEmergencyDirectory: Array<typeof emergencyDirectory.$inferInsert> = [
+		{
+			name: "National Emergency",
+			type: "comcen",
+			contactNumber: "911",
+			isActive: true,
+			createdAt: now,
+			updatedAt: now,
+		},
+		{
+			name: "iGubat Police Station",
+			type: "police",
+			contactNumber: "0917-000-0001",
+			isActive: true,
+			createdAt: now,
+			updatedAt: now,
+		},
+		{
+			name: "iGubat Fire Department",
+			type: "bfp",
+			contactNumber: "0917-000-0002",
+			isActive: true,
+			createdAt: now,
+			updatedAt: now,
+		},
+		{
+			name: "Municipal Hospital",
+			type: "hospital",
+			contactNumber: "0917-000-0003",
+			isActive: true,
+			createdAt: now,
+			updatedAt: now,
+		},
+	]
+
+	const seedServiceRequests: Array<typeof serviceRequests.$inferInsert> = [
+		{
+			trackingNumber: "REQ-2024-001",
+			serviceType: "Business Permit",
+			description: "All requirements met. Ready for pickup.",
+			status: "approved",
+			authorId: "seed-user-juan",
+			createdAt: new Date("2024-04-10T09:00:00Z"),
+			updatedAt: now,
+		},
+		{
+			trackingNumber: "REQ-2024-002",
+			serviceType: "Certificate of Residency",
+			description: "Waiting for frontline review.",
+			status: "pending",
+			authorId: "seed-user-maria",
+			createdAt: new Date("2024-05-15T11:20:00Z"),
+			updatedAt: now,
+		},
+		{
+			trackingNumber: "REQ-2024-003",
+			serviceType: "Medical Assistance",
+			description: "Verifying hospital documents.",
+			status: "in_review",
+			authorId: "seed-user-pedro",
+			createdAt: new Date("2024-05-20T13:45:00Z"),
+			updatedAt: now,
+		},
+	]
 
 	const seededUserIds = seedUsers.map(user => user.id)
 	const seededTicketEmails = seedTickets.map(ticket => ticket.email)
@@ -153,6 +282,7 @@ async function seedDatabase() {
 							email: user.email,
 							emailVerified: user.emailVerified,
 							image: user.image,
+							role: user.role,
 							updatedAt: now,
 						},
 					})
@@ -179,13 +309,23 @@ async function seedDatabase() {
 				.where(
 					or(inArray(tickets.email, seededTicketEmails), inArray(tickets.authorId, seededUserIds))
 				)
+			await tx.delete(newsArticles).where(inArray(newsArticles.authorId, seededUserIds))
+			await tx.delete(citizenReports).where(inArray(citizenReports.authorId, seededUserIds))
+			await tx.delete(serviceRequests).where(inArray(serviceRequests.authorId, seededUserIds))
+			await tx.delete(emergencyDirectory)
+			await tx.delete(departments)
 
+			await tx.insert(departments).values(seedDepartments)
 			await tx.insert(todos).values(seedTodos)
 			await tx.insert(tickets).values(seedTickets)
+			await tx.insert(newsArticles).values(seedNewsArticles)
+			await tx.insert(citizenReports).values(seedCitizenReports)
+			await tx.insert(serviceRequests).values(seedServiceRequests)
+			await tx.insert(emergencyDirectory).values(seedEmergencyDirectory)
 		})
 
 		console.log(
-			`Seeded ${seedUsers.length} users, ${seedCredentialAccounts.length} credential accounts, ${seedTodos.length} todos, and ${seedTickets.length} tickets. Default password: ${seedPassword}`
+			`Seeded ${seedUsers.length} users, ${seedCredentialAccounts.length} credential accounts, ${seedTodos.length} todos, ${seedTickets.length} tickets, ${seedNewsArticles.length} news articles, ${seedCitizenReports.length} reports, and ${seedEmergencyDirectory.length} emergency entries. Default password: ${seedPassword}`
 		)
 	} finally {
 		await pool.end()

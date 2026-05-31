@@ -1,168 +1,286 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mobile/core/widgets/tour_item.dart';
-import 'package:mobile/features/auth/presentation/providers/auth_provider.dart';
-import 'package:mobile/shared/widgets/app_card.dart';
-import 'package:mobile/shared/widgets/section_header.dart';
-import 'package:mobile/shared/widgets/settings_group.dart';
+import 'package:toastification/toastification.dart';
 
-class ProfileScreen extends ConsumerWidget {
+import '../../../../core/mock/seed_data.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../../core/theme/app_styles.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/theme/glass_tokens.dart';
+import '../../../../core/theme/theme_mode_provider.dart';
+import '../../../../shared/widgets/glass/glass_badge.dart';
+import '../../../../shared/widgets/glass/glass_button.dart';
+import '../../../../shared/widgets/glass/glass_card.dart';
+import '../../../../shared/widgets/glass/glass_scaffold.dart';
+import '../../../../shared/widgets/glass/glass_surface.dart';
+
+class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final user = ref.watch(currentUserProvider);
-    final theme = Theme.of(context);
+  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
+}
 
-    return Scaffold(
-      appBar: AppBar(
-        title: TourItem(
-          tabIndex: 2,
-          order: 0,
-          title: 'Your Profile',
-          description: 'View and manage your account details here.',
-          child: const Text('Profile'),
-        ),
-      ),
-      body: ListView(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        children: [
-          // Avatar + name header
-          TourItem(
-            tabIndex: 2,
-            order: 1,
-            title: 'Profile Picture',
-            description:
-                'Your avatar is generated from your name initial. '
-                'Tap to customize in a future update.',
-            child: AppCard(
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              padding: const EdgeInsets.symmetric(vertical: 24),
-              child: Column(
-                children: [
-                  CircleAvatar(
-                    radius: 48,
-                    backgroundColor: theme.colorScheme.primaryContainer,
-                    backgroundImage: user?.image != null
-                        ? NetworkImage(user!.image!)
-                        : null,
-                    child: user?.image == null
-                        ? Text(
-                            (user?.name.isNotEmpty == true)
-                                ? user!.name[0].toUpperCase()
-                                : '?',
-                            style: theme.textTheme.headlineLarge?.copyWith(
-                              color: theme.colorScheme.onPrimaryContainer,
-                            ),
-                          )
-                        : null,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    user?.name ?? 'Unknown',
-                    style: theme.textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: theme.colorScheme.onSurface.withOpacity(0.9),
-                      letterSpacing: -0.5,
-                      height: 1.1,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    user?.email ?? '',
-                    style: theme.textTheme.bodyLarge?.copyWith(
-                      color: theme.colorScheme.onSurface.withOpacity(0.6),
-                      height: 1.47,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+class _ProfileScreenState extends ConsumerState<ProfileScreen> {
+  bool _pushNotifications = true;
+
+  IconData _badgeIcon(String icon) {
+    switch (icon) {
+      case 'star':
+        return Icons.star_outline;
+      case 'verified':
+        return Icons.verified_outlined;
+      case 'community':
+        return Icons.groups_outlined;
+      default:
+        return Icons.emoji_events_outlined;
+    }
+  }
+
+  Future<void> _handleSignOut() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Sign Out'),
+        content: const Text('Are you sure you want to sign out?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
           ),
-          const SizedBox(height: 16),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Sign Out'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
 
-          // Account details section
-          TourItem(
-            tabIndex: 2,
-            order: 2,
-            title: 'Account Details',
-            description: 'View your account information at a glance.',
+    await ref.read(authStateProvider.notifier).signOut();
+    if (!mounted) return;
+
+    toastification.show(
+      title: const Text('Signed out successfully'),
+      type: ToastificationType.success,
+      autoCloseDuration: const Duration(seconds: 2),
+      style: ToastificationStyle.flat,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final authState = ref.watch(authStateProvider);
+    final user = ref.watch(currentUserProvider);
+    final glass = glassThemeOf(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    if (authState.isLoading && user == null) {
+      return GlassScaffold(
+        title: 'My Profile',
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    final displayName = user?.name ?? 'Citizen';
+    final displayEmail = user?.email ?? '';
+    final avatarLabel = displayName.isNotEmpty
+        ? displayName.characters.first.toUpperCase()
+        : '?';
+
+    return GlassScaffold(
+      title: 'My Profile',
+      body: ListView(
+        padding: EdgeInsets.fromLTRB(
+          24,
+          16,
+          24,
+          AppLayout.scrollBottomPadding(context),
+        ),
+        children: [
+          GlassCard(
+            intensity: GlassIntensity.prominent,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SectionHeader(title: 'Account Information'),
-                SettingsGroup(
+                Stack(
+                  alignment: Alignment.center,
                   children: [
-                ListTile(
-                  leading: Icon(
-                    Icons.badge_outlined,
-                    color: theme.colorScheme.primary,
-                  ),
-                  title: const Text('User ID'),
-                  subtitle: Text(
-                    user?.id ?? '—',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      fontFamily: 'monospace',
-                      color: theme.colorScheme.onSurfaceVariant,
+                    Container(
+                      width: 108,
+                      height: 108,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: AppTheme.secondaryColor, width: 3),
+                      ),
                     ),
-                  ),
-                ),
-                ListTile(
-                  leading: Icon(
-                    Icons.email_outlined,
-                    color: theme.colorScheme.primary,
-                  ),
-                  title: const Text('Email'),
-                  subtitle: Text(user?.email ?? '—'),
-                  trailing: user?.emailVerified == true
-                      ? Chip(
-                          label: const Text('Verified'),
-                          avatar: Icon(
-                            Icons.check_circle,
-                            size: 16,
-                            color: theme.colorScheme.primary,
-                          ),
-                          backgroundColor:
-                              theme.colorScheme.primaryContainer,
-                          side: BorderSide.none,
-                          labelStyle: theme.textTheme.labelSmall?.copyWith(
-                            color: theme.colorScheme.onPrimaryContainer,
-                          ),
-                        )
-                      : Chip(
-                          label: const Text('Unverified'),
-                          backgroundColor:
-                              theme.colorScheme.errorContainer,
-                          side: BorderSide.none,
-                          labelStyle: theme.textTheme.labelSmall?.copyWith(
-                            color: theme.colorScheme.onErrorContainer,
-                          ),
-                        ),
-                ),
-                ListTile(
-                  leading: Icon(
-                    Icons.calendar_today_outlined,
-                    color: theme.colorScheme.primary,
-                  ),
-                  title: const Text('Member Since'),
-                  subtitle: Text(
-                    user?.createdAt != null
-                        ? _formatDate(user!.createdAt!)
-                        : '—',
-                  ),
-                ),
-                if (user?.updatedAt != null)
-                  ListTile(
-                    leading: Icon(
-                      Icons.update_outlined,
-                      color: theme.colorScheme.primary,
+                    CircleAvatar(
+                      radius: 48,
+                      backgroundColor: AppTheme.primaryColor,
+                      child: user?.image != null
+                          ? null
+                          : Text(
+                              avatarLabel,
+                              style: const TextStyle(
+                                fontSize: 36,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
                     ),
-                    title: const Text('Last Updated'),
-                    subtitle: Text(_formatDate(user!.updatedAt!)),
-                  ),
                   ],
                 ),
+                const SizedBox(height: 16),
+                Text(
+                  displayName,
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: glass.textOnGlass,
+                  ),
+                ),
+                if (displayEmail.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    displayEmail,
+                    style: TextStyle(color: glass.textOnGlassMuted),
+                  ),
+                ],
+                const SizedBox(height: 16),
+                GlassButton(
+                  label: 'Edit Profile',
+                  variant: GlassButtonVariant.outline,
+                  icon: Icons.edit_outlined,
+                  onPressed: () {},
+                ),
               ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          GlassCard(
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Verification Status',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: glass.textOnGlass,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        SeedData.currentUser.verificationLevel,
+                        style: TextStyle(fontSize: 12, color: glass.textOnGlassMuted),
+                      ),
+                    ],
+                  ),
+                ),
+                GlassBadge(
+                  label: 'Verified',
+                  color: AppTheme.secondaryColor,
+                  icon: Icons.verified,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'Achievements',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(color: glass.textOnGlass),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: SeedData.achievementBadges.map((badge) {
+              return Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(
+                    right: badge != SeedData.achievementBadges.last ? 8 : 0,
+                  ),
+                  child: GlassCard(
+                    intensity: GlassIntensity.subtle,
+                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                    child: Column(
+                      children: [
+                        Icon(_badgeIcon(badge.icon), color: AppTheme.secondaryColor, size: 22),
+                        const SizedBox(height: 6),
+                        Text(
+                          badge.title,
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontSize: 10, color: glass.textOnGlassMuted),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'Settings & Preferences',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(color: glass.textOnGlass),
+          ),
+          const SizedBox(height: 12),
+          GlassCard(
+            padding: EdgeInsets.zero,
+            child: Column(
+              children: [
+                _settingsTile(
+                  icon: Icons.notifications_outlined,
+                  title: 'Push Notifications',
+                  glass: glass,
+                  trailing: Switch(
+                    value: _pushNotifications,
+                    onChanged: (v) => setState(() => _pushNotifications = v),
+                    activeTrackColor: AppTheme.secondaryColor,
+                  ),
+                ),
+                Divider(height: 1, color: glass.border),
+                _settingsTile(
+                  icon: Icons.dark_mode_outlined,
+                  title: 'Dark Mode',
+                  glass: glass,
+                  trailing: Switch(
+                    value: isDark,
+                    onChanged: (v) {
+                      ref.read(themeModeProvider.notifier).setThemeMode(
+                            v ? ThemeMode.dark : ThemeMode.light,
+                          );
+                    },
+                    activeTrackColor: AppTheme.secondaryColor,
+                  ),
+                ),
+                Divider(height: 1, color: glass.border),
+                _settingsTile(icon: Icons.language, title: 'Language (English)', glass: glass),
+                Divider(height: 1, color: glass.border),
+                _settingsTile(icon: Icons.help_outline, title: 'Help & Support', glass: glass),
+                Divider(height: 1, color: glass.border),
+                _settingsTile(icon: Icons.privacy_tip_outlined, title: 'Privacy Policy', glass: glass),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+          GlassSurface(
+            intensity: GlassIntensity.subtle,
+            borderRadius: BorderRadius.circular(GlassTokens.radiusGlassSm),
+            tint: const Color(0xFFB91C1C).withValues(alpha: 0.08),
+            border: Border.all(color: const Color(0xFFB91C1C).withValues(alpha: 0.4)),
+            onTap: _handleSignOut,
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: const Center(
+              child: Text(
+                'Sign Out',
+                style: TextStyle(
+                  color: Color(0xFFB91C1C),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                ),
+              ),
             ),
           ),
         ],
@@ -170,7 +288,18 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  String _formatDate(DateTime date) {
-    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+  Widget _settingsTile({
+    required IconData icon,
+    required String title,
+    required GlassTheme glass,
+    Widget? trailing,
+  }) {
+    return ListTile(
+      leading: Icon(icon, color: glass.textOnGlassMuted),
+      title: Text(title, style: TextStyle(fontSize: 15, color: glass.textOnGlass)),
+      trailing: trailing ?? Icon(Icons.chevron_right, color: glass.textOnGlassMuted),
+      onTap: trailing == null ? () {} : null,
+      minVerticalPadding: 12,
+    );
   }
 }

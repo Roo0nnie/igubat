@@ -1,5 +1,6 @@
 import 'dart:developer' as developer;
 
+import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio/dio.dart';
 import 'package:mobile/core/constants/api_constants.dart';
 import 'package:mobile/features/auth/data/models/session_model.dart';
@@ -15,10 +16,11 @@ part 'auth_repository.g.dart';
 /// (in api_client.dart) automatically persists `set-cookie` headers.
 /// We also store the session token in secure storage as a fallback.
 class AuthRepository {
-  AuthRepository(this._dio, this._storage);
+  AuthRepository(this._dio, this._storage, this._cookieJar);
 
   final Dio _dio;
   final SecureStorageService _storage;
+  final PersistCookieJar _cookieJar;
 
   /// Safely extracts a JSON map from a Dio response.
   /// Returns null if the data cannot be parsed as `Map<String, dynamic>`.
@@ -101,6 +103,7 @@ class AuthRepository {
     } finally {
       await _storage.deleteSessionToken();
       await _storage.deleteCookie();
+      await _cookieJar.deleteAll();
     }
   }
 
@@ -134,5 +137,6 @@ class AuthRepository {
 AuthRepository authRepository(Ref ref) {
   final dio = ref.watch(dioProvider);
   final storage = ref.watch(secureStorageProvider);
-  return AuthRepository(dio, storage);
+  final cookieJar = ref.watch(cookieJarProvider);
+  return AuthRepository(dio, storage, cookieJar);
 }

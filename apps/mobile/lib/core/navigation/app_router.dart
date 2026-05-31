@@ -4,9 +4,10 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:mobile/features/auth/presentation/providers/auth_provider.dart';
 import 'package:mobile/features/auth/presentation/screens/login_screen.dart';
 import 'package:mobile/features/auth/presentation/screens/register_screen.dart';
-import 'package:mobile/features/home/presentation/screens/home_screen.dart';
+import 'package:mobile/features/auth/presentation/screens/otp_screen.dart';
 import 'package:mobile/features/onboarding/presentation/providers/onboarding_provider.dart';
 import 'package:mobile/features/onboarding/presentation/screens/onboarding_screen.dart';
+import 'package:mobile/shared/widgets/main_scaffold.dart';
 
 part 'app_router.g.dart';
 
@@ -17,6 +18,7 @@ class AppRoutes {
   static const onboarding = '/onboarding';
   static const login = '/login';
   static const register = '/register';
+  static const otp = '/otp';
   static const home = '/';
 }
 
@@ -51,7 +53,8 @@ GoRouter appRouter(Ref ref) {
       final isOnOnboarding = state.matchedLocation == AppRoutes.onboarding;
       final isOnLogin = state.matchedLocation == AppRoutes.login;
       final isOnRegister = state.matchedLocation == AppRoutes.register;
-      final isOnAuthRoute = isOnLogin || isOnRegister;
+      final isOnOtp = state.matchedLocation == AppRoutes.otp;
+      final isOnAuthRoute = isOnLogin || isOnRegister || isOnOtp;
 
       // 1. Not done with onboarding → force onboarding
       if (!isOnboardingDone) {
@@ -63,13 +66,14 @@ GoRouter appRouter(Ref ref) {
         return isAuthenticated ? AppRoutes.home : AppRoutes.login;
       }
 
-      // 3. Not authenticated → force login (except register)
+      // 3. Not authenticated → force login (except register/otp)
       if (!isAuthenticated) {
         return isOnAuthRoute ? null : AppRoutes.login;
       }
 
       // 4. Authenticated but on auth route → go home
-      if (isOnAuthRoute) {
+      // NOTE: If you need to stay on OTP screen even when authenticated, modify this logic
+      if (isOnAuthRoute && !isOnOtp) {
         return AppRoutes.home;
       }
 
@@ -89,8 +93,12 @@ GoRouter appRouter(Ref ref) {
         builder: (context, state) => const RegisterScreen(),
       ),
       GoRoute(
+        path: AppRoutes.otp,
+        builder: (context, state) => const OtpScreen(),
+      ),
+      GoRoute(
         path: AppRoutes.home,
-        builder: (context, state) => const HomeScreen(),
+        builder: (context, state) => const MainScaffold(),
       ),
     ],
     errorBuilder: (context, state) => Scaffold(

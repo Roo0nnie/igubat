@@ -8,14 +8,22 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'api_client.g.dart';
 
-/// Creates a configured [Dio] client.
+/// Dio instance and persistent cookie jar created at app startup.
+class ApiClient {
+  ApiClient({required this.dio, required this.cookieJar});
+
+  final Dio dio;
+  final PersistCookieJar cookieJar;
+}
+
+/// Creates a configured [Dio] client and [PersistCookieJar].
 ///
 /// - Sets the base URL from [ApiConstants].
 /// - Attaches a [PersistCookieJar] backed by the app's document directory
 ///   (via `path_provider`) so Better Auth session cookies survive app restarts.
 /// - Attaches an interceptor that reads the session cookie from
 ///   [SecureStorageService] and injects it as a header when present.
-Future<Dio> createDio(SecureStorageService storage) async {
+Future<ApiClient> createApiClient(SecureStorageService storage) async {
   // Better Auth performs CSRF validation on POST requests by checking
   // the Origin header against its trustedOrigins list. Native mobile
   // HTTP clients don't send an Origin header by default, so we set one
@@ -64,7 +72,7 @@ Future<Dio> createDio(SecureStorageService storage) async {
     ),
   );
 
-  return dio;
+  return ApiClient(dio: dio, cookieJar: cookieJar);
 }
 
 /// Provider for [Dio].
@@ -75,5 +83,15 @@ Future<Dio> createDio(SecureStorageService storage) async {
 Dio dio(Ref ref) {
   throw UnimplementedError(
     'dioProvider must be overridden in ProviderScope',
+  );
+}
+
+/// Provider for the persistent [PersistCookieJar] used by [dio].
+///
+/// Overridden in main.dart alongside [dioProvider].
+@Riverpod(keepAlive: true)
+PersistCookieJar cookieJar(Ref ref) {
+  throw UnimplementedError(
+    'cookieJarProvider must be overridden in ProviderScope',
   );
 }

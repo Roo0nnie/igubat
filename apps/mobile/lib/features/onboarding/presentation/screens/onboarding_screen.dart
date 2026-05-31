@@ -2,7 +2,11 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:introduction_screen/introduction_screen.dart';
+import 'package:mobile/core/theme/glass_tokens.dart';
+import 'package:mobile/core/widgets/igubat_logo.dart';
 import 'package:mobile/features/onboarding/presentation/providers/onboarding_provider.dart';
+import 'package:mobile/shared/widgets/glass/glass_background.dart';
+import 'package:mobile/shared/widgets/glass/glass_card.dart';
 
 class OnboardingScreen extends ConsumerWidget {
   const OnboardingScreen({super.key});
@@ -12,35 +16,36 @@ class OnboardingScreen extends ConsumerWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return IntroductionScreen(
-      globalBackgroundColor: theme.scaffoldBackgroundColor,
+    return GlassBackground(
+      child: IntroductionScreen(
+      globalBackgroundColor: Colors.transparent,
       pages: [
         _buildPage(
           theme: theme,
-          icon: CupertinoIcons.rocket_fill,
+          icon: CupertinoIcons.building_2_fill,
           gradientColors: [colorScheme.primary, colorScheme.tertiary],
-          title: 'Welcome to Turbo',
+          title: 'Welcome to iGubat',
           body:
-              'Your all-in-one productivity companion.\n'
-              'Manage tasks, stay organized, and get things done.',
+              'Your digital gateway to municipal services.\n'
+              'Access permits, news, and emergency hotlines in one app.',
         ),
         _buildPage(
           theme: theme,
-          icon: CupertinoIcons.checkmark_seal_fill,
+          icon: CupertinoIcons.doc_text_fill,
           gradientColors: [colorScheme.tertiary, colorScheme.secondary],
-          title: 'Stay Organized',
+          title: 'Apply Online',
           body:
-              'Create, track, and complete todos across\n'
-              'all your devices — seamlessly synced.',
+              'Submit business permits, certificates, and\n'
+              'service requests from your phone.',
         ),
         _buildPage(
           theme: theme,
-          icon: CupertinoIcons.person_2_fill,
+          icon: CupertinoIcons.shield_fill,
           gradientColors: [colorScheme.secondary, colorScheme.primary],
-          title: 'Secure & Personal',
+          title: 'Secure & Trusted',
           body:
-              'Sign in to keep your data safe and access\n'
-              'it anywhere, anytime.',
+              'Verified citizen accounts keep your data safe\n'
+              'and your transactions secure.',
         ),
       ],
       showSkipButton: true,
@@ -102,6 +107,7 @@ class OnboardingScreen extends ConsumerWidget {
       curve: Curves.easeOutCubic,
       scrollPhysics: const BouncingScrollPhysics(),
       controlsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+    ),
     );
   }
 
@@ -141,38 +147,20 @@ class OnboardingScreen extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const SizedBox(height: 64),
-            Container(
-              width: 180,
-              height: 180,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHigh.withOpacity(0.5),
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: Container(
-                  width: 120,
-                  height: 120,
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primaryContainer,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Center(
-                    child: Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.primary,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        icon,
-                        size: 32,
-                        color: theme.colorScheme.onPrimary,
-                      ),
-                    ),
-                  ),
+            const SizedBox(height: 48),
+            const IgubatLogo(height: 56),
+            const SizedBox(height: 32),
+            GlassCard(
+              intensity: GlassIntensity.prominent,
+              padding: const EdgeInsets.all(32),
+              child: Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  gradient: GlassTokens.accentGradient,
+                  shape: BoxShape.circle,
                 ),
+                child: Icon(icon, size: 40, color: Colors.white),
               ),
             ),
           ],

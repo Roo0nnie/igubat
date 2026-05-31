@@ -23,8 +23,8 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-	title: "Turbo Template",
-	description: "Turborepo monorepo template with Next.js, NestJS, and Flutter",
+	title: "iGubat 4710",
+	description: "One Municipality. One Digital Service.",
 }
 
 export default function RootLayout({

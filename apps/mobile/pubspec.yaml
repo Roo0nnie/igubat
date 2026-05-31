@@ -58,6 +58,9 @@ dependencies:
   # Local push notifications
   awesome_notifications: ^0.11.0
 
+  # Animations
+  flutter_animate: ^4.5.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -77,3 +80,4 @@ flutter:
 
   assets:
     - .env
+    - assets/images/
