@@ -1,23 +1,50 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../core/navigation/app_router.dart';
+import '../../core/navigation/glass_page_route.dart';
 import '../../core/theme/app_styles.dart';
 import 'glass/glass_background.dart';
 import 'glass/glass_floating_nav_bar.dart';
+import '../../features/auth/presentation/providers/auth_provider.dart';
+import '../../features/auth/presentation/providers/auth_redirect_provider.dart';
 import '../../features/home/presentation/screens/home_screen.dart';
 import '../../features/services/presentation/screens/services_screen.dart';
+import '../../features/services/presentation/screens/business_permit_screen.dart';
 import '../../features/news/presentation/screens/news_screen.dart';
 import '../../features/emergency/presentation/screens/emergency_screen.dart';
+import '../../features/notifications/presentation/screens/notifications_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
 
-class MainScaffold extends StatefulWidget {
+class MainScaffold extends ConsumerStatefulWidget {
   const MainScaffold({super.key});
 
   @override
-  State<MainScaffold> createState() => _MainScaffoldState();
+  ConsumerState<MainScaffold> createState() => _MainScaffoldState();
 }
 
-class _MainScaffoldState extends State<MainScaffold> {
+class _MainScaffoldState extends ConsumerState<MainScaffold> {
+  /// Index of the Profile tab. Profile management is an authenticated-only
+  /// action (TOR Module 9), so Guests tapping it are sent to login instead.
+  static const int _profileIndex = 4;
+
   int _currentIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    // The OTP screen writes the continuation *before* navigating here, so by
+    // the time this shell mounts the value is already pending. `ref.listen`
+    // (registered in build) only fires on *subsequent* changes, never the
+    // existing one, so the pending continuation must be consumed explicitly at
+    // mount — otherwise the guest always stays on Home.
+    final pending = ref.read(authContinuationProvider);
+    if (pending != null && ref.read(isAuthenticatedProvider)) {
+      ref.read(authContinuationProvider.notifier).state = null;
+      _resumeContinuation(pending);
+    }
+  }
 
   final List<Widget> _screens = const [
     HomeScreen(),
@@ -27,8 +54,64 @@ class _MainScaffoldState extends State<MainScaffold> {
     ProfileScreen(),
   ];
 
+  void _onTabTapped(int index) {
+    // Public surfaces (Home, Services, News, Emergency) are open to Guests.
+    // The Profile tab manages an authenticated account, so unauthenticated
+    // Guests are routed to login instead of switching to the Profile tab.
+    if (index == _profileIndex && !ref.read(isAuthenticatedProvider)) {
+      // Pass the intended Profile destination so successful sign-in lands the
+      // user on Profile rather than Home.
+      context.push(AppRoutes.loginWithRedirect(AppRoutes.redirectProfile));
+      return;
+    }
+    setState(() => _currentIndex = index);
+  }
+
+  /// Resumes the surface a guest attempted before being routed to sign-in.
+  /// Runs after the authenticated shell is mounted (post-frame) so nested
+  /// pushes happen on the live navigator.
+  void _resumeContinuation(AuthContinuation continuation) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      switch (continuation) {
+        case AuthContinuation.profile:
+          setState(() => _currentIndex = _profileIndex);
+          break;
+        case AuthContinuation.notifications:
+          Navigator.push(
+            context,
+            GlassPageRoute(page: const NotificationsScreen()),
+          );
+          break;
+        case AuthContinuation.businessPermit:
+          Navigator.push(
+            context,
+            GlassPageRoute(page: const BusinessPermitScreen()),
+          );
+          break;
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    // When the session ends, never leave the user stranded on an
+    // authenticated-only tab (Profile): reset to the public Home surface.
+    ref.listen(authStateProvider, (previous, next) {
+      final isAuthed = !next.isLoading && next.value != null;
+      if (!isAuthed && _currentIndex == _profileIndex) {
+        setState(() => _currentIndex = 0);
+      }
+    });
+
+    // Resume any pending post-authentication continuation once the user is
+    // signed in, then clear it so it fires exactly once.
+    ref.listen(authContinuationProvider, (previous, next) {
+      if (next == null || !ref.read(isAuthenticatedProvider)) return;
+      ref.read(authContinuationProvider.notifier).state = null;
+      _resumeContinuation(next);
+    });
+
     return Scaffold(
       extendBody: true,
       backgroundColor: Colors.transparent,
@@ -67,7 +150,7 @@ class _MainScaffoldState extends State<MainScaffold> {
               bottom: 0,
               child: GlassFloatingNavBar(
                 currentIndex: _currentIndex,
-                onTap: (index) => setState(() => _currentIndex = index),
+                onTap: _onTabTapped,
                 items: GlassFloatingNavBar.defaultItems,
               ),
             ),

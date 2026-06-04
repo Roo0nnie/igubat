@@ -24,6 +24,15 @@ const config: NextConfig = {
 	typescript: { ignoreBuildErrors: true },
 	reactCompiler: true,
 
+	/**
+	 * Enables `forbidden()`/`unauthorized()` from `next/navigation` so admin-only
+	 * route guards can return a real HTTP 403 (rendered via `forbidden.tsx`)
+	 * instead of a 200 page that merely looks forbidden.
+	 */
+	experimental: {
+		authInterrupts: true,
+	},
+
 	devIndicators: {
 		position: "bottom-right",
 	},

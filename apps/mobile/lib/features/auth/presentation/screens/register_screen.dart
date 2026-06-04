@@ -1,7 +1,10 @@
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mobile/core/mock/seed_data.dart';
+import 'package:mobile/core/navigation/app_router.dart';
 import 'package:mobile/core/widgets/igubat_logo.dart';
 import 'package:mobile/features/auth/presentation/providers/auth_provider.dart';
 import 'package:mobile/shared/widgets/glass/glass_background.dart';
@@ -16,23 +19,31 @@ class RegisterScreen extends ConsumerStatefulWidget {
 class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
+  final _mobileController = TextEditingController();
   final _emailController = TextEditingController();
+  final _addressController = TextEditingController();
   final _passwordController = TextEditingController();
+  String? _selectedBarangay;
   bool _obscurePassword = true;
-  bool _agreeToTerms = false;
+
+  /// Explicit consent to processing of personal data under the Data Privacy
+  /// Act of 2012 (RA 10173). Required before an account can be created.
+  bool _agreeToDpa = false;
 
   @override
   void dispose() {
     _nameController.dispose();
+    _mobileController.dispose();
     _emailController.dispose();
+    _addressController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
   Future<void> _handleSignUp() async {
     if (!_formKey.currentState!.validate()) return;
-    
-    if (!_agreeToTerms) {
+
+    if (!_agreeToDpa) {
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(
@@ -41,8 +52,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             behavior: SnackBarBehavior.floating,
             backgroundColor: Colors.transparent,
             content: AwesomeSnackbarContent(
-              title: 'Terms of Service',
-              message: 'Please agree to the Terms of Services to register.',
+              title: 'Consent Required',
+              message:
+                  'Please review the Privacy Notice and consent to the '
+                  'processing of your personal data to register.',
               contentType: ContentType.warning,
             ),
           ),
@@ -50,17 +63,22 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       return;
     }
 
-    await ref.read(authStateProvider.notifier).signUp(
-          email: _emailController.text.trim(),
+    final email = _emailController.text.trim();
+    final registered = await ref.read(authStateProvider.notifier).signUp(
+          email: email,
           password: _passwordController.text,
           name: _nameController.text.trim(),
+          mobileNumber: _mobileController.text.trim(),
+          barangay: _selectedBarangay!,
+          address: _addressController.text.trim(),
+          dpaConsent: _agreeToDpa,
         );
 
     if (!mounted) return;
 
-    final authState = ref.read(authStateProvider);
-    if (authState.hasError) {
+    if (!registered) {
       if (!context.mounted) return;
+      final error = ref.read(authStateProvider).error;
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(
@@ -70,28 +88,73 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             backgroundColor: Colors.transparent,
             content: AwesomeSnackbarContent(
               title: 'Sign Up Failed',
-              message: authState.error.toString(),
+              message: error?.toString() ?? 'Registration failed. Please try again.',
               contentType: ContentType.failure,
             ),
           ),
         );
-    } else if (authState.hasValue && authState.value != null) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          SnackBar(
-            elevation: 0,
-            behavior: SnackBarBehavior.floating,
-            backgroundColor: Colors.transparent,
-            content: AwesomeSnackbarContent(
-              title: 'Account Created!',
-              message: 'Welcome aboard — your account is ready.',
-              contentType: ContentType.success,
+      return;
+    }
+
+    if (!context.mounted) return;
+    // Account created in an unverified state — a verification OTP was
+    // dispatched server-side. Route to OTP verification with the email under
+    // verification before the citizen reaches authenticated surfaces (TOR
+    // Step 2b). Forward any post-authentication continuation so a guest who
+    // started from a guarded surface still returns there after verifying.
+    final redirect = GoRouterState.of(context)
+        .uri
+        .queryParameters[AppRoutes.redirectQueryParam];
+    context.push(AppRoutes.otpWith(email, redirect));
+  }
+
+  /// Presents the Privacy Notice (RA 10173) the citizen must acknowledge
+  /// before consenting. Shown inline as a scrollable bottom sheet.
+  void _showPrivacyNotice() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (context) {
+        final theme = Theme.of(context);
+        return DraggableScrollableSheet(
+          expand: false,
+          initialChildSize: 0.6,
+          maxChildSize: 0.9,
+          builder: (context, scrollController) => SingleChildScrollView(
+            controller: scrollController,
+            padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Privacy Notice',
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'The Municipality of Gubat, through the iGubat application, '
+                  'collects your full name, barangay, address, mobile number, '
+                  'and optional email to create and verify your account and to '
+                  'process the service requests and reports you submit.\n\n'
+                  'Your personal data is processed in accordance with the Data '
+                  'Privacy Act of 2012 (Republic Act No. 10173). It is used '
+                  'only for legitimate government service delivery, is kept '
+                  'confidential, and is retained only for as long as necessary.\n\n'
+                  'You may access, correct, or request deletion of your data, '
+                  'and withdraw consent, by contacting the LGU Data Protection '
+                  'Officer. By consenting, you confirm that the information you '
+                  'provided is true and accurate.',
+                  style: theme.textTheme.bodyMedium?.copyWith(height: 1.5),
+                ),
+              ],
             ),
           ),
         );
-    }
+      },
+    );
   }
 
   Widget _buildTextField({
@@ -101,6 +164,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     required IconData prefixIcon,
     required TextEditingController controller,
     bool isPassword = false,
+    TextInputType? keyboardType,
     String? Function(String?)? validator,
   }) {
     final theme = Theme.of(context);
@@ -120,6 +184,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         TextFormField(
           controller: controller,
           obscureText: isPassword ? _obscurePassword : false,
+          keyboardType: keyboardType,
           style: theme.textTheme.bodyLarge?.copyWith(
             color: theme.colorScheme.onSurface,
           ),
@@ -186,6 +251,74 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             ),
           ),
           validator: validator,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBarangayDropdown(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    OutlineInputBorder border(Color color, [double width = 1]) =>
+        OutlineInputBorder(
+          borderRadius: BorderRadius.circular(30),
+          borderSide: BorderSide(color: color, width: width),
+        );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Barangay',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w500,
+            color: theme.colorScheme.onSurface.withOpacity(0.8),
+          ),
+        ),
+        const SizedBox(height: 8),
+        DropdownButtonFormField<String>(
+          initialValue: _selectedBarangay,
+          isExpanded: true,
+          icon: Icon(
+            Icons.keyboard_arrow_down,
+            color: theme.colorScheme.onSurface.withOpacity(0.5),
+          ),
+          style: theme.textTheme.bodyLarge?.copyWith(
+            color: theme.colorScheme.onSurface,
+          ),
+          dropdownColor: theme.colorScheme.surface,
+          hint: Text(
+            'Select your barangay',
+            style: theme.textTheme.bodyLarge?.copyWith(
+              color: theme.colorScheme.onSurface.withOpacity(0.4),
+            ),
+          ),
+          decoration: InputDecoration(
+            prefixIcon: Icon(
+              Icons.location_city_outlined,
+              color: theme.colorScheme.onSurface.withOpacity(0.5),
+              size: 22,
+            ),
+            filled: true,
+            fillColor: isDark
+                ? theme.colorScheme.surface.withOpacity(0.5)
+                : theme.colorScheme.surface,
+            contentPadding:
+                const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
+            border: border(theme.colorScheme.outline.withOpacity(0.3)),
+            enabledBorder: border(theme.colorScheme.outline.withOpacity(0.3)),
+            focusedBorder: border(theme.colorScheme.primary, 2),
+            errorBorder: border(theme.colorScheme.error),
+            focusedErrorBorder: border(theme.colorScheme.error, 2),
+          ),
+          items: [
+            for (final barangay in SeedData.barangays)
+              DropdownMenuItem(value: barangay, child: Text(barangay)),
+          ],
+          onChanged: (value) => setState(() => _selectedBarangay = value),
+          validator: (value) =>
+              value == null ? 'Please select your barangay' : null,
         ),
       ],
     );
@@ -303,14 +436,39 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     ),
                     
                     const SizedBox(height: 20),
-                    
+
+                    _buildTextField(
+                      context: context,
+                      label: 'Mobile Number',
+                      hint: 'e.g. 0917 123 4567',
+                      prefixIcon: Icons.phone_outlined,
+                      controller: _mobileController,
+                      keyboardType: TextInputType.phone,
+                      validator: (value) {
+                        final digits =
+                            (value ?? '').replaceAll(RegExp(r'\D'), '');
+                        if (digits.isEmpty) {
+                          return 'Mobile number is required';
+                        }
+                        if (digits.length < 10) {
+                          return 'Enter a valid mobile number';
+                        }
+                        return null;
+                      },
+                    ),
+
+                    const SizedBox(height: 20),
+
                     _buildTextField(
                       context: context,
                       label: 'Email',
                       hint: 'Email address',
                       prefixIcon: Icons.email_outlined,
                       controller: _emailController,
+                      keyboardType: TextInputType.emailAddress,
                       validator: (value) {
+                        // Email is the identifier the citizen will sign in with,
+                        // so it is required until mobile-number login exists.
                         if (value == null || value.trim().isEmpty) {
                           return 'Email is required';
                         }
@@ -320,9 +478,29 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         return null;
                       },
                     ),
-                    
+
                     const SizedBox(height: 20),
-                    
+
+                    _buildBarangayDropdown(context),
+
+                    const SizedBox(height: 20),
+
+                    _buildTextField(
+                      context: context,
+                      label: 'Complete Address',
+                      hint: 'House no., street, purok/sitio',
+                      prefixIcon: Icons.home_outlined,
+                      controller: _addressController,
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Address is required';
+                        }
+                        return null;
+                      },
+                    ),
+
+                    const SizedBox(height: 20),
+
                     _buildTextField(
                       context: context,
                       label: 'Password',
@@ -334,25 +512,29 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         if (value == null || value.isEmpty) {
                           return 'Password is required';
                         }
-                        if (value.length < 6) {
-                          return 'Password must be at least 6 characters';
+                        if (value.length < 8) {
+                          return 'Password must be at least 8 characters';
+                        }
+                        if (!RegExp(r'^[a-zA-Z0-9]+$').hasMatch(value)) {
+                          return 'Use letters and numbers only';
                         }
                         return null;
                       },
                     ),
-                    
+
                     const SizedBox(height: 16),
-                    
+
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         SizedBox(
                           width: 24,
                           height: 24,
                           child: Checkbox(
-                            value: _agreeToTerms,
+                            value: _agreeToDpa,
                             onChanged: (value) {
                               setState(() {
-                                _agreeToTerms = value ?? false;
+                                _agreeToDpa = value ?? false;
                               });
                             },
                             activeColor: theme.colorScheme.primary,
@@ -363,10 +545,38 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         ),
                         const SizedBox(width: 8),
                         Expanded(
-                          child: Text(
-                            'I agree to the Terms of Services',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.onSurface.withOpacity(0.8),
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 2),
+                            child: Text.rich(
+                              TextSpan(
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: theme.colorScheme.onSurface
+                                      .withOpacity(0.8),
+                                  height: 1.4,
+                                ),
+                                children: [
+                                  const TextSpan(
+                                    text:
+                                        'I have read the ',
+                                  ),
+                                  TextSpan(
+                                    text: 'Privacy Notice',
+                                    style: TextStyle(
+                                      color: theme.colorScheme.primary,
+                                      fontWeight: FontWeight.w700,
+                                      decoration: TextDecoration.underline,
+                                    ),
+                                    recognizer: TapGestureRecognizer()
+                                      ..onTap = _showPrivacyNotice,
+                                  ),
+                                  const TextSpan(
+                                    text:
+                                        ' and consent to the processing of my '
+                                        'personal data under the Data Privacy '
+                                        'Act of 2012 (RA 10173).',
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),

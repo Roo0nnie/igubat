@@ -1,7 +1,11 @@
+"use client"
+
+import Link from "next/link"
+import { usePathname } from "next/navigation"
+
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
@@ -10,44 +14,22 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/core/components/ui/sidebar"
-import { Home, FileText, Users, Newspaper, AlertTriangle, Bell, Settings } from "lucide-react"
-import Link from "next/link"
 import { IgubatLogo } from "@/core/components/ui/igubat-logo"
-
-const items = [
-  {
-    title: "Dashboard",
-    url: "/dashboard",
-    icon: Home,
-  },
-  {
-    title: "Requests",
-    url: "/requests",
-    icon: FileText,
-  },
-  {
-    title: "Citizens",
-    url: "/citizens",
-    icon: Users,
-  },
-  {
-    title: "Content",
-    url: "/content",
-    icon: Newspaper,
-  },
-  {
-    title: "Reports",
-    url: "/reports",
-    icon: AlertTriangle,
-  },
-  {
-    title: "Notifications",
-    url: "/notifications",
-    icon: Bell,
-  },
-]
+import { useRole } from "@/core/context/role-provider"
+import { canAccess } from "@/core/lib/roles"
+import { NAV_GROUPS } from "@/features/admin-layout/nav-items"
 
 export function AdminSidebar() {
+  const pathname = usePathname()
+  const { portalRole } = useRole()
+
+  // Hide groups/items the current role can't access. Admin-only items simply
+  // disappear for Moderators (spec Section 8 permission matrix).
+  const groups = NAV_GROUPS.map((group) => ({
+    ...group,
+    items: group.items.filter((item) => canAccess(portalRole, item.access)),
+  })).filter((group) => group.items.length > 0)
+
   return (
     <Sidebar className="border-r bg-sidebar">
       <SidebarHeader className="p-4 border-b">
@@ -57,36 +39,30 @@ export function AdminSidebar() {
         </div>
       </SidebarHeader>
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Menu</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {items.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild tooltip={item.title}>
-                    <Link href={item.url}>
-                      <item.icon className="text-muted-foreground" />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {groups.map((group) => (
+          <SidebarGroup key={group.label}>
+            <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {group.items.map((item) => {
+                  const isActive =
+                    pathname === item.url || pathname.startsWith(`${item.url}/`)
+                  return (
+                    <SidebarMenuItem key={item.title}>
+                      <SidebarMenuButton asChild tooltip={item.title} isActive={isActive}>
+                        <Link href={item.url}>
+                          <item.icon className="text-muted-foreground" />
+                          <span>{item.title}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )
+                })}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ))}
       </SidebarContent>
-      <SidebarFooter className="border-t p-4">
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild tooltip="Settings">
-              <Link href="/settings">
-                <Settings className="text-muted-foreground" />
-                <span>Settings</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarFooter>
     </Sidebar>
   )
 }

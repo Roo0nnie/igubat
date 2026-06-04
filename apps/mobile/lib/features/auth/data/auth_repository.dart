@@ -67,17 +67,39 @@ class AuthRepository {
     return null;
   }
 
-  /// Signs up with email, password, and name.
+  /// Registers a citizen with email, password, name and the profile fields
+  /// collected during registration (mobile number, barangay, address and DPA
+  /// consent), which the backend persists via Better Auth `additionalFields`.
   ///
-  /// Better Auth `/sign-up/email` returns the same shape as sign-in.
-  Future<SessionModel?> signUp({
+  /// The backend is configured with `requireEmailVerification: true`, so
+  /// `/sign-up/email` creates the account in an **unverified** state and the
+  /// `emailOTP` plugin dispatches a 6-digit code — it does NOT return a usable
+  /// session. We therefore deliberately do not parse or persist any token here:
+  /// the citizen only becomes authenticated after [verifyEmailOtp] succeeds.
+  ///
+  /// Throws a [DioException] if the request fails so callers can surface the
+  /// backend error message.
+  Future<void> signUp({
     required String email,
     required String password,
     required String name,
+    required String mobileNumber,
+    required String barangay,
+    required String address,
+    required bool dpaConsent,
   }) async {
     final response = await _dio.post(
       ApiConstants.signUp,
-      data: {'email': email, 'password': password, 'name': name},
+      data: {
+        'email': email,
+        'password': password,
+        'name': name,
+        // Persisted on the user row via Better Auth additionalFields.
+        'mobileNumber': mobileNumber,
+        'barangay': barangay,
+        'address': address,
+        'dpaConsent': dpaConsent,
+      },
     );
 
     developer.log(
@@ -86,9 +108,42 @@ class AuthRepository {
       'data=${response.data}',
       name: 'AuthRepository',
     );
+    // No session is created on sign-up; the verification OTP has been sent.
+  }
+
+  /// (Re)dispatches an email-verification OTP for [email] via the Better Auth
+  /// `emailOTP` plugin. Used by the OTP screen's "Resend code" action.
+  Future<void> sendVerificationOtp({required String email}) async {
+    await _dio.post(
+      ApiConstants.sendVerificationOtp,
+      data: {'email': email, 'type': 'email-verification'},
+    );
+  }
+
+  /// Validates the email-verification [otp] for [email] server-side.
+  ///
+  /// On success Better Auth marks the email verified and returns an
+  /// authenticated session (same shape as sign-in), which we persist before
+  /// returning so the citizen enters the authenticated shell. Returns null if
+  /// the response carried no session.
+  Future<SessionModel?> verifyEmailOtp({
+    required String email,
+    required String otp,
+  }) async {
+    final response = await _dio.post(
+      ApiConstants.verifyEmailOtp,
+      data: {'email': email, 'otp': otp},
+    );
+
+    developer.log(
+      'verifyEmailOtp status=${response.statusCode} '
+      'type=${response.data.runtimeType} '
+      'data=${response.data}',
+      name: 'AuthRepository',
+    );
 
     final body = _parseJsonBody(response);
-    if (response.statusCode == 200 && body != null) {
+    if (response.statusCode == 200 && body != null && body['user'] != null) {
       final session = SessionModel.fromAuthResponse(body);
       await _storage.setSessionToken(session.session.token);
       return session;

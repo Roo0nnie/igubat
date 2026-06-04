@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/mock/seed_data.dart';
+import '../../../../core/navigation/app_router.dart';
 import '../../../../core/navigation/glass_page_route.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/glass_tokens.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../../shared/widgets/glass/glass_badge.dart';
 import '../../../../shared/widgets/glass/glass_button.dart';
 import '../../../../shared/widgets/glass/glass_card.dart';
@@ -11,7 +15,14 @@ import '../../../../shared/widgets/glass/glass_scaffold.dart';
 import '../../../../shared/widgets/glass/glass_surface.dart';
 import 'request_details_screen.dart';
 
-class BusinessPermitScreen extends StatelessWidget {
+/// Business Permit service detail (TOR Module 5).
+///
+/// Browsing the service is public, but the apply action and the citizen's
+/// own application history are authenticated surfaces (Story 5.1): a guest who
+/// tries to submit is sent to sign-in, and the "My Applications" list — which
+/// exposes account-specific request details and citizen names — is hidden
+/// until the user authenticates.
+class BusinessPermitScreen extends ConsumerWidget {
   const BusinessPermitScreen({super.key});
 
   Color _statusColor(String status) {
@@ -28,8 +39,16 @@ class BusinessPermitScreen extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
-    final requests = SeedData.activeRequests.where((r) => r.serviceType == 'Business Permit').toList();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isAuthenticated = ref.watch(isAuthenticatedProvider);
+    final user = ref.watch(currentUserProvider);
+    // Scope the history to the signed-in citizen's own submissions: this is a
+    // citizen-facing surface (Module 5), so other applicants' names and
+    // statuses must never be rendered here. Guests resolve to no user and see
+    // the sign-in prompt instead of any list.
+    final requests = SeedData.activeRequests
+        .where((r) => r.serviceType == 'Business Permit' && r.citizenName == user?.name)
+        .toList();
     final glass = glassThemeOf(context);
 
     return GlassScaffold(
@@ -51,9 +70,23 @@ class BusinessPermitScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   GlassButton(
-                    label: 'Apply for Business Permit',
+                    label: isAuthenticated
+                        ? 'Apply for Business Permit'
+                        : 'Sign In to Apply',
                     expanded: true,
-                    onPressed: () {},
+                    onPressed: () {
+                      // Submitting a request is authenticated-only (Story 5.1).
+                      // Guests are routed to sign-in; pushing (rather than
+                      // replacing) keeps this service on the stack so they can
+                      // return to it after authenticating.
+                      if (!isAuthenticated) {
+                        context.push(
+                          AppRoutes.loginWithRedirect(AppRoutes.redirectBusinessPermit),
+                        );
+                        return;
+                      }
+                      // Authenticated submission flow.
+                    },
                   ),
                 ],
               ),
@@ -68,7 +101,9 @@ class BusinessPermitScreen extends StatelessWidget {
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(color: glass.textOnGlass),
                 ),
                 const SizedBox(height: 16),
-                if (requests.isEmpty)
+                if (!isAuthenticated)
+                  _buildSignInPrompt(context, glass)
+                else if (requests.isEmpty)
                   Center(
                     child: Padding(
                       padding: const EdgeInsets.all(32),
@@ -78,6 +113,42 @@ class BusinessPermitScreen extends StatelessWidget {
                 else
                   ...requests.map((request) => _buildApplicationCard(context, request, glass)),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Shown in place of the application history when the viewer is a guest, so
+  /// account-specific request details and citizen names are never exposed on
+  /// this now-public surface (Story 5.1).
+  Widget _buildSignInPrompt(BuildContext context, GlassTheme glass) {
+    return GlassCard(
+      child: Column(
+        children: [
+          Icon(Icons.lock_outline, color: glass.textOnGlassMuted, size: 32),
+          const SizedBox(height: 12),
+          Text(
+            'Sign in to view your applications',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: glass.textOnGlass,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Your submitted requests and their status are private to your account.',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 13, color: glass.textOnGlassMuted),
+          ),
+          const SizedBox(height: 16),
+          GlassButton(
+            label: 'Sign In',
+            expanded: true,
+            onPressed: () => context.push(
+              AppRoutes.loginWithRedirect(AppRoutes.redirectBusinessPermit),
             ),
           ),
         ],

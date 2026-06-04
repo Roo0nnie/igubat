@@ -20,6 +20,42 @@ class AppRoutes {
   static const register = '/register';
   static const otp = '/otp';
   static const home = '/';
+
+  /// Query parameter carrying the post-authentication continuation target
+  /// through the login → OTP flow, so a guest who signs in from a guarded
+  /// surface resumes the action they attempted instead of landing on Home.
+  static const redirectQueryParam = 'redirect';
+  static const redirectNotifications = 'notifications';
+  static const redirectProfile = 'profile';
+  static const redirectBusinessPermit = 'businessPermit';
+
+  /// Query parameter carrying the email being verified into the OTP screen,
+  /// so server-side OTP validation/resend target the right account.
+  static const emailQueryParam = 'email';
+
+  /// Builds a `/login?redirect=<target>` location for the given continuation.
+  static String loginWithRedirect(String target) =>
+      '$login?$redirectQueryParam=$target';
+
+  /// Appends the active `redirect` continuation (if any) to [path] so the
+  /// post-authentication target survives every hop of the auth funnel
+  /// (login → register → OTP), not just the login path.
+  static String withRedirect(String path, String? redirect) =>
+      redirect != null ? '$path?$redirectQueryParam=$redirect' : path;
+
+  /// Builds the OTP location carrying the [email] under verification plus any
+  /// active post-authentication [redirect] continuation, so server-side OTP
+  /// validation and resend target the right account.
+  static String otpWith(String email, String? redirect) {
+    final params = <String, String>{
+      emailQueryParam: email,
+      if (redirect != null) redirectQueryParam: redirect,
+    };
+    final query = params.entries
+        .map((e) => '${e.key}=${Uri.encodeQueryComponent(e.value)}')
+        .join('&');
+    return '$otp?$query';
+  }
 }
 
 /// Provides the [GoRouter] instance configured with redirect logic
@@ -61,19 +97,18 @@ GoRouter appRouter(Ref ref) {
         return isOnOnboarding ? null : AppRoutes.onboarding;
       }
 
-      // 2. Done with onboarding but still on onboarding page → go to login
+      // 2. Done with onboarding but still on onboarding page → go to the
+      //    public Home. Guests land on the public surfaces (Home, News,
+      //    Emergency, Services) without being forced to authenticate first.
       if (isOnOnboarding) {
-        return isAuthenticated ? AppRoutes.home : AppRoutes.login;
+        return AppRoutes.home;
       }
 
-      // 3. Not authenticated → force login (except register/otp)
-      if (!isAuthenticated) {
-        return isOnAuthRoute ? null : AppRoutes.login;
-      }
-
-      // 4. Authenticated but on auth route → go home
-      // NOTE: If you need to stay on OTP screen even when authenticated, modify this logic
-      if (isOnAuthRoute && !isOnOtp) {
+      // 3. Authenticated but sitting on a (non-OTP) auth route → go home.
+      //    Unauthenticated Guests are intentionally NOT redirected to login
+      //    here: public surfaces stay open, and only authenticated actions
+      //    (submissions, notifications, profile) are gated downstream.
+      if (isAuthenticated && isOnAuthRoute && !isOnOtp) {
         return AppRoutes.home;
       }
 

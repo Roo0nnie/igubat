@@ -73,10 +73,20 @@ class Hotline {
   final String number;
   final String category;
 
+  /// Physical office/facility address. Optional so nationwide hotlines
+  /// (e.g. 911) can omit it. Mirrors the eventual emergency-directory API
+  /// contract (TOR Module 7: name, address, contact number, hours).
+  final String? address;
+
+  /// Operating hours, e.g. `24/7` or `Mon–Fri 8:00 AM – 5:00 PM`.
+  final String? hours;
+
   const Hotline({
     required this.name,
     required this.number,
     required this.category,
+    this.address,
+    this.hours,
   });
 }
 
@@ -282,12 +292,71 @@ class SeedData {
   ];
 
   static const List<Hotline> hotlines = [
-    Hotline(name: 'National Emergency Hotline', number: '911', category: 'Emergency'),
-    Hotline(name: 'Gubat Municipal Police Station', number: '(056) 311-1234', category: 'Police'),
-    Hotline(name: 'Bureau of Fire Protection - Gubat', number: '(056) 311-5678', category: 'BFP'),
-    Hotline(name: 'Gubat District Hospital', number: '(056) 311-9876', category: 'Hospital'),
-    Hotline(name: 'MDRRMO Gubat', number: '(056) 311-2468', category: 'Disaster'),
-    Hotline(name: 'Rural Health Unit', number: '(056) 311-1357', category: 'Hospital'),
+    Hotline(
+      name: 'National Emergency Hotline',
+      number: '911',
+      category: 'Emergency',
+      hours: '24/7',
+    ),
+    // COMCEN (Community Emergency Communications Center) hotlines. Listed per
+    // carrier so a citizen can reach the center regardless of their SIM
+    // (TOR Module 7 / User Story 7.2: Smart, TNT, Landline).
+    Hotline(
+      name: 'COMCEN Gubat (Smart)',
+      number: '0998-555-0117',
+      category: 'COMCEN',
+      address: 'Municipal Hall Compound, Brgy. Poblacion, Gubat, Sorsogon',
+      hours: '24/7',
+    ),
+    Hotline(
+      name: 'COMCEN Gubat (TNT)',
+      number: '0907-555-0117',
+      category: 'COMCEN',
+      address: 'Municipal Hall Compound, Brgy. Poblacion, Gubat, Sorsogon',
+      hours: '24/7',
+    ),
+    Hotline(
+      name: 'COMCEN Gubat (Landline)',
+      number: '(056) 311-0117',
+      category: 'COMCEN',
+      address: 'Municipal Hall Compound, Brgy. Poblacion, Gubat, Sorsogon',
+      hours: '24/7',
+    ),
+    Hotline(
+      name: 'Gubat Municipal Police Station',
+      number: '(056) 311-1234',
+      category: 'Police',
+      address: 'Brgy. Poblacion, Gubat, Sorsogon',
+      hours: '24/7',
+    ),
+    Hotline(
+      name: 'Bureau of Fire Protection - Gubat',
+      number: '(056) 311-5678',
+      category: 'BFP',
+      address: 'National Road, Brgy. Cota Na Daco, Gubat, Sorsogon',
+      hours: '24/7',
+    ),
+    Hotline(
+      name: 'Gubat District Hospital',
+      number: '(056) 311-9876',
+      category: 'Hospital',
+      address: 'Brgy. Manook, Gubat, Sorsogon',
+      hours: '24/7 Emergency Room',
+    ),
+    Hotline(
+      name: 'MDRRMO Gubat',
+      number: '(056) 311-2468',
+      category: 'Disaster',
+      address: 'Municipal Hall Compound, Brgy. Poblacion, Gubat, Sorsogon',
+      hours: '24/7',
+    ),
+    Hotline(
+      name: 'Rural Health Unit',
+      number: '(056) 311-1357',
+      category: 'Hospital',
+      address: 'Brgy. Poblacion, Gubat, Sorsogon',
+      hours: 'Mon–Fri 8:00 AM – 5:00 PM',
+    ),
   ];
 
   static const List<ServiceRequest> activeRequests = [
@@ -388,5 +457,52 @@ class SeedData {
     'Permits',
     'Certificates',
     'Health',
+  ];
+
+  /// Canonical list of barangays in the Municipality of Gubat, Sorsogon.
+  /// Registration requires the citizen to pick from this list rather than
+  /// free-typing, so addresses stay consistent across the LGU back office
+  /// (TOR: barangay is a canonical, validated field).
+  static const List<String> barangays = [
+    'Ariman',
+    'Bagacay',
+    'Balud del Norte',
+    'Balud del Sur',
+    'Bentuco',
+    'Beriran',
+    'Bonga',
+    'Buenavista',
+    'Bulacao',
+    'Cabigaan',
+    'Cabiguhan',
+    'Carriedo',
+    'Casili',
+    'Cogon',
+    'Cota na Daco',
+    'Dita',
+    'Jupi',
+    'Lapinig',
+    'Manapao',
+    'Manook',
+    'Naagtan',
+    'Nato',
+    'Ogao',
+    'Paco',
+    'Pandan',
+    'Panganiban (Poblacion)',
+    'Paradijon (Poblacion)',
+    'Patag',
+    'Payawin',
+    'Pinontingan (Poblacion)',
+    'Rizal',
+    'San Ignacio',
+    'Sangat',
+    'Santa Ana',
+    'Tabi',
+    'Tagaytay',
+    'Tigkiw',
+    'Togawe',
+    'Union',
+    'Villareal',
   ];
 }

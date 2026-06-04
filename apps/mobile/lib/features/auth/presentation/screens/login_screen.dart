@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mobile/core/navigation/app_router.dart';
 import 'package:mobile/core/widgets/igubat_logo.dart';
 import 'package:mobile/features/auth/presentation/providers/auth_provider.dart';
+import 'package:mobile/features/auth/presentation/providers/auth_redirect_provider.dart';
 import 'package:mobile/shared/widgets/app_button.dart';
 import 'package:mobile/shared/widgets/glass/glass_background.dart';
 
@@ -81,14 +82,39 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             backgroundColor: Colors.transparent,
             content: AwesomeSnackbarContent(
               title: 'Welcome back!',
-              message: 'You have signed in successfully. Please verify your OTP.',
+              message: 'You have signed in successfully.',
               contentType: ContentType.success,
             ),
           ),
         );
-      
-      // Navigate to OTP screen
-      context.push(AppRoutes.otp);
+
+      // Email/password sign-in lands directly on the authenticated shell
+      // (TOR Step 2c) — there is no OTP step on the login path. If the guest
+      // arrived from a guarded surface, record the continuation so the main
+      // shell resumes the action they originally attempted instead of Home.
+      final redirect = GoRouterState.of(context)
+          .uri
+          .queryParameters[AppRoutes.redirectQueryParam];
+      final continuation = _continuationFor(redirect);
+      if (continuation != null) {
+        ref.read(authContinuationProvider.notifier).state = continuation;
+      }
+      context.go(AppRoutes.home);
+    }
+  }
+
+  /// Maps the `redirect` query value carried into the login screen onto a
+  /// concrete [AuthContinuation], or `null` when there is nothing to resume.
+  AuthContinuation? _continuationFor(String? redirect) {
+    switch (redirect) {
+      case AppRoutes.redirectNotifications:
+        return AuthContinuation.notifications;
+      case AppRoutes.redirectProfile:
+        return AuthContinuation.profile;
+      case AppRoutes.redirectBusinessPermit:
+        return AuthContinuation.businessPermit;
+      default:
+        return null;
     }
   }
 
@@ -466,7 +492,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ),
                         ),
                         TextButton(
-                          onPressed: () => context.push(AppRoutes.register),
+                          onPressed: () {
+                            // Forward any post-authentication continuation so a
+                            // guest who chooses to create an account (instead of
+                            // signing in) still returns to the surface they
+                            // originally attempted after registering.
+                            final redirect = GoRouterState.of(context)
+                                .uri
+                                .queryParameters[AppRoutes.redirectQueryParam];
+                            context.push(
+                              AppRoutes.withRedirect(
+                                AppRoutes.register,
+                                redirect,
+                              ),
+                            );
+                          },
                           style: TextButton.styleFrom(
                             padding: EdgeInsets.zero,
                             minimumSize: Size.zero,

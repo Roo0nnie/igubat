@@ -19,6 +19,14 @@ export const users = createTable("users", t => ({
 		.default("registered_citizen")
 		.$type<"registered_citizen" | "frontline_officer" | "department_supervisor" | "content_editor" | "emergency_operator" | "ict_admin" | "super_admin">(),
 	departmentId: t.integer("department_id"),
+	// Citizen profile captured at registration (mobile app). Persisted via
+	// Better Auth `additionalFields` so the sign-up payload is stored rather
+	// than dropped. Nullable because staff/seeded accounts do not supply them.
+	mobileNumber: t.text("mobile_number"),
+	barangay: t.text("barangay"),
+	address: t.text("address"),
+	// Explicit Data Privacy Act (RA 10173) consent given at registration.
+	dpaConsent: t.boolean("dpa_consent").notNull().default(false),
 	createdAt: t.timestamp("created_at").notNull().defaultNow(),
 	updatedAt: t.timestamp("updated_at").notNull().defaultNow(),
 }))

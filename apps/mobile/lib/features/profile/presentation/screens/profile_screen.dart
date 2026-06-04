@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:toastification/toastification.dart';
 
 import '../../../../core/mock/seed_data.dart';
+import '../../../../core/navigation/app_router.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../../core/theme/app_styles.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -59,6 +61,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
     await ref.read(authStateProvider.notifier).signOut();
     if (!mounted) return;
+
+    // Sign-out happens from the Profile tab, an authenticated-only surface.
+    // Return the now-unauthenticated user to the public Home surface instead
+    // of leaving them stranded on account management.
+    context.go(AppRoutes.home);
 
     toastification.show(
       title: const Text('Signed out successfully'),

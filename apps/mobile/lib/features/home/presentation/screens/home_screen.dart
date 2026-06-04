@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/mock/seed_data.dart';
+import '../../../../core/navigation/app_router.dart';
 import '../../../../core/navigation/glass_page_route.dart';
 import '../../../../core/theme/app_styles.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/glass_tokens.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../../shared/widgets/glass/glass_badge.dart';
 import '../../../../shared/widgets/glass/glass_card.dart';
 import '../../../../shared/widgets/glass/glass_search_bar.dart';
@@ -14,14 +18,14 @@ import '../../../../shared/widgets/glass/glass_skeleton.dart';
 import '../../../../shared/widgets/glass/glass_surface.dart';
 import '../../../notifications/presentation/screens/notifications_screen.dart';
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends ConsumerState<HomeScreen> {
   final ScrollController _scrollController = ScrollController();
   bool _loading = true;
 
@@ -172,7 +176,33 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  /// Visayan (Bisaya) time-of-day greeting used for the bilingual welcome
+  /// (e.g. "Maayong Buntag"). Segments follow the device clock:
+  /// morning → midday → afternoon → evening.
+  String _timeOfDayGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 11) return 'Maayong Buntag';
+    if (hour < 13) return 'Maayong Udto';
+    if (hour < 18) return 'Maayong Hapon';
+    return 'Maayong Gabii';
+  }
+
   Widget _buildFixedHeader(BuildContext context) {
+    // Home is a public surface (Stories 1.1, 3.1, 3.2): guests see neutral
+    // copy and a sign-in prompt, while authenticated citizens get a
+    // personalized greeting.
+    final isAuthenticated = ref.watch(isAuthenticatedProvider);
+    final user = ref.watch(currentUserProvider);
+
+    // Bilingual time-of-day greeting. Guests are greeted by the town name
+    // ("Maayong Buntag, Igubat!"), authenticated citizens by their first
+    // name ("Maayong Buntag, Juan!").
+    final greeting = _timeOfDayGreeting();
+    final firstName = (user?.name ?? SeedData.currentUser.name)
+        .trim()
+        .split(RegExp(r'\s+'))
+        .first;
+
     return ClipRRect(
       borderRadius: const BorderRadius.only(
         bottomLeft: Radius.circular(GlassTokens.radiusGlassLg),
@@ -224,32 +254,45 @@ class _HomeScreenState extends State<HomeScreen> {
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Warm greeting!',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                              height: 1.2,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            SeedData.currentUser.name,
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.85),
-                              fontSize: 14,
-                            ),
-                          ),
-                          Text(
-                            SeedData.currentUser.barangay,
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.65),
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
+                        children: isAuthenticated
+                            ? [
+                                Text(
+                                  '$greeting, $firstName!',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.bold,
+                                    height: 1.2,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  user?.name ?? SeedData.currentUser.name,
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.85),
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ]
+                            : [
+                                Text(
+                                  '$greeting, Igubat!',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.bold,
+                                    height: 1.2,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Sign in to access your account',
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.85),
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
                       ),
                     ),
                     GlassSurface(
@@ -260,7 +303,19 @@ class _HomeScreenState extends State<HomeScreen> {
                       padding: EdgeInsets.zero,
                       child: IconButton(
                         icon: const Icon(Icons.notifications_outlined, color: Colors.white),
+                        // The notification inbox is an authenticated surface
+                        // (Stories 3.1, 3.2): guests are routed to sign-in
+                        // instead of opening the inbox.
                         onPressed: () {
+                          if (!isAuthenticated) {
+                            // Carry the intended destination so sign-in resumes
+                            // the notification inbox instead of dropping the
+                            // user on Home.
+                            context.push(
+                              AppRoutes.loginWithRedirect(AppRoutes.redirectNotifications),
+                            );
+                            return;
+                          }
                           Navigator.push(
                             context,
                             GlassPageRoute(page: const NotificationsScreen()),
@@ -270,6 +325,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ],
                 ),
+                if (!isAuthenticated) ...[
+                  const SizedBox(height: 16),
+                  _buildGuestSignInBanner(context),
+                ],
                 const SizedBox(height: 16),
                 const GlassSearchBar(
                   floating: true,
@@ -279,6 +338,46 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  /// Guest-only call-to-action prompting sign-in. Routes to the login flow
+  /// (Story 1.1) without blocking access to the public home surface.
+  Widget _buildGuestSignInBanner(BuildContext context) {
+    return GlassSurface(
+      intensity: GlassIntensity.subtle,
+      borderRadius: BorderRadius.circular(GlassTokens.radiusGlassSm),
+      tint: Colors.white.withValues(alpha: 0.15),
+      boxShadow: const [],
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        children: [
+          const Icon(Icons.account_circle_outlined, color: Colors.white, size: 22),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Text(
+              'Sign in to submit requests and view your notifications.',
+              style: TextStyle(color: Colors.white, fontSize: 13, height: 1.3),
+            ),
+          ),
+          const SizedBox(width: 12),
+          TextButton(
+            onPressed: () => context.push(AppRoutes.login),
+            style: TextButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: AppTheme.primaryColor,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(999),
+              ),
+            ),
+            child: const Text(
+              'Sign In',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -496,7 +595,7 @@ class _HomeScreenState extends State<HomeScreen> {
         scrollDirection: Axis.horizontal,
         clipBehavior: Clip.none,
         itemCount: SeedData.upcomingEvents.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 12),
+        separatorBuilder: (_, _) => const SizedBox(width: 12),
         itemBuilder: (context, index) {
           final event = SeedData.upcomingEvents[index];
           return SizedBox(

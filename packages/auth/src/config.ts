@@ -1,7 +1,7 @@
 import { createEnv } from "@t3-oss/env-core"
 import { betterAuth } from "better-auth"
 import { drizzleAdapter } from "better-auth/adapters/drizzle"
-import { openAPI } from "better-auth/plugins"
+import { emailOTP, openAPI } from "better-auth/plugins"
 import { z } from "zod"
 
 import { createDBClient } from "@repo/db/client"
@@ -64,7 +64,57 @@ export function createAuth(): ReturnType<typeof betterAuth> {
 		secret: authEnv.BETTER_AUTH_SECRET,
 		emailAndPassword: {
 			enabled: true,
-			requireEmailVerification: false,
+			// A citizen account is NOT a usable session until the email/OTP
+			// challenge succeeds. With this on, sign-up creates the user in an
+			// unverified state (no session token) and the emailOTP plugin below
+			// dispatches the verification code; only `/email-otp/verify-email`
+			// establishes an authenticated session.
+			requireEmailVerification: true,
+		},
+		user: {
+			// Surface the citizen/staff role and department on the session so the
+			// web portal can enforce role-based access control (Moderator vs Admin).
+			// `input: false` prevents clients from assigning their own role at signup;
+			// roles are managed exclusively through staff/admin tooling.
+			//
+			// The citizen profile fields collected during registration
+			// (mobile number, barangay, address and DPA consent) are persisted as
+			// `input: true` additional fields so the mobile sign-up payload is
+			// stored on the `users` row instead of being silently dropped.
+			additionalFields: {
+				role: {
+					type: "string",
+					required: false,
+					defaultValue: "registered_citizen",
+					input: false,
+				},
+				departmentId: {
+					type: "number",
+					required: false,
+					input: false,
+				},
+				mobileNumber: {
+					type: "string",
+					required: false,
+					input: true,
+				},
+				barangay: {
+					type: "string",
+					required: false,
+					input: true,
+				},
+				address: {
+					type: "string",
+					required: false,
+					input: true,
+				},
+				dpaConsent: {
+					type: "boolean",
+					required: false,
+					defaultValue: false,
+					input: true,
+				},
+			},
 		},
 		socialProviders: {
 			google: {
@@ -85,6 +135,23 @@ export function createAuth(): ReturnType<typeof betterAuth> {
 		plugins: [
 			openAPI({
 				path: "/reference",
+			}),
+			// Server-side 6-digit OTP email verification. `sendVerificationOnSignUp`
+			// dispatches the code as part of `/sign-up/email`, and the citizen only
+			// becomes authenticated once `/email-otp/verify-email` validates it.
+			emailOTP({
+				otpLength: 6,
+				expiresIn: 60 * 10, // 10 minutes
+				sendVerificationOnSignUp: true,
+				async sendVerificationOTP({ email, otp, type }) {
+					// Dispatch the OTP through the configured delivery channel.
+					// Until a production SMS/SMTP provider is wired, the code is
+					// surfaced via the server log so the verification handshake is
+					// fully exercisable end-to-end in development. Swapping in a real
+					// transport here requires no client change.
+					// eslint-disable-next-line no-console
+					console.info(`[email-otp] type=${type} email=${email} otp=${otp}`)
+				},
 			}),
 		],
 	})
