@@ -27,6 +27,11 @@ function createAuthMiddleware(versionedAuthPaths: string[]) {
 		const matchedPath = versionedAuthPaths.find(path => url.startsWith(path))
 
 		if (matchedPath) {
+			// Let the CORS middleware (registered earlier) answer preflight requests.
+			if (req.method === "OPTIONS") {
+				return next()
+			}
+
 			req.url = url.replace(matchedPath, AUTH_BASE_PATH)
 			return handler(req, res)
 		}

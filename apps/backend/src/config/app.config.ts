@@ -18,11 +18,18 @@ function configureBodyParser(app: INestApplication): void {
 }
 
 /**
- * Configure CORS for the application
+ * Configure CORS for the application.
+ * Must run before Better Auth middleware so browser OPTIONS preflights
+ * receive CORS headers instead of falling through to auth (404).
  */
-function configureCors(app: INestApplication): void {
+export function configureCors(app: INestApplication): void {
 	const origins = env.CORS_ORIGINS.split(",").map(origin => origin.trim())
-	app.enableCors({ origin: origins, credentials: true })
+	app.enableCors({
+		origin: origins,
+		credentials: true,
+		methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+		allowedHeaders: ["Content-Type", "Authorization", "Cookie", "X-Requested-With"],
+	})
 	logger.log(`CORS enabled for origins: ${origins.join(", ")}`)
 }
 
@@ -53,6 +60,5 @@ function enableGracefulShutdown(app: INestApplication): void {
  */
 export function configureApp(app: INestApplication): void {
 	configureBodyParser(app)
-	configureCors(app)
 	enableGracefulShutdown(app)
 }
