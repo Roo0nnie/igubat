@@ -2,8 +2,8 @@ import "server-only"
 
 import { redirect } from "next/navigation"
 
-import { getSession } from "@/services/better-auth/auth-server"
 import { getPortalRole, type PortalRole } from "@/core/lib/roles"
+import { getSession } from "@/services/better-auth/auth-server"
 
 /** The authenticated staff member resolved for the portal. */
 export type PortalUser = {

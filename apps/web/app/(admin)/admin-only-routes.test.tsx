@@ -2,6 +2,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import type { PortalUser } from "@/core/lib/admin-guard"
 
+import AnalyticsPage from "./analytics/page"
+import AuditLogsPage from "./audit-logs/page"
+import CitizensPage from "./citizens/page"
+import SettingsPage from "./settings/page"
+import StaffPage from "./staff/page"
+
 const mocks = vi.hoisted(() => ({
 	requireStaff: vi.fn(),
 	// `forbidden()` throws in Next to trigger the 403 boundary; emulate that so a
@@ -27,11 +33,9 @@ vi.mock("@/features/admin-audit/components/audit-content", () => ({
 vi.mock("@/features/admin-settings/components/settings-content", () => ({
 	SettingsContent: () => "settings",
 }))
-
-import CitizensPage from "./citizens/page"
-import AnalyticsPage from "./analytics/page"
-import AuditLogsPage from "./audit-logs/page"
-import SettingsPage from "./settings/page"
+vi.mock("@/features/admin-staff/components/staff-content", () => ({
+	StaffContent: () => "staff",
+}))
 
 const moderator: PortalUser = {
 	id: "m1",
@@ -51,6 +55,7 @@ const admin: PortalUser = {
 
 const adminOnlyRoutes = [
 	{ name: "User Management", Page: CitizensPage },
+	{ name: "Staff Management", Page: StaffPage },
 	{ name: "Analytics", Page: AnalyticsPage },
 	{ name: "Audit Log", Page: AuditLogsPage },
 	{ name: "Settings", Page: SettingsPage },

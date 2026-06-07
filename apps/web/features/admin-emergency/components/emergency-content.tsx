@@ -1,236 +1,335 @@
 "use client"
 
 import { useState } from "react"
-import { Phone, Radio, History, Plus, Send, AlertCircle } from "lucide-react"
+import { AlertCircle, History, Phone, Plus, Radio, Send } from "lucide-react"
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/core/components/ui/card"
-import { Button } from "@/core/components/ui/button"
-import { Input } from "@/core/components/ui/input"
-import { Textarea } from "@/core/components/ui/textarea"
 import { Badge } from "@/core/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/core/components/ui/tabs"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/core/components/ui/table"
+import { Button } from "@/core/components/ui/button"
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/core/components/ui/alert-dialog"
-import { useRole } from "@/core/context/role-provider"
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from "@/core/components/ui/card"
+import { Input } from "@/core/components/ui/input"
+import { Label } from "@/core/components/ui/label"
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/core/components/ui/select"
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "@/core/components/ui/table"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/core/components/ui/tabs"
+import { Textarea } from "@/core/components/ui/textarea"
+import {
+	useAdminEmergencyDirectoryQuery,
+	useCreateBroadcastMutation,
+	useEmergencyBroadcastsQuery,
+} from "@/features/admin-emergency/api/emergency.hooks"
 
 const MAX_BROADCAST_LENGTH = 480
+const SEVERITIES = ["info", "warning", "critical"] as const
 
-type DirectoryEntry = {
-  id: number
-  name: string
-  category: string
-  contact: string
-  address: string
-  isActive: boolean
+function formatDate(value: string | Date | null) {
+	if (!value) return "Scheduled"
+	return new Date(value).toLocaleString(undefined, {
+		month: "short",
+		day: "numeric",
+		year: "numeric",
+		hour: "numeric",
+		minute: "2-digit",
+	})
 }
-
-type Broadcast = {
-  id: number
-  message: string
-  sender: string
-  sentAt: string
-  recipients: number
-  status: string
-}
-
-const MOCK_DIRECTORY: DirectoryEntry[] = []
-const MOCK_BROADCASTS: Broadcast[] = []
 
 export function EmergencyContent() {
-  const { isAdmin } = useRole()
-  const [message, setMessage] = useState("")
+	const directory = useAdminEmergencyDirectoryQuery()
+	const broadcasts = useEmergencyBroadcastsQuery()
+	const createBroadcast = useCreateBroadcastMutation()
+	const [title, setTitle] = useState("")
+	const [message, setMessage] = useState("")
+	const [severity, setSeverity] = useState<(typeof SEVERITIES)[number]>("info")
+	const [scheduledAt, setScheduledAt] = useState("")
 
-  return (
-    <div className="p-6 md:p-8 space-y-6 max-w-7xl mx-auto">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight text-primary">Emergency</h1>
-        <p className="text-muted-foreground mt-2">
-          Manage the COMCEN directory and dispatch emergency broadcasts to citizens.
-        </p>
-      </div>
+	function submitBroadcast(sendNow: boolean) {
+		createBroadcast.mutate({
+			title,
+			message,
+			severity,
+			scheduledAt: !sendNow && scheduledAt ? scheduledAt : undefined,
+			sendNow,
+		})
+	}
 
-      <Tabs defaultValue="directory">
-        <TabsList>
-          <TabsTrigger value="directory">
-            <Phone className="mr-2 h-4 w-4" /> Directory
-          </TabsTrigger>
-          <TabsTrigger value="broadcast">
-            <Radio className="mr-2 h-4 w-4" /> Compose Broadcast
-          </TabsTrigger>
-          <TabsTrigger value="history">
-            <History className="mr-2 h-4 w-4" /> History
-          </TabsTrigger>
-        </TabsList>
+	return (
+		<div className="mx-auto max-w-7xl space-y-6 p-6 md:p-8">
+			<div>
+				<h1 className="text-primary text-3xl font-bold tracking-tight">Emergency</h1>
+				<p className="text-muted-foreground mt-2">
+					Manage COMCEN contacts and emergency broadcasts.
+				</p>
+			</div>
 
-        {/* Step 5a — COMCEN Hotlines and Directory */}
-        <TabsContent value="directory" className="mt-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle>COMCEN & Directory</CardTitle>
-                <CardDescription>
-                  Hospitals, BFP, PNP, Disaster and COMCEN hotlines. Changes propagate to the mobile app.
-                </CardDescription>
-              </div>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" /> Add Entry
-              </Button>
-            </CardHeader>
-            <CardContent>
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Category</TableHead>
-                      <TableHead>Contact</TableHead>
-                      <TableHead>Address</TableHead>
-                      <TableHead>Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {MOCK_DIRECTORY.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
-                          No directory entries yet.
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      MOCK_DIRECTORY.map((entry) => (
-                        <TableRow key={entry.id}>
-                          <TableCell className="font-medium">{entry.name}</TableCell>
-                          <TableCell>{entry.category}</TableCell>
-                          <TableCell>{entry.contact}</TableCell>
-                          <TableCell>{entry.address}</TableCell>
-                          <TableCell>
-                            <Badge variant={entry.isActive ? "default" : "secondary"} className={entry.isActive ? "bg-primary" : ""}>
-                              {entry.isActive ? "Active" : "Inactive"}
-                            </Badge>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+			<Tabs defaultValue="directory">
+				<TabsList>
+					<TabsTrigger value="directory">
+						<Phone className="mr-2 size-4" /> Directory
+					</TabsTrigger>
+					<TabsTrigger value="broadcast">
+						<Radio className="mr-2 size-4" /> Compose
+					</TabsTrigger>
+					<TabsTrigger value="history">
+						<History className="mr-2 size-4" /> History
+					</TabsTrigger>
+				</TabsList>
 
-        {/* Step 5b — Compose Broadcast */}
-        <TabsContent value="broadcast" className="mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Compose Broadcast</CardTitle>
-              <CardDescription>
-                High-priority push to all opted-in citizens. Sending requires explicit confirmation.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Textarea
-                  placeholder="Emergency message body..."
-                  value={message}
-                  maxLength={MAX_BROADCAST_LENGTH}
-                  onChange={(e) => setMessage(e.target.value)}
-                  rows={5}
-                />
-                <p className="text-right text-xs text-muted-foreground">
-                  {message.length}/{MAX_BROADCAST_LENGTH}
-                </p>
-              </div>
-              <div className="flex flex-wrap items-center gap-3">
-                <Input type="datetime-local" className="w-auto" aria-label="Schedule date and time" />
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button disabled={message.trim().length === 0}>
-                      <Send className="mr-2 h-4 w-4" /> Send Broadcast
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle className="flex items-center gap-2">
-                        <AlertCircle className="h-5 w-5 text-destructive" /> Confirm Emergency Broadcast
-                      </AlertDialogTitle>
-                      <AlertDialogDescription>
-                        This dispatches a high-priority push notification to all opted-in citizens.
-                        This action cannot be undone.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction>Confirm & Send</AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+				<TabsContent value="directory" className="mt-4">
+					<Card>
+						<CardHeader className="flex flex-row items-center justify-between">
+							<div>
+								<CardTitle>COMCEN & Directory</CardTitle>
+								<CardDescription>
+									Hospitals, BFP, PNP, disaster response, and COMCEN hotlines.
+								</CardDescription>
+							</div>
+							<Button variant="outline">
+								<Plus className="size-4" /> Add entry
+							</Button>
+						</CardHeader>
+						<CardContent>
+							<div className="rounded-md border">
+								<Table>
+									<TableHeader>
+										<TableRow>
+											<TableHead>Name</TableHead>
+											<TableHead>Category</TableHead>
+											<TableHead>Contact</TableHead>
+											<TableHead>Address</TableHead>
+											<TableHead>Hours</TableHead>
+											<TableHead>Status</TableHead>
+										</TableRow>
+									</TableHeader>
+									<TableBody>
+										{directory.isLoading && (
+											<TableRow>
+												<TableCell colSpan={6} className="text-muted-foreground h-24 text-center">
+													Loading emergency directory...
+												</TableCell>
+											</TableRow>
+										)}
+										{directory.isError && (
+											<TableRow>
+												<TableCell colSpan={6} className="text-destructive h-24 text-center">
+													Directory could not be loaded.
+												</TableCell>
+											</TableRow>
+										)}
+										{!directory.isLoading &&
+											!directory.isError &&
+											(directory.data ?? []).length === 0 && (
+												<TableRow>
+													<TableCell colSpan={6} className="text-muted-foreground h-24 text-center">
+														No directory entries yet.
+													</TableCell>
+												</TableRow>
+											)}
+										{directory.data?.map(entry => (
+											<TableRow key={entry.id}>
+												<TableCell className="font-medium">{entry.name}</TableCell>
+												<TableCell>{entry.type.toUpperCase()}</TableCell>
+												<TableCell>{entry.contactNumber}</TableCell>
+												<TableCell>{entry.address ?? "Not set"}</TableCell>
+												<TableCell>{entry.hours ?? "24/7"}</TableCell>
+												<TableCell>
+													<Badge variant={entry.isActive ? "default" : "secondary"}>
+														{entry.isActive ? "Active" : "Inactive"}
+													</Badge>
+												</TableCell>
+											</TableRow>
+										))}
+									</TableBody>
+								</Table>
+							</div>
+						</CardContent>
+					</Card>
+				</TabsContent>
 
-        {/* Step 5c — Broadcast History */}
-        <TabsContent value="history" className="mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Broadcast History</CardTitle>
-              <CardDescription>All sent broadcasts with delivery summary.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Message</TableHead>
-                      <TableHead>Sender</TableHead>
-                      <TableHead>Sent</TableHead>
-                      <TableHead>Recipients</TableHead>
-                      <TableHead>Status</TableHead>
-                      {isAdmin && <TableHead className="text-right">Actions</TableHead>}
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {MOCK_BROADCASTS.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={isAdmin ? 6 : 5} className="h-24 text-center text-muted-foreground">
-                          No broadcasts sent yet.
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      MOCK_BROADCASTS.map((b) => (
-                        <TableRow key={b.id}>
-                          <TableCell className="max-w-xs truncate">{b.message}</TableCell>
-                          <TableCell>{b.sender}</TableCell>
-                          <TableCell>{new Date(b.sentAt).toLocaleString()}</TableCell>
-                          <TableCell>{b.recipients}</TableCell>
-                          <TableCell>{b.status}</TableCell>
-                          {isAdmin && (
-                            <TableCell className="text-right">
-                              {/* Admin-only hard delete (spec Step 5d) */}
-                              <Button variant="ghost" size="sm" className="text-destructive">
-                                Delete
-                              </Button>
-                            </TableCell>
-                          )}
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-    </div>
-  )
+				<TabsContent value="broadcast" className="mt-4">
+					<Card>
+						<CardHeader>
+							<CardTitle>Compose Broadcast</CardTitle>
+							<CardDescription>
+								Send or schedule high-priority notices to opted-in citizens.
+							</CardDescription>
+						</CardHeader>
+						<CardContent className="space-y-4">
+							<div className="grid gap-4 md:grid-cols-2">
+								<div className="space-y-2">
+									<Label htmlFor="title">Title</Label>
+									<Input
+										id="title"
+										value={title}
+										onChange={event => setTitle(event.target.value)}
+										placeholder="Weather advisory"
+									/>
+								</div>
+								<div className="space-y-2">
+									<Label>Severity</Label>
+									<Select
+										value={severity}
+										onValueChange={value => setSeverity(value as (typeof SEVERITIES)[number])}
+									>
+										<SelectTrigger className="w-full">
+											<SelectValue />
+										</SelectTrigger>
+										<SelectContent>
+											{SEVERITIES.map(option => (
+												<SelectItem key={option} value={option}>
+													{option}
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+								</div>
+							</div>
+							<div className="space-y-2">
+								<Label htmlFor="message">Message</Label>
+								<Textarea
+									id="message"
+									value={message}
+									maxLength={MAX_BROADCAST_LENGTH}
+									onChange={event => setMessage(event.target.value)}
+									rows={5}
+								/>
+								<p className="text-muted-foreground text-right text-xs">
+									{message.length}/{MAX_BROADCAST_LENGTH}
+								</p>
+							</div>
+							<div className="flex flex-wrap items-end gap-3">
+								<div className="space-y-2">
+									<Label htmlFor="schedule">Schedule</Label>
+									<Input
+										id="schedule"
+										type="datetime-local"
+										value={scheduledAt}
+										onChange={event => setScheduledAt(event.target.value)}
+									/>
+								</div>
+								<Button
+									disabled={
+										createBroadcast.isPending ||
+										title.trim().length === 0 ||
+										message.trim().length === 0
+									}
+									onClick={() => submitBroadcast(true)}
+								>
+									<Send className="size-4" /> Send now
+								</Button>
+								<Button
+									variant="outline"
+									disabled={
+										createBroadcast.isPending ||
+										title.trim().length === 0 ||
+										message.trim().length === 0 ||
+										!scheduledAt
+									}
+									onClick={() => submitBroadcast(false)}
+								>
+									<AlertCircle className="size-4" /> Schedule
+								</Button>
+							</div>
+						</CardContent>
+					</Card>
+				</TabsContent>
+
+				<TabsContent value="history" className="mt-4">
+					<Card>
+						<CardHeader>
+							<CardTitle>Broadcast History</CardTitle>
+							<CardDescription>
+								Sent and scheduled broadcasts with delivery summary.
+							</CardDescription>
+						</CardHeader>
+						<CardContent>
+							<div className="rounded-md border">
+								<Table>
+									<TableHeader>
+										<TableRow>
+											<TableHead>Title</TableHead>
+											<TableHead>Severity</TableHead>
+											<TableHead>Sent/Scheduled</TableHead>
+											<TableHead>Recipients</TableHead>
+											<TableHead>Status</TableHead>
+										</TableRow>
+									</TableHeader>
+									<TableBody>
+										{broadcasts.isLoading && (
+											<TableRow>
+												<TableCell colSpan={5} className="text-muted-foreground h-24 text-center">
+													Loading broadcasts...
+												</TableCell>
+											</TableRow>
+										)}
+										{broadcasts.isError && (
+											<TableRow>
+												<TableCell colSpan={5} className="text-destructive h-24 text-center">
+													Broadcasts could not be loaded.
+												</TableCell>
+											</TableRow>
+										)}
+										{!broadcasts.isLoading &&
+											!broadcasts.isError &&
+											(broadcasts.data ?? []).length === 0 && (
+												<TableRow>
+													<TableCell colSpan={5} className="text-muted-foreground h-24 text-center">
+														No broadcasts sent yet.
+													</TableCell>
+												</TableRow>
+											)}
+										{broadcasts.data?.map(broadcast => (
+											<TableRow key={broadcast.id}>
+												<TableCell>
+													<div className="font-medium">{broadcast.title}</div>
+													<div className="text-muted-foreground max-w-md truncate text-xs">
+														{broadcast.message}
+													</div>
+												</TableCell>
+												<TableCell>
+													<Badge
+														variant={
+															broadcast.severity === "critical"
+																? "destructive"
+																: broadcast.severity === "warning"
+																	? "secondary"
+																	: "outline"
+														}
+													>
+														{broadcast.severity}
+													</Badge>
+												</TableCell>
+												<TableCell>
+													{formatDate(broadcast.sentAt ?? broadcast.scheduledAt)}
+												</TableCell>
+												<TableCell>{broadcast.recipientCount}</TableCell>
+												<TableCell>{broadcast.status}</TableCell>
+											</TableRow>
+										))}
+									</TableBody>
+								</Table>
+							</div>
+						</CardContent>
+					</Card>
+				</TabsContent>
+			</Tabs>
+		</div>
+	)
 }

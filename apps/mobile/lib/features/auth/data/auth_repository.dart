@@ -144,6 +144,11 @@ class AuthRepository {
 
     final body = _parseJsonBody(response);
     if (response.statusCode == 200 && body != null && body['user'] != null) {
+      if (body['token'] == null && body['session'] == null) {
+        throw StateError(
+          'Email verified, but no session was returned. Please sign in.',
+        );
+      }
       final session = SessionModel.fromAuthResponse(body);
       await _storage.setSessionToken(session.session.token);
       return session;

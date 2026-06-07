@@ -1,6 +1,12 @@
 import { Construction } from "lucide-react"
 
-import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/core/components/ui/empty"
+import {
+	Empty,
+	EmptyDescription,
+	EmptyHeader,
+	EmptyMedia,
+	EmptyTitle,
+} from "@/core/components/ui/empty"
 
 /**
  * Explicit "not yet implemented" placeholder for admin surfaces whose backend

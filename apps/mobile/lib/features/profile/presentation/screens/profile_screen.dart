@@ -10,11 +10,16 @@ import '../../../../core/theme/app_styles.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/glass_tokens.dart';
 import '../../../../core/theme/theme_mode_provider.dart';
+import '../../../../core/navigation/glass_page_route.dart';
 import '../../../../shared/widgets/glass/glass_badge.dart';
 import '../../../../shared/widgets/glass/glass_button.dart';
 import '../../../../shared/widgets/glass/glass_card.dart';
 import '../../../../shared/widgets/glass/glass_scaffold.dart';
 import '../../../../shared/widgets/glass/glass_surface.dart';
+import 'help_support_screen.dart';
+import 'notification_preferences_screen.dart';
+import 'policy_screen.dart';
+import 'profile_edit_screen.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -157,7 +162,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   label: 'Edit Profile',
                   variant: GlassButtonVariant.outline,
                   icon: Icons.edit_outlined,
-                  onPressed: () {},
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      GlassPageRoute(
+                        page: ProfileEditScreen(name: displayName, email: displayEmail),
+                      ),
+                    );
+                  },
                 ),
               ],
             ),
@@ -249,6 +261,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 ),
                 Divider(height: 1, color: glass.border),
                 _settingsTile(
+                  icon: Icons.tune_outlined,
+                  title: 'Notification Preferences',
+                  glass: glass,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      GlassPageRoute(page: const NotificationPreferencesScreen()),
+                    );
+                  },
+                ),
+                Divider(height: 1, color: glass.border),
+                _settingsTile(
                   icon: Icons.dark_mode_outlined,
                   title: 'Dark Mode',
                   glass: glass,
@@ -265,9 +289,41 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 Divider(height: 1, color: glass.border),
                 _settingsTile(icon: Icons.language, title: 'Language (English)', glass: glass),
                 Divider(height: 1, color: glass.border),
-                _settingsTile(icon: Icons.help_outline, title: 'Help & Support', glass: glass),
+                _settingsTile(
+                  icon: Icons.help_outline,
+                  title: 'Help & Support',
+                  glass: glass,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      GlassPageRoute(page: const HelpSupportScreen()),
+                    );
+                  },
+                ),
                 Divider(height: 1, color: glass.border),
-                _settingsTile(icon: Icons.privacy_tip_outlined, title: 'Privacy Policy', glass: glass),
+                _settingsTile(
+                  icon: Icons.privacy_tip_outlined,
+                  title: 'Privacy Policy',
+                  glass: glass,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      GlassPageRoute(page: PolicyScreen.privacy()),
+                    );
+                  },
+                ),
+                Divider(height: 1, color: glass.border),
+                _settingsTile(
+                  icon: Icons.policy_outlined,
+                  title: 'Terms of Use',
+                  glass: glass,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      GlassPageRoute(page: PolicyScreen.terms()),
+                    );
+                  },
+                ),
               ],
             ),
           ),
@@ -300,12 +356,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     required String title,
     required GlassTheme glass,
     Widget? trailing,
+    VoidCallback? onTap,
   }) {
     return ListTile(
       leading: Icon(icon, color: glass.textOnGlassMuted),
       title: Text(title, style: TextStyle(fontSize: 15, color: glass.textOnGlass)),
       trailing: trailing ?? Icon(Icons.chevron_right, color: glass.textOnGlassMuted),
-      onTap: trailing == null ? () {} : null,
+      onTap: trailing == null ? onTap : null,
       minVerticalPadding: 12,
     );
   }

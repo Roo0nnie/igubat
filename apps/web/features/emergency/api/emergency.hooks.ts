@@ -1,6 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+"use client"
 
+import { useQuery } from "@tanstack/react-query"
+
+import { orpc } from "@/services/orpc/client"
 
 export function useEmergencyQuery() {
-	// Stub
+	return useQuery(orpc.igubat.public.emergencyDirectory.queryOptions())
 }

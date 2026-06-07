@@ -3,9 +3,9 @@
 import { useRouter } from "next/navigation"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 
+import { getPortalRole } from "@/core/lib/roles"
 import { authClient } from "@/services/better-auth/auth-client"
 import { sessionKeys } from "@/features/auth/api/session.hooks"
-import { getPortalRole } from "@/core/lib/roles"
 
 import type { Login } from "./login.schema"
 

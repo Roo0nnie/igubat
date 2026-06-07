@@ -1,152 +1,224 @@
 "use client"
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/core/components/ui/card"
-const MOCK_REPORTS: any[] = [];
+import { useMemo, useState } from "react"
+import type { Route } from "next"
+import Link from "next/link"
+import { Eye, Filter, MapPin, Search } from "lucide-react"
+
 import { Badge } from "@/core/components/ui/badge"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/core/components/ui/table"
 import { Button } from "@/core/components/ui/button"
-import { Input } from "@/core/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/core/components/ui/select"
-import { Search, Filter, MoreHorizontal, Eye, MapPin } from "lucide-react"
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/core/components/ui/dropdown-menu"
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from "@/core/components/ui/card"
+import { Input } from "@/core/components/ui/input"
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/core/components/ui/select"
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "@/core/components/ui/table"
+import { useAdminReportsQuery } from "@/features/admin-reports/api/reports.hooks"
+
+const STATUS_OPTIONS = ["all", "received", "in_progress", "resolved", "closed"] as const
+
+function formatStatus(status: string) {
+	return status.replace(/_/g, " ").replace(/\b\w/g, char => char.toUpperCase())
+}
+
+function statusVariant(status: string) {
+	if (status === "resolved") return "default" as const
+	if (status === "closed") return "destructive" as const
+	if (status === "received") return "outline" as const
+	return "secondary" as const
+}
+
+function formatDate(value: string | Date) {
+	return new Date(value).toLocaleDateString(undefined, {
+		month: "short",
+		day: "numeric",
+		year: "numeric",
+	})
+}
 
 export function ReportsContent() {
-  return (
-    <div className="p-6 md:p-8 space-y-6 max-w-7xl mx-auto">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-primary">Citizen Reports</h1>
-          <p className="text-muted-foreground mt-2">Manage and resolve community concerns and issues.</p>
-        </div>
-      </div>
+	const [search, setSearch] = useState("")
+	const [status, setStatus] = useState<(typeof STATUS_OPTIONS)[number]>("all")
+	const reports = useAdminReportsQuery({
+		search: search.trim() || undefined,
+		status: status === "all" ? undefined : status,
+	})
 
-      <div className="grid gap-6 md:grid-cols-3">
-        <div className="md:col-span-2">
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex flex-col sm:flex-row justify-between gap-4">
-                <div className="flex items-center gap-2 max-w-sm w-full">
-                  <div className="relative w-full">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      type="search"
-                      placeholder="Search reports..."
-                      className="pl-8"
-                    />
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Select defaultValue="all">
-                    <SelectTrigger className="w-[130px]">
-                      <SelectValue placeholder="Status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All</SelectItem>
-                      <SelectItem value="received">Received</SelectItem>
-                      <SelectItem value="in-progress">In Progress</SelectItem>
-                      <SelectItem value="resolved">Resolved</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Button variant="outline" size="icon">
-                    <Filter className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>ID & Category</TableHead>
-                      <TableHead>Location</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {MOCK_REPORTS.map((report) => (
-                      <TableRow key={report.id}>
-                        <TableCell className="font-medium">
-                          <div>{report.id}</div>
-                          <div className="text-sm text-muted-foreground">{report.category}</div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1 max-w-[200px]">
-                            <MapPin className="h-3 w-3 text-muted-foreground shrink-0" />
-                            <span className="truncate" title={report.location}>{report.location}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {new Date(report.dateSubmitted).toLocaleDateString()}
-                        </TableCell>
-                        <TableCell>
-                          <Badge 
-                            variant={report.status === "Resolved" ? "default" : report.status === "Received" ? "outline" : "secondary"}
-                            className={report.status === "Resolved" ? "bg-primary" : ""}
-                          >
-                            {report.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" className="h-8 w-8 p-0">
-                                <span className="sr-only">Open menu</span>
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                              <DropdownMenuItem>
-                                <Eye className="mr-2 h-4 w-4" />
-                                View Details
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem>Update Status</DropdownMenuItem>
-                              <DropdownMenuItem>Assign Department</DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-        
-        <div>
-          <Card className="h-full">
-            <CardHeader>
-              <CardTitle>Map View</CardTitle>
-              <CardDescription>
-                Geographic distribution of reports
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="w-full h-[400px] bg-muted rounded-md flex items-center justify-center border relative overflow-hidden">
-                <div className="absolute inset-0 opacity-20" style={{
-                  backgroundImage: "url('data:image/svg+xml,%3Csvg width=\\'20\\' height=\\'20\\' viewBox=\\'0 0 20 20\\' xmlns=\\'http://www.w3.org/2000/svg\\'%3E%3Cg fill=\\'%239C92AC\\' fill-opacity=\\'0.4\\' fill-rule=\\'evenodd\\'%3E%3Ccircle cx=\\'3\\' cy=\\'3\\' r=\\'3\\'/%3E%3Ccircle cx=\\'13\\' cy=\\'13\\' r=\\'3\\'/%3E%3C/g%3E%3C/svg%3E')",
-                }} />
-                <div className="z-10 flex flex-col items-center text-muted-foreground gap-2">
-                  <MapPin className="h-8 w-8 text-primary/50" />
-                  <span>Map integration placeholder</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    </div>
-  )
+	const rows = useMemo(() => reports.data ?? [], [reports.data])
+
+	return (
+		<div className="mx-auto max-w-7xl space-y-6 p-6 md:p-8">
+			<div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+				<div>
+					<h1 className="text-primary text-3xl font-bold tracking-tight">Citizen Reports</h1>
+					<p className="text-muted-foreground mt-2">
+						Manage and resolve community concerns and issue reports.
+					</p>
+				</div>
+			</div>
+
+			<div className="grid gap-6 lg:grid-cols-3">
+				<Card className="lg:col-span-2">
+					<CardHeader className="pb-3">
+						<div className="flex flex-col justify-between gap-4 sm:flex-row">
+							<div className="flex w-full max-w-sm items-center gap-2">
+								<div className="relative w-full">
+									<Search className="text-muted-foreground absolute top-2.5 left-2.5 size-4" />
+									<Input
+										type="search"
+										placeholder="Search reports..."
+										className="pl-8"
+										value={search}
+										onChange={event => setSearch(event.target.value)}
+									/>
+								</div>
+							</div>
+							<div className="flex items-center gap-2">
+								<Select
+									value={status}
+									onValueChange={value => setStatus(value as (typeof STATUS_OPTIONS)[number])}
+								>
+									<SelectTrigger className="w-[150px]">
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										{STATUS_OPTIONS.map(option => (
+											<SelectItem key={option} value={option}>
+												{option === "all" ? "All Statuses" : formatStatus(option)}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+								<Button variant="outline" size="icon" aria-label="Filter reports">
+									<Filter className="size-4" />
+								</Button>
+							</div>
+						</div>
+					</CardHeader>
+					<CardContent>
+						<div className="rounded-md border">
+							<Table>
+								<TableHeader>
+									<TableRow>
+										<TableHead>ID & Category</TableHead>
+										<TableHead>Location</TableHead>
+										<TableHead>Citizen</TableHead>
+										<TableHead>Date</TableHead>
+										<TableHead>Status</TableHead>
+										<TableHead className="text-right">Actions</TableHead>
+									</TableRow>
+								</TableHeader>
+								<TableBody>
+									{reports.isLoading && (
+										<TableRow>
+											<TableCell colSpan={6} className="text-muted-foreground h-24 text-center">
+												Loading citizen reports...
+											</TableCell>
+										</TableRow>
+									)}
+									{reports.isError && (
+										<TableRow>
+											<TableCell colSpan={6} className="text-destructive h-24 text-center">
+												Citizen reports could not be loaded.
+											</TableCell>
+										</TableRow>
+									)}
+									{!reports.isLoading && !reports.isError && rows.length === 0 && (
+										<TableRow>
+											<TableCell colSpan={6} className="text-muted-foreground h-24 text-center">
+												No reports found.
+											</TableCell>
+										</TableRow>
+									)}
+									{rows.map(report => (
+										<TableRow key={report.id}>
+											<TableCell className="font-medium">
+												<div>IR-{String(report.id).padStart(5, "0")}</div>
+												<div className="text-muted-foreground text-sm">{report.category}</div>
+											</TableCell>
+											<TableCell>
+												<div className="flex max-w-[220px] items-center gap-1">
+													<MapPin className="text-muted-foreground size-3 shrink-0" />
+													<span
+														className="truncate"
+														title={report.locationAddress ?? report.barangay ?? ""}
+													>
+														{report.locationAddress ?? report.barangay ?? "Not set"}
+													</span>
+												</div>
+											</TableCell>
+											<TableCell>{report.citizenName ?? "Citizen"}</TableCell>
+											<TableCell>{formatDate(report.createdAt)}</TableCell>
+											<TableCell>
+												<Badge variant={statusVariant(report.status)}>
+													{formatStatus(report.status)}
+												</Badge>
+											</TableCell>
+											<TableCell className="text-right">
+												<Button
+													variant="outline"
+													size="sm"
+													render={<Link href={`/reports/${report.id}` as Route} />}
+												>
+													<Eye className="size-4" /> View
+												</Button>
+											</TableCell>
+										</TableRow>
+									))}
+								</TableBody>
+							</Table>
+						</div>
+					</CardContent>
+				</Card>
+
+				<Card className="h-full">
+					<CardHeader>
+						<CardTitle>Location Summary</CardTitle>
+						<CardDescription>
+							Geographic distribution from the filtered report list.
+						</CardDescription>
+					</CardHeader>
+					<CardContent>
+						<div className="space-y-3">
+							{rows.slice(0, 6).map(report => (
+								<Link
+									key={report.id}
+									href={`/reports/${report.id}` as Route}
+									className="hover:bg-muted flex items-start gap-2 rounded-md border p-3 text-sm"
+								>
+									<MapPin className="text-primary mt-0.5 size-4" />
+									<div className="min-w-0">
+										<p className="truncate font-medium">
+											{report.locationAddress ?? report.barangay ?? "Unspecified location"}
+										</p>
+										<p className="text-muted-foreground truncate text-xs">{report.category}</p>
+									</div>
+								</Link>
+							))}
+							{rows.length === 0 && (
+								<p className="text-muted-foreground text-sm">No report locations to display.</p>
+							)}
+						</div>
+					</CardContent>
+				</Card>
+			</div>
+		</div>
+	)
 }

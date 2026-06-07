@@ -11,7 +11,7 @@ import '../../../../shared/widgets/glass/glass_card.dart';
 import '../../../../shared/widgets/glass/glass_scaffold.dart';
 import '../../../../shared/widgets/glass/glass_search_bar.dart';
 import '../../../../shared/widgets/glass/glass_surface.dart';
-import 'business_permit_screen.dart';
+import 'service_request_stepper_screen.dart';
 
 class ServicesScreen extends StatefulWidget {
   const ServicesScreen({super.key});
@@ -121,12 +121,10 @@ class _ServicesScreenState extends State<ServicesScreen> {
               final service = _filteredServices[index];
               return GlassCard(
                 onTap: () {
-                  if (service.title == 'Business Permits') {
-                    Navigator.push(
-                      context,
-                      GlassPageRoute(page: const BusinessPermitScreen()),
-                    );
-                  }
+                  Navigator.push(
+                    context,
+                    GlassPageRoute(page: ServiceRequestStepperScreen(service: service)),
+                  );
                 },
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

@@ -71,6 +71,12 @@ export function createAuth(): ReturnType<typeof betterAuth> {
 			// establishes an authenticated session.
 			requireEmailVerification: true,
 		},
+		emailVerification: {
+			// Mobile registration routes directly to OTP. A valid verification
+			// must create the first usable session so the app can enter the
+			// authenticated shell without sending the user back through login.
+			autoSignInAfterVerification: true,
+		},
 		user: {
 			// Surface the citizen/staff role and department on the session so the
 			// web portal can enforce role-based access control (Moderator vs Admin).

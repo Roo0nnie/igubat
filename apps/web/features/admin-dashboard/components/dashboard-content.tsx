@@ -1,130 +1,205 @@
 "use client"
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/core/components/ui/card"
-const ADMIN_DASHBOARD_STATS = { totalUsers: 0, pendingRequests: 0, activeServices: 0, newReports: 0, publishedAnnouncements: 0 };
-const MOCK_REQUESTS: any[] = [];
-import { Users, FileText, Activity, AlertTriangle, Newspaper } from "lucide-react"
+import type { Route } from "next"
+import Link from "next/link"
+import { Activity, AlertTriangle, CalendarDays, FileText, Newspaper, Users } from "lucide-react"
+
 import { Badge } from "@/core/components/ui/badge"
+import { Button } from "@/core/components/ui/button"
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from "@/core/components/ui/card"
+import { useAdminDashboardQuery } from "@/features/admin-dashboard/api/dashboard.hooks"
+
+function formatStatus(status: string) {
+	return status.replace(/_/g, " ").replace(/\b\w/g, char => char.toUpperCase())
+}
+
+function statusVariant(status: string) {
+	if (["approved", "resolved", "completed"].includes(status)) return "default" as const
+	if (["rejected", "closed"].includes(status)) return "destructive" as const
+	if (["pending", "received"].includes(status)) return "outline" as const
+	return "secondary" as const
+}
+
+function formatDate(value: string | Date) {
+	return new Date(value).toLocaleDateString(undefined, {
+		month: "short",
+		day: "numeric",
+		year: "numeric",
+	})
+}
 
 export function DashboardContent() {
-  return (
-    <div className="p-6 md:p-8 space-y-6 max-w-7xl mx-auto">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight text-primary">Dashboard</h1>
-        <p className="text-muted-foreground mt-2">Welcome back to the iGubat Admin Portal.</p>
-      </div>
+	const dashboard = useAdminDashboardQuery()
+	const data = dashboard.data
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-            <Users className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{ADMIN_DASHBOARD_STATS.totalUsers}</div>
-            <p className="text-xs text-muted-foreground">+180 from last month</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending Requests</CardTitle>
-            <FileText className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{ADMIN_DASHBOARD_STATS.pendingRequests}</div>
-            <p className="text-xs text-muted-foreground">-4 from yesterday</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Services</CardTitle>
-            <Activity className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{ADMIN_DASHBOARD_STATS.activeServices}</div>
-            <p className="text-xs text-muted-foreground">All systems operational</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">New Reports</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-destructive" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{ADMIN_DASHBOARD_STATS.newReports}</div>
-            <p className="text-xs text-muted-foreground">+2 since last login</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Announcements</CardTitle>
-            <Newspaper className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{ADMIN_DASHBOARD_STATS.publishedAnnouncements}</div>
-            <p className="text-xs text-muted-foreground">Published to app</p>
-          </CardContent>
-        </Card>
-      </div>
+	return (
+		<div className="mx-auto max-w-7xl space-y-6 p-6 md:p-8">
+			<div>
+				<h1 className="text-primary text-3xl font-bold tracking-tight">Dashboard</h1>
+				<p className="text-muted-foreground mt-2">
+					Live LGU service activity, content, and emergency overview.
+				</p>
+			</div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="col-span-4">
-          <CardHeader>
-            <CardTitle>Recent Requests</CardTitle>
-            <CardDescription>
-              A summary of the latest service requests submitted by citizens.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-8">
-              {MOCK_REQUESTS.map((request) => (
-                <div key={request.id} className="flex items-center">
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium leading-none">{request.citizenName}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {request.serviceType}
-                    </p>
-                  </div>
-                  <div className="ml-auto font-medium">
-                    <Badge variant={request.status === "Approved" ? "default" : request.status === "Pending" ? "outline" : "secondary"} className={request.status === "Approved" ? "bg-primary" : ""}>
-                      {request.status}
-                    </Badge>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="col-span-3">
-          <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
-            <CardDescription>
-              Common tasks and administrative actions.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="border rounded-lg p-4 flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-muted transition-colors">
-                <Newspaper className="h-6 w-6 text-primary" />
-                <span className="text-sm font-medium">Post Update</span>
-              </div>
-              <div className="border rounded-lg p-4 flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-muted transition-colors">
-                <AlertTriangle className="h-6 w-6 text-destructive" />
-                <span className="text-sm font-medium text-center">Broadcast Alert</span>
-              </div>
-              <div className="border rounded-lg p-4 flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-muted transition-colors">
-                <Users className="h-6 w-6 text-primary" />
-                <span className="text-sm font-medium">Verify Users</span>
-              </div>
-              <div className="border rounded-lg p-4 flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-muted transition-colors">
-                <FileText className="h-6 w-6 text-primary" />
-                <span className="text-sm font-medium">Generate Report</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
-  )
+			{dashboard.isError && (
+				<Card className="border-destructive/40">
+					<CardContent className="text-destructive py-4 text-sm">
+						Dashboard data could not be loaded.
+					</CardContent>
+				</Card>
+			)}
+
+			<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+				{[
+					{ label: "Total Users", value: data?.totalUsers ?? 0, icon: Users, href: "/citizens" },
+					{
+						label: "Pending Requests",
+						value: data?.pendingRequests ?? 0,
+						icon: FileText,
+						href: "/requests",
+					},
+					{
+						label: "Active Services",
+						value: data?.activeServices ?? 0,
+						icon: Activity,
+						href: "/content",
+					},
+					{
+						label: "New Reports",
+						value: data?.newReports ?? 0,
+						icon: AlertTriangle,
+						href: "/reports",
+					},
+					{
+						label: "Announcements",
+						value: data?.publishedAnnouncements ?? 0,
+						icon: Newspaper,
+						href: "/content",
+					},
+				].map(stat => (
+					<Card key={stat.label}>
+						<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+							<CardTitle className="text-sm font-medium">{stat.label}</CardTitle>
+							<stat.icon className="text-primary size-4" />
+						</CardHeader>
+						<CardContent>
+							<div className="text-2xl font-bold">{dashboard.isLoading ? "..." : stat.value}</div>
+							<Button
+								variant="link"
+								className="h-auto p-0 text-xs"
+								render={<Link href={stat.href as Route} />}
+							>
+								View details
+							</Button>
+						</CardContent>
+					</Card>
+				))}
+			</div>
+
+			<div className="grid gap-4 lg:grid-cols-7">
+				<Card className="lg:col-span-4">
+					<CardHeader>
+						<CardTitle>Recent Transactions</CardTitle>
+						<CardDescription>Latest service requests submitted by citizens.</CardDescription>
+					</CardHeader>
+					<CardContent>
+						<div className="space-y-4">
+							{(data?.recentRequests ?? []).length === 0 && (
+								<p className="text-muted-foreground text-sm">No recent service requests yet.</p>
+							)}
+							{data?.recentRequests.map(request => (
+								<Link
+									key={request.id}
+									href={`/requests/${request.id}` as Route}
+									className="hover:bg-muted flex items-center gap-4 rounded-md border p-3 transition-colors"
+								>
+									<div className="min-w-0 flex-1 space-y-1">
+										<p className="truncate text-sm font-medium">
+											{request.citizenName ?? "Citizen"}
+										</p>
+										<p className="text-muted-foreground truncate text-sm">
+											{request.trackingNumber} - {request.serviceType}
+										</p>
+									</div>
+									<Badge variant={statusVariant(request.status)}>
+										{formatStatus(request.status)}
+									</Badge>
+								</Link>
+							))}
+						</div>
+					</CardContent>
+				</Card>
+
+				<Card className="lg:col-span-3">
+					<CardHeader>
+						<CardTitle>Upcoming Events</CardTitle>
+						<CardDescription>Public calendar items visible to citizens.</CardDescription>
+					</CardHeader>
+					<CardContent>
+						<div className="space-y-4">
+							{(data?.upcomingEvents ?? []).length === 0 && (
+								<p className="text-muted-foreground text-sm">No upcoming events yet.</p>
+							)}
+							{data?.upcomingEvents.map(event => (
+								<Link
+									key={event.id}
+									href={`/content?event=${event.slug}` as Route}
+									className="hover:bg-muted flex gap-3 rounded-md border p-3 transition-colors"
+								>
+									<CalendarDays className="text-primary mt-0.5 size-4" />
+									<div className="min-w-0 space-y-1">
+										<p className="truncate text-sm font-medium">{event.title}</p>
+										<p className="text-muted-foreground text-xs">{formatDate(event.startsAt)}</p>
+									</div>
+								</Link>
+							))}
+						</div>
+					</CardContent>
+				</Card>
+			</div>
+
+			<Card>
+				<CardHeader>
+					<CardTitle>Quick Actions</CardTitle>
+					<CardDescription>Common staff workflows.</CardDescription>
+				</CardHeader>
+				<CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+					<Button
+						variant="outline"
+						className="justify-start"
+						render={<Link href={"/content" as Route} />}
+					>
+						<Newspaper className="size-4" /> Post update
+					</Button>
+					<Button
+						variant="outline"
+						className="justify-start"
+						render={<Link href={"/emergency" as Route} />}
+					>
+						<AlertTriangle className="size-4" /> Broadcast alert
+					</Button>
+					<Button
+						variant="outline"
+						className="justify-start"
+						render={<Link href={"/requests" as Route} />}
+					>
+						<FileText className="size-4" /> Process request
+					</Button>
+					<Button
+						variant="outline"
+						className="justify-start"
+						render={<Link href={"/reports" as Route} />}
+					>
+						<Activity className="size-4" /> Review report
+					</Button>
+				</CardContent>
+			</Card>
+		</div>
+	)
 }

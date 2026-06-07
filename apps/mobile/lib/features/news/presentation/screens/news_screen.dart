@@ -9,6 +9,8 @@ import '../../../../shared/widgets/glass/glass_badge.dart';
 import '../../../../shared/widgets/glass/glass_card.dart';
 import '../../../../shared/widgets/glass/glass_scaffold.dart';
 import '../../../../shared/widgets/glass/glass_surface.dart';
+import '../../../../core/navigation/glass_page_route.dart';
+import 'news_detail_screen.dart';
 
 class NewsScreen extends StatefulWidget {
   const NewsScreen({super.key});
@@ -93,7 +95,12 @@ class _NewsScreenState extends State<NewsScreen> {
     return GlassCard(
       padding: EdgeInsets.zero,
       intensity: GlassIntensity.prominent,
-      onTap: () {},
+      onTap: () {
+        Navigator.push(
+          context,
+          GlassPageRoute(page: NewsDetailScreen(announcement: news)),
+        );
+      },
       child: ClipRRect(
         borderRadius: BorderRadius.circular(GlassTokens.radiusGlassSm),
         child: SizedBox(
@@ -158,7 +165,12 @@ class _NewsScreenState extends State<NewsScreen> {
   Widget _buildNewsCard(Announcement news, GlassTheme glass, int index) {
     return GlassCard(
       padding: EdgeInsets.zero,
-      onTap: () {},
+      onTap: () {
+        Navigator.push(
+          context,
+          GlassPageRoute(page: NewsDetailScreen(announcement: news)),
+        );
+      },
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

@@ -1,27 +1,132 @@
-import { Lock } from "lucide-react"
+"use client"
 
-import { NotImplemented } from "@/core/components/not-implemented"
+import { FileDown, Lock } from "lucide-react"
 
-/**
- * Audit Log (IG-044).
- *
- * The audit-log service (queries against `audit_logs`) and CSV export are not
- * wired to the backend yet. Instead of rendering an empty mock table backed by
- * `MOCK_AUDIT = []` plus filters and a dead export button — which would read as
- * a working, append-only audit viewer — this surface states its status
- * explicitly until the audit query + export endpoints exist.
- */
+import { Button } from "@/core/components/ui/button"
+import { Card, CardContent } from "@/core/components/ui/card"
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "@/core/components/ui/table"
+import { useAuditLogsQuery } from "@/features/admin-audit/api/audit.hooks"
+
+function formatDate(value: string | Date) {
+	return new Date(value).toLocaleString(undefined, {
+		month: "short",
+		day: "numeric",
+		year: "numeric",
+		hour: "numeric",
+		minute: "2-digit",
+	})
+}
+
+function exportAudit(rows: NonNullable<ReturnType<typeof useAuditLogsQuery>["data"]>) {
+	const headers = ["id", "actor", "role", "action", "entity", "entityId", "createdAt"]
+	const body = [
+		headers.join(","),
+		...rows.map(row =>
+			[
+				row.id,
+				row.actorName ?? row.actorId ?? "system",
+				row.actorRole ?? "",
+				row.actionType,
+				row.entityType,
+				row.entityId ?? "",
+				String(row.createdAt),
+			]
+				.map(value => JSON.stringify(value))
+				.join(",")
+		),
+	].join("\n")
+	const blob = new Blob([body], { type: "text/csv;charset=utf-8" })
+	const url = URL.createObjectURL(blob)
+	const link = document.createElement("a")
+	link.href = url
+	link.download = "igubat-audit-log.csv"
+	link.click()
+	URL.revokeObjectURL(url)
+}
+
 export function AuditContent() {
-  return (
-    <div className="p-6 md:p-8 space-y-6 max-w-7xl mx-auto">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight text-primary">Audit Log</h1>
-        <p className="text-muted-foreground mt-2 flex items-center gap-2">
-          <Lock className="h-4 w-4" /> Append-only. Entries cannot be edited or deleted by any role.
-        </p>
-      </div>
+	const audit = useAuditLogsQuery()
+	const rows = audit.data ?? []
 
-      <NotImplemented description="The audit-log viewer and CSV export are not connected to the backend yet. Filterable entries and export will appear here once the audit-log query and export endpoints are implemented." />
-    </div>
-  )
+	return (
+		<div className="mx-auto max-w-7xl space-y-6 p-6 md:p-8">
+			<div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+				<div>
+					<h1 className="text-primary text-3xl font-bold tracking-tight">Audit Log</h1>
+					<p className="text-muted-foreground mt-2 flex items-center gap-2">
+						<Lock className="size-4" /> Append-only. Entries cannot be edited or deleted by any
+						role.
+					</p>
+				</div>
+				<Button variant="outline" disabled={rows.length === 0} onClick={() => exportAudit(rows)}>
+					<FileDown className="size-4" /> Export CSV
+				</Button>
+			</div>
+
+			<Card>
+				<CardContent className="pt-6">
+					<div className="rounded-md border">
+						<Table>
+							<TableHeader>
+								<TableRow>
+									<TableHead>Time</TableHead>
+									<TableHead>Actor</TableHead>
+									<TableHead>Action</TableHead>
+									<TableHead>Entity</TableHead>
+									<TableHead>IP</TableHead>
+								</TableRow>
+							</TableHeader>
+							<TableBody>
+								{audit.isLoading && (
+									<TableRow>
+										<TableCell colSpan={5} className="text-muted-foreground h-24 text-center">
+											Loading audit logs...
+										</TableCell>
+									</TableRow>
+								)}
+								{audit.isError && (
+									<TableRow>
+										<TableCell colSpan={5} className="text-destructive h-24 text-center">
+											Audit logs could not be loaded.
+										</TableCell>
+									</TableRow>
+								)}
+								{!audit.isLoading && !audit.isError && rows.length === 0 && (
+									<TableRow>
+										<TableCell colSpan={5} className="text-muted-foreground h-24 text-center">
+											No audit logs found.
+										</TableCell>
+									</TableRow>
+								)}
+								{rows.map(row => (
+									<TableRow key={row.id}>
+										<TableCell>{formatDate(row.createdAt)}</TableCell>
+										<TableCell>
+											<div>{row.actorName ?? row.actorId ?? "System"}</div>
+											<div className="text-muted-foreground text-xs">
+												{row.actorRole ?? "system"}
+											</div>
+										</TableCell>
+										<TableCell>{row.actionType}</TableCell>
+										<TableCell>
+											<div>{row.entityType}</div>
+											<div className="text-muted-foreground text-xs">{row.entityId ?? "n/a"}</div>
+										</TableCell>
+										<TableCell>{row.ipAddress ?? "n/a"}</TableCell>
+									</TableRow>
+								))}
+							</TableBody>
+						</Table>
+					</div>
+				</CardContent>
+			</Card>
+		</div>
+	)
 }

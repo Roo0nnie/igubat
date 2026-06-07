@@ -18,96 +18,96 @@ class OnboardingScreen extends ConsumerWidget {
 
     return GlassBackground(
       child: IntroductionScreen(
-      globalBackgroundColor: Colors.transparent,
-      pages: [
-        _buildPage(
-          theme: theme,
-          icon: CupertinoIcons.building_2_fill,
-          gradientColors: [colorScheme.primary, colorScheme.tertiary],
-          title: 'Welcome to iGubat',
-          body:
-              'Your digital gateway to municipal services.\n'
-              'Access permits, news, and emergency hotlines in one app.',
-        ),
-        _buildPage(
-          theme: theme,
-          icon: CupertinoIcons.doc_text_fill,
-          gradientColors: [colorScheme.tertiary, colorScheme.secondary],
-          title: 'Apply Online',
-          body:
-              'Submit business permits, certificates, and\n'
-              'service requests from your phone.',
-        ),
-        _buildPage(
-          theme: theme,
-          icon: CupertinoIcons.shield_fill,
-          gradientColors: [colorScheme.secondary, colorScheme.primary],
-          title: 'Secure & Trusted',
-          body:
-              'Verified citizen accounts keep your data safe\n'
-              'and your transactions secure.',
-        ),
-      ],
-      showSkipButton: true,
-      skip: Text(
-        'Skip',
-        style: TextStyle(
-          color: colorScheme.onSurface.withOpacity(0.6),
-          fontWeight: FontWeight.w500,
-          letterSpacing: 0.5,
-        ),
-      ),
-      next: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: colorScheme.primaryContainer,
-          shape: BoxShape.circle,
-        ),
-        child: Icon(
-          CupertinoIcons.arrow_right,
-          color: colorScheme.onPrimaryContainer,
-          size: 20,
-        ),
-      ),
-      done: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          color: colorScheme.primary,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: const Text(
-          'Start',
+        globalBackgroundColor: Colors.transparent,
+        pages: [
+          _buildPage(
+            theme: theme,
+            icon: CupertinoIcons.building_2_fill,
+            gradientColors: [colorScheme.primary, colorScheme.tertiary],
+            title: 'Welcome to iGubat',
+            body:
+                'Your digital gateway to municipal services.\n'
+                'Access permits, news, and emergency hotlines in one app.',
+          ),
+          _buildPage(
+            theme: theme,
+            icon: CupertinoIcons.doc_text_fill,
+            gradientColors: [colorScheme.tertiary, colorScheme.secondary],
+            title: 'Apply Online',
+            body:
+                'Submit business permits, certificates, and\n'
+                'service requests from your phone.',
+          ),
+          _buildPage(
+            theme: theme,
+            icon: CupertinoIcons.shield_fill,
+            gradientColors: [colorScheme.secondary, colorScheme.primary],
+            title: 'Secure & Trusted',
+            body:
+                'Verified citizen accounts keep your data safe\n'
+                'and your transactions secure.',
+          ),
+        ],
+        showSkipButton: true,
+        skip: Text(
+          'Skip',
           style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
+            color: colorScheme.onSurface.withOpacity(0.6),
+            fontWeight: FontWeight.w500,
             letterSpacing: 0.5,
           ),
         ),
-      ),
-      onDone: () {
-        ref.read(onboardingStateProvider.notifier).completeOnboarding();
-      },
-      onSkip: () {
-        ref.read(onboardingStateProvider.notifier).completeOnboarding();
-      },
-      dotsDecorator: DotsDecorator(
-        size: const Size.square(8.0),
-        activeSize: const Size(24.0, 8.0),
-        activeColor: colorScheme.primary,
-        color: colorScheme.outlineVariant.withOpacity(0.5),
-        activeShape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
+        next: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: colorScheme.primaryContainer,
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            CupertinoIcons.arrow_right,
+            color: colorScheme.onPrimaryContainer,
+            size: 20,
+          ),
         ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
+        done: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          decoration: BoxDecoration(
+            color: colorScheme.primary,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: const Text(
+            'Start',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.5,
+            ),
+          ),
         ),
-        spacing: const EdgeInsets.symmetric(horizontal: 4),
+        onDone: () {
+          ref.read(onboardingStateProvider.notifier).completeOnboarding();
+        },
+        onSkip: () {
+          ref.read(onboardingStateProvider.notifier).completeOnboarding();
+        },
+        dotsDecorator: DotsDecorator(
+          size: const Size.square(8.0),
+          activeSize: const Size(24.0, 8.0),
+          activeColor: colorScheme.primary,
+          color: colorScheme.outlineVariant.withOpacity(0.5),
+          activeShape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          spacing: const EdgeInsets.symmetric(horizontal: 4),
+        ),
+        isProgressTap: false,
+        curve: Curves.easeOutCubic,
+        scrollPhysics: const BouncingScrollPhysics(),
+        controlsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
       ),
-      isProgressTap: false,
-      curve: Curves.easeOutCubic,
-      scrollPhysics: const BouncingScrollPhysics(),
-      controlsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-    ),
     );
   }
 
@@ -127,7 +127,7 @@ class OnboardingScreen extends ConsumerWidget {
           style: theme.textTheme.headlineLarge!.copyWith(
             fontWeight: FontWeight.w600, // Semibold Apple style
             color: theme.colorScheme.onSurface.withOpacity(0.9),
-            letterSpacing: -0.5,
+            letterSpacing: 0,
             height: 1.1,
           ),
         ),
@@ -147,20 +147,20 @@ class OnboardingScreen extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const SizedBox(height: 48),
-            const IgubatLogo(height: 56),
-            const SizedBox(height: 32),
+            const SizedBox(height: 20),
+            const IgubatLogo(height: 42),
+            const SizedBox(height: 18),
             GlassCard(
               intensity: GlassIntensity.prominent,
-              padding: const EdgeInsets.all(32),
+              padding: const EdgeInsets.all(20),
               child: Container(
-                width: 100,
-                height: 100,
+                width: 82,
+                height: 82,
                 decoration: BoxDecoration(
                   gradient: GlassTokens.accentGradient,
                   shape: BoxShape.circle,
                 ),
-                child: Icon(icon, size: 40, color: Colors.white),
+                child: Icon(icon, size: 34, color: Colors.white),
               ),
             ),
           ],

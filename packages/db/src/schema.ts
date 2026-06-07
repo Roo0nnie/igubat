@@ -17,7 +17,16 @@ export const users = createTable("users", t => ({
 		.text("role")
 		.notNull()
 		.default("registered_citizen")
-		.$type<"registered_citizen" | "frontline_officer" | "department_supervisor" | "content_editor" | "emergency_operator" | "ict_admin" | "super_admin">(),
+		.$type<
+			| "registered_citizen"
+			| "frontline_officer"
+			| "department_supervisor"
+			| "content_editor"
+			| "emergency_operator"
+			| "ict_admin"
+			| "super_admin"
+		>(),
+	status: t.text("status").notNull().default("active").$type<"active" | "locked" | "deactivated">(),
 	departmentId: t.integer("department_id"),
 	// Citizen profile captured at registration (mobile app). Persisted via
 	// Better Auth `additionalFields` so the sign-up payload is stored rather
@@ -27,6 +36,10 @@ export const users = createTable("users", t => ({
 	address: t.text("address"),
 	// Explicit Data Privacy Act (RA 10173) consent given at registration.
 	dpaConsent: t.boolean("dpa_consent").notNull().default(false),
+	failedLoginAttempts: t.integer("failed_login_attempts").notNull().default(0),
+	lockedUntil: t.timestamp("locked_until"),
+	forcePasswordReset: t.boolean("force_password_reset").notNull().default(false),
+	lastLoginAt: t.timestamp("last_login_at"),
 	createdAt: t.timestamp("created_at").notNull().defaultNow(),
 	updatedAt: t.timestamp("updated_at").notNull().defaultNow(),
 }))
@@ -136,15 +149,57 @@ export const tickets = createTable("tickets", t => ({
 export const newsArticles = createTable("news_articles", t => ({
 	id: t.serial("id").primaryKey(),
 	title: t.text("title").notNull(),
+	slug: t.text("slug").unique(),
+	excerpt: t.text("excerpt"),
 	body: t.text("body").notNull(),
 	category: t.text("category").notNull(),
+	status: t.text("status").notNull().default("draft").$type<"draft" | "published" | "archived">(),
+	imageUrl: t.text("image_url"),
+	isFeatured: t.boolean("is_featured").notNull().default(false),
+	authorId: t.text("author_id").references(() => users.id, { onDelete: "set null" }),
+	scheduledAt: t.timestamp("scheduled_at"),
+	publishedAt: t.timestamp("published_at"),
+	archivedAt: t.timestamp("archived_at"),
+	deletedAt: t.timestamp("deleted_at"),
+	metadata: t.json("metadata"),
+	createdAt: t.timestamp("created_at").notNull().defaultNow(),
+	updatedAt: t.timestamp("updated_at").notNull().defaultNow(),
+}))
+
+export const contentPlacements = createTable("content_placements", t => ({
+	id: t.serial("id").primaryKey(),
+	type: t.text("type").notNull().$type<"carousel" | "banner">(),
+	title: t.text("title").notNull(),
+	imageUrl: t.text("image_url").notNull(),
+	linkType: t
+		.text("link_type")
+		.notNull()
+		.default("none")
+		.$type<"none" | "article" | "service" | "event" | "external">(),
+	linkTarget: t.text("link_target"),
+	sortOrder: t.integer("sort_order").notNull().default(0),
+	isActive: t.boolean("is_active").notNull().default(true),
+	startsAt: t.timestamp("starts_at"),
+	endsAt: t.timestamp("ends_at"),
+	createdAt: t.timestamp("created_at").notNull().defaultNow(),
+	updatedAt: t.timestamp("updated_at").notNull().defaultNow(),
+}))
+
+export const events = createTable("events", t => ({
+	id: t.serial("id").primaryKey(),
+	title: t.text("title").notNull(),
+	slug: t.text("slug").notNull().unique(),
+	description: t.text("description").notNull(),
+	category: t.text("category").notNull(),
+	location: t.text("location").notNull(),
+	imageUrl: t.text("image_url"),
 	status: t
 		.text("status")
 		.notNull()
-		.default("draft")
+		.default("published")
 		.$type<"draft" | "published" | "archived">(),
-	imageUrl: t.text("image_url"),
-	authorId: t.text("author_id").references(() => users.id, { onDelete: "set null" }),
+	startsAt: t.timestamp("starts_at").notNull(),
+	endsAt: t.timestamp("ends_at"),
 	publishedAt: t.timestamp("published_at"),
 	createdAt: t.timestamp("created_at").notNull().defaultNow(),
 	updatedAt: t.timestamp("updated_at").notNull().defaultNow(),
@@ -163,11 +218,43 @@ export const citizenReports = createTable("citizen_reports", t => ({
 		.notNull()
 		.default("received")
 		.$type<"received" | "in_progress" | "resolved" | "closed">(),
+	barangay: t.text("barangay"),
+	locationAddress: t.text("location_address"),
 	latitude: t.numeric("latitude"),
 	longitude: t.numeric("longitude"),
+	publicRemarks: t.text("public_remarks"),
+	internalNotes: t.text("internal_notes"),
+	departmentId: t.integer("department_id"),
+	assignedOfficerId: t
+		.text("assigned_officer_id")
+		.references(() => users.id, { onDelete: "set null" }),
 	authorId: t.text("author_id").references(() => users.id, { onDelete: "set null" }),
 	createdAt: t.timestamp("created_at").notNull().defaultNow(),
 	updatedAt: t.timestamp("updated_at").notNull().defaultNow(),
+}))
+
+export const citizenReportAttachments = createTable("citizen_report_attachments", t => ({
+	id: t.serial("id").primaryKey(),
+	citizenReportId: t
+		.integer("citizen_report_id")
+		.notNull()
+		.references(() => citizenReports.id, { onDelete: "cascade" }),
+	fileUrl: t.text("file_url").notNull(),
+	fileName: t.text("file_name").notNull(),
+	createdAt: t.timestamp("created_at").notNull().defaultNow(),
+}))
+
+export const citizenReportStatusHistory = createTable("citizen_report_status_history", t => ({
+	id: t.serial("id").primaryKey(),
+	citizenReportId: t
+		.integer("citizen_report_id")
+		.notNull()
+		.references(() => citizenReports.id, { onDelete: "cascade" }),
+	status: t.text("status").notNull().$type<"received" | "in_progress" | "resolved" | "closed">(),
+	remarks: t.text("remarks"),
+	visibility: t.text("visibility").notNull().default("public").$type<"public" | "internal">(),
+	changedById: t.text("changed_by_id").references(() => users.id, { onDelete: "set null" }),
+	createdAt: t.timestamp("created_at").notNull().defaultNow(),
 }))
 
 // ============================================================================
@@ -177,13 +264,33 @@ export const citizenReports = createTable("citizen_reports", t => ({
 export const emergencyDirectory = createTable("emergency_directory", t => ({
 	id: t.serial("id").primaryKey(),
 	name: t.text("name").notNull(),
-	type: t
-		.text("type")
-		.notNull()
-		.$type<"hospital" | "bfp" | "police" | "comcen">(),
+	type: t.text("type").notNull().$type<"hospital" | "bfp" | "police" | "comcen">(),
 	contactNumber: t.text("contact_number").notNull(),
 	address: t.text("address"),
+	hours: t.text("hours"),
 	isActive: t.boolean("is_active").notNull().default(true),
+	createdAt: t.timestamp("created_at").notNull().defaultNow(),
+	updatedAt: t.timestamp("updated_at").notNull().defaultNow(),
+}))
+
+export const emergencyBroadcasts = createTable("emergency_broadcasts", t => ({
+	id: t.serial("id").primaryKey(),
+	title: t.text("title").notNull(),
+	message: t.text("message").notNull(),
+	severity: t
+		.text("severity")
+		.notNull()
+		.default("warning")
+		.$type<"info" | "warning" | "critical">(),
+	status: t
+		.text("status")
+		.notNull()
+		.default("draft")
+		.$type<"draft" | "scheduled" | "sent" | "cancelled">(),
+	scheduledAt: t.timestamp("scheduled_at"),
+	sentAt: t.timestamp("sent_at"),
+	senderId: t.text("sender_id").references(() => users.id, { onDelete: "set null" }),
+	recipientCount: t.integer("recipient_count").notNull().default(0),
 	createdAt: t.timestamp("created_at").notNull().defaultNow(),
 	updatedAt: t.timestamp("updated_at").notNull().defaultNow(),
 }))
@@ -207,6 +314,7 @@ export const departments = createTable("departments", t => ({
 export const serviceRequests = createTable("service_requests", t => ({
 	id: t.serial("id").primaryKey(),
 	trackingNumber: t.text("tracking_number").notNull().unique(),
+	serviceTypeId: t.integer("service_type_id"),
 	serviceType: t.text("service_type").notNull(),
 	description: t.text("description").notNull(),
 	preferredDate: t.timestamp("preferred_date"),
@@ -215,18 +323,81 @@ export const serviceRequests = createTable("service_requests", t => ({
 		.notNull()
 		.default("pending")
 		.$type<"pending" | "in_review" | "approved" | "rejected" | "for_pickup" | "completed">(),
-	departmentId: t.integer("department_id").references(() => departments.id, { onDelete: "set null" }),
-	assignedOfficerId: t.text("assigned_officer_id").references(() => users.id, { onDelete: "set null" }),
+	departmentId: t
+		.integer("department_id")
+		.references(() => departments.id, { onDelete: "set null" }),
+	assignedOfficerId: t
+		.text("assigned_officer_id")
+		.references(() => users.id, { onDelete: "set null" }),
 	authorId: t.text("author_id").references(() => users.id, { onDelete: "set null" }),
+	contactSnapshot: t.json("contact_snapshot"),
+	publicRemarks: t.text("public_remarks"),
+	internalNotes: t.text("internal_notes"),
+	cancelledAt: t.timestamp("cancelled_at"),
+	cancellationReason: t.text("cancellation_reason"),
+	createdAt: t.timestamp("created_at").notNull().defaultNow(),
+	updatedAt: t.timestamp("updated_at").notNull().defaultNow(),
+}))
+
+// ============================================================================
+// SERVICE CATALOG
+// ============================================================================
+
+export const serviceCategories = createTable("service_categories", t => ({
+	id: t.serial("id").primaryKey(),
+	name: t.text("name").notNull(),
+	slug: t.text("slug").notNull().unique(),
+	description: t.text("description"),
+	sortOrder: t.integer("sort_order").notNull().default(0),
+	isActive: t.boolean("is_active").notNull().default(true),
+	createdAt: t.timestamp("created_at").notNull().defaultNow(),
+	updatedAt: t.timestamp("updated_at").notNull().defaultNow(),
+}))
+
+export const serviceTypes = createTable("service_types", t => ({
+	id: t.serial("id").primaryKey(),
+	categoryId: t
+		.integer("category_id")
+		.references(() => serviceCategories.id, { onDelete: "set null" }),
+	name: t.text("name").notNull(),
+	slug: t.text("slug").notNull().unique(),
+	description: t.text("description").notNull(),
+	requirements: t.json("requirements"),
+	formFields: t.json("form_fields"),
+	workflowSteps: t.json("workflow_steps"),
+	processingDays: t.integer("processing_days").notNull().default(3),
+	icon: t.text("icon").notNull().default("file-text"),
+	imageUrl: t.text("image_url"),
+	isPopular: t.boolean("is_popular").notNull().default(false),
+	isActive: t.boolean("is_active").notNull().default(true),
 	createdAt: t.timestamp("created_at").notNull().defaultNow(),
 	updatedAt: t.timestamp("updated_at").notNull().defaultNow(),
 }))
 
 export const serviceRequestAttachments = createTable("service_request_attachments", t => ({
 	id: t.serial("id").primaryKey(),
-	serviceRequestId: t.integer("service_request_id").notNull().references(() => serviceRequests.id, { onDelete: "cascade" }),
+	serviceRequestId: t
+		.integer("service_request_id")
+		.notNull()
+		.references(() => serviceRequests.id, { onDelete: "cascade" }),
 	fileUrl: t.text("file_url").notNull(),
 	fileName: t.text("file_name").notNull(),
+	createdAt: t.timestamp("created_at").notNull().defaultNow(),
+}))
+
+export const serviceRequestStatusHistory = createTable("service_request_status_history", t => ({
+	id: t.serial("id").primaryKey(),
+	serviceRequestId: t
+		.integer("service_request_id")
+		.notNull()
+		.references(() => serviceRequests.id, { onDelete: "cascade" }),
+	status: t
+		.text("status")
+		.notNull()
+		.$type<"pending" | "in_review" | "approved" | "rejected" | "for_pickup" | "completed">(),
+	remarks: t.text("remarks"),
+	visibility: t.text("visibility").notNull().default("public").$type<"public" | "internal">(),
+	changedById: t.text("changed_by_id").references(() => users.id, { onDelete: "set null" }),
 	createdAt: t.timestamp("created_at").notNull().defaultNow(),
 }))
 
@@ -237,7 +408,9 @@ export const serviceRequestAttachments = createTable("service_request_attachment
 export const workflowTemplates = createTable("workflow_templates", t => ({
 	id: t.serial("id").primaryKey(),
 	serviceType: t.text("service_type").notNull().unique(),
-	departmentId: t.integer("department_id").references(() => departments.id, { onDelete: "set null" }),
+	departmentId: t
+		.integer("department_id")
+		.references(() => departments.id, { onDelete: "set null" }),
 	steps: t.json("steps").notNull(),
 	isActive: t.boolean("is_active").notNull().default(true),
 	createdAt: t.timestamp("created_at").notNull().defaultNow(),
@@ -269,118 +442,254 @@ export const notifications = createTable("notifications", t => ({
 	title: t.text("title").notNull(),
 	body: t.text("body").notNull(),
 	type: t.text("type").notNull().default("in_app").$type<"in_app" | "push" | "email">(),
+	category: t
+		.text("category")
+		.notNull()
+		.default("general")
+		.$type<"news" | "service_request" | "issue_report" | "emergency" | "general">(),
 	isRead: t.boolean("is_read").notNull().default(false),
+	readAt: t.timestamp("read_at"),
 	metadata: t.json("metadata"),
+	createdAt: t.timestamp("created_at").notNull().defaultNow(),
+}))
+
+export const notificationPreferences = createTable("notification_preferences", t => ({
+	id: t.serial("id").primaryKey(),
+	userId: t
+		.text("user_id")
+		.notNull()
+		.unique()
+		.references(() => users.id, { onDelete: "cascade" }),
+	news: t.boolean("news").notNull().default(true),
+	serviceRequests: t.boolean("service_requests").notNull().default(true),
+	issueReports: t.boolean("issue_reports").notNull().default(true),
+	emergencyBroadcasts: t.boolean("emergency_broadcasts").notNull().default(true),
+	pushEnabled: t.boolean("push_enabled").notNull().default(true),
+	emailEnabled: t.boolean("email_enabled").notNull().default(true),
+	createdAt: t.timestamp("created_at").notNull().defaultNow(),
+	updatedAt: t.timestamp("updated_at").notNull().defaultNow(),
+}))
+
+export const notificationDeliveryLogs = createTable("notification_delivery_logs", t => ({
+	id: t.serial("id").primaryKey(),
+	notificationId: t
+		.integer("notification_id")
+		.references(() => notifications.id, { onDelete: "set null" }),
+	userId: t.text("user_id").references(() => users.id, { onDelete: "set null" }),
+	channel: t.text("channel").notNull().$type<"in_app" | "push" | "email" | "sms">(),
+	status: t
+		.text("status")
+		.notNull()
+		.default("queued")
+		.$type<"queued" | "sent" | "failed" | "skipped">(),
+	providerMessage: t.text("provider_message"),
+	createdAt: t.timestamp("created_at").notNull().defaultNow(),
+}))
+
+// ============================================================================
+// SUPPORT, SETTINGS, MEDIA, AND ACTIVITY
+// ============================================================================
+
+export const mediaAssets = createTable("media_assets", t => ({
+	id: t.serial("id").primaryKey(),
+	fileName: t.text("file_name").notNull(),
+	fileUrl: t.text("file_url").notNull(),
+	mimeType: t.text("mime_type").notNull(),
+	sizeBytes: t.integer("size_bytes").notNull().default(0),
+	altText: t.text("alt_text"),
+	folder: t.text("folder").notNull().default("general"),
+	uploadedById: t.text("uploaded_by_id").references(() => users.id, { onDelete: "set null" }),
+	deletedAt: t.timestamp("deleted_at"),
+	createdAt: t.timestamp("created_at").notNull().defaultNow(),
+	updatedAt: t.timestamp("updated_at").notNull().defaultNow(),
+}))
+
+export const helpArticles = createTable("help_articles", t => ({
+	id: t.serial("id").primaryKey(),
+	slug: t.text("slug").notNull().unique(),
+	title: t.text("title").notNull(),
+	category: t.text("category").notNull(),
+	content: t.text("content").notNull(),
+	audience: t.text("audience").notNull().default("citizen").$type<"citizen" | "staff" | "all">(),
+	sortOrder: t.integer("sort_order").notNull().default(0),
+	isPublished: t.boolean("is_published").notNull().default(true),
+	createdAt: t.timestamp("created_at").notNull().defaultNow(),
+	updatedAt: t.timestamp("updated_at").notNull().defaultNow(),
+}))
+
+export const policyDocuments = createTable("policy_documents", t => ({
+	id: t.serial("id").primaryKey(),
+	slug: t.text("slug").notNull().unique(),
+	title: t.text("title").notNull(),
+	version: t.text("version").notNull().default("1.0"),
+	content: t.text("content").notNull(),
+	publishedAt: t.timestamp("published_at").notNull().defaultNow(),
+	createdAt: t.timestamp("created_at").notNull().defaultNow(),
+	updatedAt: t.timestamp("updated_at").notNull().defaultNow(),
+}))
+
+export const systemSettings = createTable("system_settings", t => ({
+	id: t.serial("id").primaryKey(),
+	key: t.text("key").notNull().unique(),
+	category: t.text("category").notNull().default("application"),
+	value: t.json("value").notNull(),
+	isSecret: t.boolean("is_secret").notNull().default(false),
+	updatedById: t.text("updated_by_id").references(() => users.id, { onDelete: "set null" }),
+	createdAt: t.timestamp("created_at").notNull().defaultNow(),
+	updatedAt: t.timestamp("updated_at").notNull().defaultNow(),
+}))
+
+export const userLoginActivity = createTable("user_login_activity", t => ({
+	id: t.serial("id").primaryKey(),
+	userId: t.text("user_id").references(() => users.id, { onDelete: "set null" }),
+	identifier: t.text("identifier").notNull(),
+	success: t.boolean("success").notNull().default(false),
+	failureReason: t.text("failure_reason"),
+	ipAddress: t.text("ip_address"),
+	userAgent: t.text("user_agent"),
 	createdAt: t.timestamp("created_at").notNull().defaultNow(),
 }))
 
 // ============================================================================
 // RELATIONS
 // ============================================================================
-export const relations = defineRelations({ users, sessions, accounts, todos, tickets, newsArticles, citizenReports, emergencyDirectory, departments, serviceRequests, serviceRequestAttachments, workflowTemplates, auditLogs, notifications }, r => ({
-	users: {
-		sessions: r.many.sessions(),
-		accounts: r.many.accounts(),
-		todos: r.many.todos(),
-		tickets: r.many.tickets(),
-		newsArticles: r.many.newsArticles(),
-		citizenReports: r.many.citizenReports(),
-		department: r.one.departments({
-			from: r.users.departmentId,
-			to: r.departments.id,
-		}),
-		serviceRequestsAuthored: r.many.serviceRequests({
-			from: r.users.id,
-			to: r.serviceRequests.authorId,
-		}),
-		serviceRequestsAssigned: r.many.serviceRequests({
-			from: r.users.id,
-			to: r.serviceRequests.assignedOfficerId,
-		}),
-		auditLogs: r.many.auditLogs(),
-		notifications: r.many.notifications(),
+export const relations = defineRelations(
+	{
+		users,
+		sessions,
+		accounts,
+		todos,
+		tickets,
+		newsArticles,
+		contentPlacements,
+		events,
+		citizenReports,
+		citizenReportAttachments,
+		citizenReportStatusHistory,
+		emergencyDirectory,
+		emergencyBroadcasts,
+		departments,
+		serviceCategories,
+		serviceTypes,
+		serviceRequests,
+		serviceRequestAttachments,
+		serviceRequestStatusHistory,
+		workflowTemplates,
+		auditLogs,
+		notifications,
+		notificationPreferences,
+		notificationDeliveryLogs,
+		mediaAssets,
+		helpArticles,
+		policyDocuments,
+		systemSettings,
+		userLoginActivity,
 	},
-	departments: {
-		users: r.many.users(),
-		serviceRequests: r.many.serviceRequests(),
-		workflowTemplates: r.many.workflowTemplates(),
-	},
-	serviceRequests: {
-		author: r.one.users({
-			from: r.serviceRequests.authorId,
-			to: r.users.id,
-		}),
-		assignedOfficer: r.one.users({
-			from: r.serviceRequests.assignedOfficerId,
-			to: r.users.id,
-		}),
-		department: r.one.departments({
-			from: r.serviceRequests.departmentId,
-			to: r.departments.id,
-		}),
-		attachments: r.many.serviceRequestAttachments(),
-	},
-	serviceRequestAttachments: {
-		serviceRequest: r.one.serviceRequests({
-			from: r.serviceRequestAttachments.serviceRequestId,
-			to: r.serviceRequests.id,
-		}),
-	},
-	workflowTemplates: {
-		department: r.one.departments({
-			from: r.workflowTemplates.departmentId,
-			to: r.departments.id,
-		}),
-	},
-	auditLogs: {
-		actor: r.one.users({
-			from: r.auditLogs.actorId,
-			to: r.users.id,
-		}),
-	},
-	notifications: {
-		user: r.one.users({
-			from: r.notifications.userId,
-			to: r.users.id,
-		}),
-	},
-	sessions: {
-		user: r.one.users({
-			from: r.sessions.userId,
-			to: r.users.id,
-		}),
-	},
-	accounts: {
-		user: r.one.users({
-			from: r.accounts.userId,
-			to: r.users.id,
-		}),
-	},
-	todos: {
-		author: r.one.users({
-			from: r.todos.authorId,
-			to: r.users.id,
-		}),
-	},
-	tickets: {
-		author: r.one.users({
-			from: r.tickets.authorId,
-			to: r.users.id,
-		}),
-	},
-	newsArticles: {
-		author: r.one.users({
-			from: r.newsArticles.authorId,
-			to: r.users.id,
-		}),
-	},
-	citizenReports: {
-		author: r.one.users({
-			from: r.citizenReports.authorId,
-			to: r.users.id,
-		}),
-	},
-}))
+	r => ({
+		users: {
+			sessions: r.many.sessions(),
+			accounts: r.many.accounts(),
+			todos: r.many.todos(),
+			tickets: r.many.tickets(),
+			newsArticles: r.many.newsArticles(),
+			citizenReports: r.many.citizenReports(),
+			department: r.one.departments({
+				from: r.users.departmentId,
+				to: r.departments.id,
+			}),
+			serviceRequestsAuthored: r.many.serviceRequests({
+				from: r.users.id,
+				to: r.serviceRequests.authorId,
+			}),
+			serviceRequestsAssigned: r.many.serviceRequests({
+				from: r.users.id,
+				to: r.serviceRequests.assignedOfficerId,
+			}),
+			auditLogs: r.many.auditLogs(),
+			notifications: r.many.notifications(),
+		},
+		departments: {
+			users: r.many.users(),
+			serviceRequests: r.many.serviceRequests(),
+			workflowTemplates: r.many.workflowTemplates(),
+		},
+		serviceRequests: {
+			author: r.one.users({
+				from: r.serviceRequests.authorId,
+				to: r.users.id,
+			}),
+			assignedOfficer: r.one.users({
+				from: r.serviceRequests.assignedOfficerId,
+				to: r.users.id,
+			}),
+			department: r.one.departments({
+				from: r.serviceRequests.departmentId,
+				to: r.departments.id,
+			}),
+			attachments: r.many.serviceRequestAttachments(),
+		},
+		serviceRequestAttachments: {
+			serviceRequest: r.one.serviceRequests({
+				from: r.serviceRequestAttachments.serviceRequestId,
+				to: r.serviceRequests.id,
+			}),
+		},
+		workflowTemplates: {
+			department: r.one.departments({
+				from: r.workflowTemplates.departmentId,
+				to: r.departments.id,
+			}),
+		},
+		auditLogs: {
+			actor: r.one.users({
+				from: r.auditLogs.actorId,
+				to: r.users.id,
+			}),
+		},
+		notifications: {
+			user: r.one.users({
+				from: r.notifications.userId,
+				to: r.users.id,
+			}),
+		},
+		sessions: {
+			user: r.one.users({
+				from: r.sessions.userId,
+				to: r.users.id,
+			}),
+		},
+		accounts: {
+			user: r.one.users({
+				from: r.accounts.userId,
+				to: r.users.id,
+			}),
+		},
+		todos: {
+			author: r.one.users({
+				from: r.todos.authorId,
+				to: r.users.id,
+			}),
+		},
+		tickets: {
+			author: r.one.users({
+				from: r.tickets.authorId,
+				to: r.users.id,
+			}),
+		},
+		newsArticles: {
+			author: r.one.users({
+				from: r.newsArticles.authorId,
+				to: r.users.id,
+			}),
+		},
+		citizenReports: {
+			author: r.one.users({
+				from: r.citizenReports.authorId,
+				to: r.users.id,
+			}),
+		},
+	})
+)
 
 // ============================================================================
 // SCHEMA
@@ -394,14 +703,29 @@ export const schema = Object.assign(
 		todos,
 		tickets,
 		newsArticles,
+		contentPlacements,
+		events,
 		citizenReports,
+		citizenReportAttachments,
+		citizenReportStatusHistory,
 		emergencyDirectory,
+		emergencyBroadcasts,
 		departments,
+		serviceCategories,
+		serviceTypes,
 		serviceRequests,
 		serviceRequestAttachments,
+		serviceRequestStatusHistory,
 		workflowTemplates,
 		auditLogs,
 		notifications,
+		notificationPreferences,
+		notificationDeliveryLogs,
+		mediaAssets,
+		helpArticles,
+		policyDocuments,
+		systemSettings,
+		userLoginActivity,
 	},
 	relations
 )

@@ -2,6 +2,7 @@ import { oc } from "@orpc/contract"
 
 import { v1Example } from "./examples/v1.example.js"
 import { healthContract } from "./health/health.contract.js"
+import { igubatContract } from "./igubat/igubat.contract.js"
 import { ticketContract } from "./tickets/tickets.contract.js"
 
 /**
@@ -13,6 +14,7 @@ export const v1Contract = oc.prefix("/v1").router(
 		health: healthContract,
 		example: v1Example,
 		ticket: ticketContract,
+		igubat: igubatContract,
 	})
 )
 

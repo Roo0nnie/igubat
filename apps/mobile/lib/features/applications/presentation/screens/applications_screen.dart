@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/glass_tokens.dart';
 import '../../../../core/widgets/igubat_logo.dart';
+import '../../../../core/mock/seed_data.dart';
+import '../../../../core/navigation/glass_page_route.dart';
 import '../../../../shared/widgets/app_stepper.dart';
 import '../../../../shared/widgets/glass/glass_background.dart';
 import '../../../../shared/widgets/glass/glass_badge.dart';
@@ -11,6 +13,7 @@ import '../../../../shared/widgets/glass/glass_card.dart';
 import '../../../../shared/widgets/glass/glass_list_tile.dart';
 import '../../../../shared/widgets/glass/glass_surface.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../services/presentation/screens/request_details_screen.dart';
 
 class ApplicationsScreen extends ConsumerWidget {
   const ApplicationsScreen({super.key});
@@ -144,7 +147,15 @@ class ApplicationsScreen extends ConsumerWidget {
     final glass = glassThemeOf(context);
 
     return GlassCard(
-      onTap: () {},
+      onTap: () {
+        final request = title.contains('Business')
+            ? SeedData.activeRequests.first
+            : SeedData.activeRequests.last;
+        Navigator.push(
+          context,
+          GlassPageRoute(page: RequestDetailsScreen(request: request)),
+        );
+      },
       child: Row(
         children: [
           GlassSurface(

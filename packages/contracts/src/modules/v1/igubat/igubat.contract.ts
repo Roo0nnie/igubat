@@ -1,0 +1,286 @@
+import { oc } from "@orpc/contract"
+import { z } from "zod"
+
+import {
+	AnalyticsSchema,
+	AuditLogSchema,
+	CitizenReportDetailSchema,
+	CitizenReportSchema,
+	ContentPlacementSchema,
+	CreateBroadcastSchema,
+	CreateCitizenReportSchema,
+	CreateServiceRequestSchema,
+	CreateStaffSchema,
+	DashboardSchema,
+	EmergencyBroadcastSchema,
+	EmergencyDirectorySchema,
+	EventSchema,
+	HelpArticleSchema,
+	IdParamSchema,
+	ListQuerySchema,
+	NewsArticleSchema,
+	NotificationPreferenceSchema,
+	NotificationSchema,
+	PolicyDocumentSchema,
+	ServiceCategorySchema,
+	ServiceRequestDetailSchema,
+	ServiceRequestSchema,
+	ServiceTypeSchema,
+	SlugParamSchema,
+	SystemSettingSchema,
+	UpdateProfileSchema,
+	UpdateReportStatusSchema,
+	UpdateRequestStatusSchema,
+	UpsertArticleSchema,
+	UpsertDirectoryEntrySchema,
+	UpsertSettingSchema,
+	UserSummarySchema,
+} from "./igubat.schema.js"
+
+export const igubatContract = oc.prefix("/igubat").router(
+	oc.router({
+		public: oc.prefix("/public").router(
+			oc.router({
+				dashboard: oc
+					.route({
+						method: "GET",
+						path: "/dashboard",
+						tags: ["iGubat Public"],
+						spec: spec => ({ ...spec, security: [] }),
+					})
+					.output(DashboardSchema),
+				news: oc
+					.route({
+						method: "GET",
+						path: "/news",
+						tags: ["iGubat Public"],
+						spec: spec => ({ ...spec, security: [] }),
+					})
+					.input(ListQuerySchema)
+					.output(z.array(NewsArticleSchema)),
+				article: oc
+					.route({
+						method: "GET",
+						path: "/news/{slug}",
+						tags: ["iGubat Public"],
+						spec: spec => ({ ...spec, security: [] }),
+					})
+					.input(SlugParamSchema)
+					.output(NewsArticleSchema),
+				placements: oc
+					.route({
+						method: "GET",
+						path: "/placements",
+						tags: ["iGubat Public"],
+						spec: spec => ({ ...spec, security: [] }),
+					})
+					.output(z.array(ContentPlacementSchema)),
+				events: oc
+					.route({
+						method: "GET",
+						path: "/events",
+						tags: ["iGubat Public"],
+						spec: spec => ({ ...spec, security: [] }),
+					})
+					.output(z.array(EventSchema)),
+				event: oc
+					.route({
+						method: "GET",
+						path: "/events/{slug}",
+						tags: ["iGubat Public"],
+						spec: spec => ({ ...spec, security: [] }),
+					})
+					.input(SlugParamSchema)
+					.output(EventSchema),
+				serviceCategories: oc
+					.route({
+						method: "GET",
+						path: "/service-categories",
+						tags: ["iGubat Public"],
+						spec: spec => ({ ...spec, security: [] }),
+					})
+					.output(z.array(ServiceCategorySchema)),
+				services: oc
+					.route({
+						method: "GET",
+						path: "/services",
+						tags: ["iGubat Public"],
+						spec: spec => ({ ...spec, security: [] }),
+					})
+					.input(ListQuerySchema)
+					.output(z.array(ServiceTypeSchema)),
+				service: oc
+					.route({
+						method: "GET",
+						path: "/services/{slug}",
+						tags: ["iGubat Public"],
+						spec: spec => ({ ...spec, security: [] }),
+					})
+					.input(SlugParamSchema)
+					.output(ServiceTypeSchema),
+				emergencyDirectory: oc
+					.route({
+						method: "GET",
+						path: "/emergency-directory",
+						tags: ["iGubat Public"],
+						spec: spec => ({ ...spec, security: [] }),
+					})
+					.output(z.array(EmergencyDirectorySchema)),
+				help: oc
+					.route({
+						method: "GET",
+						path: "/help",
+						tags: ["iGubat Public"],
+						spec: spec => ({ ...spec, security: [] }),
+					})
+					.output(z.array(HelpArticleSchema)),
+				policy: oc
+					.route({
+						method: "GET",
+						path: "/policies/{slug}",
+						tags: ["iGubat Public"],
+						spec: spec => ({ ...spec, security: [] }),
+					})
+					.input(SlugParamSchema)
+					.output(PolicyDocumentSchema),
+			})
+		),
+		me: oc.prefix("/me").router(
+			oc.router({
+				profile: oc
+					.route({ method: "GET", path: "/profile", tags: ["iGubat Citizen"] })
+					.output(UserSummarySchema),
+				updateProfile: oc
+					.route({ method: "PATCH", path: "/profile", tags: ["iGubat Citizen"] })
+					.input(UpdateProfileSchema)
+					.output(UserSummarySchema),
+				notificationPreferences: oc
+					.route({ method: "GET", path: "/notification-preferences", tags: ["iGubat Citizen"] })
+					.output(NotificationPreferenceSchema),
+				updateNotificationPreferences: oc
+					.route({ method: "PATCH", path: "/notification-preferences", tags: ["iGubat Citizen"] })
+					.input(NotificationPreferenceSchema.partial())
+					.output(NotificationPreferenceSchema),
+				requests: oc
+					.route({ method: "GET", path: "/requests", tags: ["iGubat Citizen"] })
+					.output(z.array(ServiceRequestSchema)),
+				request: oc
+					.route({ method: "GET", path: "/requests/{id}", tags: ["iGubat Citizen"] })
+					.input(IdParamSchema)
+					.output(ServiceRequestDetailSchema),
+				createRequest: oc
+					.route({ method: "POST", path: "/requests", tags: ["iGubat Citizen"] })
+					.input(CreateServiceRequestSchema)
+					.output(ServiceRequestDetailSchema),
+				cancelRequest: oc
+					.route({ method: "POST", path: "/requests/{id}/cancel", tags: ["iGubat Citizen"] })
+					.input(IdParamSchema)
+					.output(ServiceRequestDetailSchema),
+				reports: oc
+					.route({ method: "GET", path: "/reports", tags: ["iGubat Citizen"] })
+					.output(z.array(CitizenReportSchema)),
+				report: oc
+					.route({ method: "GET", path: "/reports/{id}", tags: ["iGubat Citizen"] })
+					.input(IdParamSchema)
+					.output(CitizenReportDetailSchema),
+				createReport: oc
+					.route({ method: "POST", path: "/reports", tags: ["iGubat Citizen"] })
+					.input(CreateCitizenReportSchema)
+					.output(CitizenReportDetailSchema),
+				notifications: oc
+					.route({ method: "GET", path: "/notifications", tags: ["iGubat Citizen"] })
+					.output(z.array(NotificationSchema)),
+				markNotificationRead: oc
+					.route({ method: "POST", path: "/notifications/{id}/read", tags: ["iGubat Citizen"] })
+					.input(IdParamSchema)
+					.output(NotificationSchema),
+				markAllNotificationsRead: oc
+					.route({ method: "POST", path: "/notifications/read-all", tags: ["iGubat Citizen"] })
+					.output(z.object({ success: z.boolean() })),
+			})
+		),
+		admin: oc.prefix("/admin").router(
+			oc.router({
+				dashboard: oc
+					.route({ method: "GET", path: "/dashboard", tags: ["iGubat Admin"] })
+					.output(DashboardSchema),
+				requests: oc
+					.route({ method: "GET", path: "/requests", tags: ["iGubat Admin"] })
+					.input(ListQuerySchema)
+					.output(z.array(ServiceRequestSchema)),
+				request: oc
+					.route({ method: "GET", path: "/requests/{id}", tags: ["iGubat Admin"] })
+					.input(IdParamSchema)
+					.output(ServiceRequestDetailSchema),
+				updateRequestStatus: oc
+					.route({ method: "PATCH", path: "/requests/{id}/status", tags: ["iGubat Admin"] })
+					.input(UpdateRequestStatusSchema)
+					.output(ServiceRequestDetailSchema),
+				reports: oc
+					.route({ method: "GET", path: "/reports", tags: ["iGubat Admin"] })
+					.input(ListQuerySchema)
+					.output(z.array(CitizenReportSchema)),
+				report: oc
+					.route({ method: "GET", path: "/reports/{id}", tags: ["iGubat Admin"] })
+					.input(IdParamSchema)
+					.output(CitizenReportDetailSchema),
+				updateReportStatus: oc
+					.route({ method: "PATCH", path: "/reports/{id}/status", tags: ["iGubat Admin"] })
+					.input(UpdateReportStatusSchema)
+					.output(CitizenReportDetailSchema),
+				articles: oc
+					.route({ method: "GET", path: "/articles", tags: ["iGubat Admin"] })
+					.input(ListQuerySchema)
+					.output(z.array(NewsArticleSchema)),
+				upsertArticle: oc
+					.route({ method: "POST", path: "/articles", tags: ["iGubat Admin"] })
+					.input(UpsertArticleSchema)
+					.output(NewsArticleSchema),
+				emergencyDirectory: oc
+					.route({ method: "GET", path: "/emergency-directory", tags: ["iGubat Admin"] })
+					.output(z.array(EmergencyDirectorySchema)),
+				upsertDirectoryEntry: oc
+					.route({ method: "POST", path: "/emergency-directory", tags: ["iGubat Admin"] })
+					.input(UpsertDirectoryEntrySchema)
+					.output(EmergencyDirectorySchema),
+				broadcasts: oc
+					.route({ method: "GET", path: "/broadcasts", tags: ["iGubat Admin"] })
+					.output(z.array(EmergencyBroadcastSchema)),
+				createBroadcast: oc
+					.route({ method: "POST", path: "/broadcasts", tags: ["iGubat Admin"] })
+					.input(CreateBroadcastSchema)
+					.output(EmergencyBroadcastSchema),
+				citizens: oc
+					.route({ method: "GET", path: "/citizens", tags: ["iGubat Admin"] })
+					.input(ListQuerySchema)
+					.output(z.array(UserSummarySchema)),
+				citizen: oc
+					.route({ method: "GET", path: "/citizens/{id}", tags: ["iGubat Admin"] })
+					.input(z.object({ id: z.string().min(1) }))
+					.output(UserSummarySchema),
+				staff: oc
+					.route({ method: "GET", path: "/staff", tags: ["iGubat Admin"] })
+					.output(z.array(UserSummarySchema)),
+				createStaff: oc
+					.route({ method: "POST", path: "/staff", tags: ["iGubat Admin"] })
+					.input(CreateStaffSchema)
+					.output(UserSummarySchema),
+				analytics: oc
+					.route({ method: "GET", path: "/analytics", tags: ["iGubat Admin"] })
+					.input(ListQuerySchema)
+					.output(AnalyticsSchema),
+				auditLogs: oc
+					.route({ method: "GET", path: "/audit-logs", tags: ["iGubat Admin"] })
+					.input(ListQuerySchema)
+					.output(z.array(AuditLogSchema)),
+				settings: oc
+					.route({ method: "GET", path: "/settings", tags: ["iGubat Admin"] })
+					.output(z.array(SystemSettingSchema)),
+				upsertSetting: oc
+					.route({ method: "POST", path: "/settings", tags: ["iGubat Admin"] })
+					.input(UpsertSettingSchema)
+					.output(SystemSettingSchema),
+			})
+		),
+	})
+)

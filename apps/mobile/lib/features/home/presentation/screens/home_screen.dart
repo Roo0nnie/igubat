@@ -17,6 +17,13 @@ import '../../../../shared/widgets/glass/glass_section_header.dart';
 import '../../../../shared/widgets/glass/glass_skeleton.dart';
 import '../../../../shared/widgets/glass/glass_surface.dart';
 import '../../../notifications/presentation/screens/notifications_screen.dart';
+import '../../../news/presentation/screens/news_detail_screen.dart';
+import '../../../reports/presentation/screens/report_issue_screen.dart';
+import '../../../services/presentation/screens/request_details_screen.dart';
+import '../../../services/presentation/screens/service_request_stepper_screen.dart';
+import '../../../emergency/presentation/screens/emergency_screen.dart';
+import 'event_detail_screen.dart';
+import 'transaction_detail_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -130,7 +137,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         context,
                         title: 'Featured Community News',
                         actionLabel: 'View All',
-                        child: _buildFeaturedNews(),
+                        child: _buildFeaturedNews(context),
                       ),
                       _sectionSliver(
                         context,
@@ -385,8 +392,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget _buildQuickActions(BuildContext context) {
     final actions = [
       (Icons.phone_in_talk, 'Call 911', const Color(0xFFB91C1C)),
-      (Icons.payment, 'Pay Bills', AppTheme.secondaryColor),
+      (Icons.report_problem_outlined, 'Report Issue', const Color(0xFFD97706)),
       (Icons.track_changes, 'Track Request', AppTheme.primaryColor),
+      (Icons.payment, 'Pay Bills', AppTheme.secondaryColor),
     ];
 
     return Row(
@@ -398,7 +406,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             child: GlassCard(
               intensity: GlassIntensity.prominent,
               padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-              onTap: () {},
+              onTap: () {
+                switch (index) {
+                  case 0:
+                    Navigator.push(context, GlassPageRoute(page: const EmergencyScreen()));
+                    break;
+                  case 1:
+                    Navigator.push(context, GlassPageRoute(page: const ReportIssueScreen()));
+                    break;
+                  case 2:
+                    Navigator.push(
+                      context,
+                      GlassPageRoute(page: RequestDetailsScreen(request: SeedData.activeRequests.first)),
+                    );
+                    break;
+                  default:
+                    Navigator.push(
+                      context,
+                      GlassPageRoute(page: TransactionDetailScreen(transaction: SeedData.recentTransactions.first)),
+                    );
+                }
+              },
               child: Column(
                 children: [
                   Container(
@@ -446,7 +474,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       itemBuilder: (context, index) {
         final service = services[index];
         return GlassCard(
-          onTap: () {},
+          onTap: () {
+            Navigator.push(
+              context,
+              GlassPageRoute(page: ServiceRequestStepperScreen(service: service)),
+            );
+          },
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -513,13 +546,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildFeaturedNews() {
+  Widget _buildFeaturedNews(BuildContext context) {
     final featured = SeedData.announcements.firstWhere((a) => a.isFeatured);
 
     return GlassCard(
       intensity: GlassIntensity.prominent,
       padding: EdgeInsets.zero,
-      onTap: () {},
+      onTap: () {
+        Navigator.push(
+          context,
+          GlassPageRoute(page: NewsDetailScreen(announcement: featured)),
+        );
+      },
       child: ClipRRect(
         borderRadius: BorderRadius.circular(GlassTokens.radiusGlassSm),
         child: SizedBox(
@@ -601,7 +639,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           return SizedBox(
             width: 200,
             child: GlassCard(
-              onTap: () {},
+              onTap: () {
+                Navigator.push(
+                  context,
+                  GlassPageRoute(page: EventDetailScreen(event: event)),
+                );
+              },
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -663,6 +706,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           child: GlassCard(
             intensity: GlassIntensity.subtle,
             padding: const EdgeInsets.all(16),
+            onTap: () {
+              Navigator.push(
+                context,
+                GlassPageRoute(page: TransactionDetailScreen(transaction: tx)),
+              );
+            },
             child: Row(
               children: [
                 Container(

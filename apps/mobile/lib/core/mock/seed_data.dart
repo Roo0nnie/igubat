@@ -208,6 +208,27 @@ class SeedData {
       processingDays: 3,
     ),
     Service(
+      title: 'Medical Assistance',
+      description: 'Request support for medicine, consultation, or hospital assistance.',
+      icon: 'heart',
+      category: 'Assistance',
+      processingDays: 5,
+    ),
+    Service(
+      title: 'Transportation Assistance',
+      description: 'Request LGU transportation support for eligible citizen needs.',
+      icon: 'credit-card',
+      category: 'Assistance',
+      processingDays: 3,
+    ),
+    Service(
+      title: 'Facility Use',
+      description: 'Reserve municipal facilities for approved community activities.',
+      icon: 'file-text',
+      category: 'Facilities',
+      processingDays: 4,
+    ),
+    Service(
       title: 'Public Documents',
       description: 'Browse public ordinances and resolutions.',
       icon: 'file-text',
@@ -457,6 +478,8 @@ class SeedData {
     'Permits',
     'Certificates',
     'Health',
+    'Assistance',
+    'Facilities',
   ];
 
   /// Canonical list of barangays in the Municipality of Gubat, Sorsogon.

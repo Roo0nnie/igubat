@@ -1,14 +1,17 @@
 import {
-	Home,
-	FileText,
 	AlertTriangle,
-	Newspaper,
-	Siren,
-	Bell,
-	Users,
 	BarChart3,
+	Bell,
+	FileText,
+	HelpCircle,
+	Home,
+	Newspaper,
 	ScrollText,
 	Settings,
+	ShieldCheck,
+	Siren,
+	UserCog,
+	Users,
 	type LucideIcon,
 } from "lucide-react"
 
@@ -54,9 +57,18 @@ export const NAV_GROUPS: NavGroup[] = [
 		label: "Administration",
 		items: [
 			{ title: "User Management", url: "/citizens", icon: Users, access: "admin" },
+			{ title: "Staff Management", url: "/staff", icon: UserCog, access: "admin" },
 			{ title: "Analytics", url: "/analytics", icon: BarChart3, access: "admin" },
 			{ title: "Audit Log", url: "/audit-logs", icon: ScrollText, access: "admin" },
 			{ title: "Settings", url: "/settings", icon: Settings, access: "admin" },
+		],
+	},
+	{
+		label: "Support",
+		items: [
+			{ title: "Help & Support", url: "/help-support", icon: HelpCircle, access: "staff" },
+			{ title: "Privacy Policy", url: "/privacy-policy", icon: ShieldCheck, access: "staff" },
+			{ title: "Terms of Use", url: "/terms-of-use", icon: ScrollText, access: "staff" },
 		],
 	},
 ]

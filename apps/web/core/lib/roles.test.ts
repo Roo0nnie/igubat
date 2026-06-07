@@ -1,12 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import {
-	getPortalRole,
-	isStaffRole,
-	isAdminRole,
-	canAccess,
-	getRoleLabel,
-} from "./roles"
+import { canAccess, getPortalRole, getRoleLabel, isAdminRole, isStaffRole } from "./roles"
 
 describe("getPortalRole", () => {
 	it("maps super_admin and ict_admin to admin", () => {

@@ -2,8 +2,7 @@
 
 import { createContext, useContext, type PropsWithChildren } from "react"
 
-import type { PortalRole } from "@/core/lib/roles"
-import { canAccess, type RequiredAccess } from "@/core/lib/roles"
+import { canAccess, type PortalRole, type RequiredAccess } from "@/core/lib/roles"
 
 export type PortalUserContext = {
 	id: string
