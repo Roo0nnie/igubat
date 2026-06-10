@@ -2,18 +2,18 @@
 
 ## Project Proposal
 
-> **Prepared for:** Municipality of Igubat, Information and Communications Technology Office  
+> **Prepared for:** Municipality of Gubat, Province of Sorsogon (Bicol Region), Information and Communications Technology Office  
 > **Prepared by:** Development Team  
-> **Source TOR:** `igubat_tor.md` v3.1  
+> **Source TOR:** `igubat_tor.md` v3.2  
 > **Workflow Documents:** `igubat_overall_system.md`, `igubat_mobile_app.md`, `igubat_admin_portal.md`
 
 ---
 
 ## 1. Executive Summary
 
-This proposal outlines the full design, development, and deployment of the **iGubat Application** — the digital services platform of the Municipality of Igubat. The platform modernizes the delivery of LGU services to constituents by giving every resident a single, convenient mobile entry point and giving LGU staff a unified web portal for daily operations.
+This proposal outlines the full design, development, and deployment of the **iGubat Application** — the digital services platform of the Municipality of Gubat, Province of Sorsogon (the product name *iGubat* combines *i* with *Gubat*). The platform modernizes the delivery of LGU services to constituents by giving every resident a single, convenient mobile entry point and giving LGU staff a unified web portal for daily operations.
 
-Based on the four-role model (Guest, Authenticated User, Moderator, Admin) and the eleven (11) functional modules defined in `igubat_tor.md`, we propose to deliver the complete platform in **four phased tracks**. The sequence is deliberately ordered so that the public-information and emergency surfaces ship first (Phase 1) — giving the LGU value on day one — and the operational, administrative, and analytics layers follow.
+Based on the four-role model (Guest, Authenticated User, Moderator, Admin) and the thirteen (13) functional modules defined in `igubat_tor.md` — including **Module 13 — Transparency and Good Governance** (public disclosure of programs/projects, procurement bids, financial reports, annual budget, legislative ordinances, and executive orders per the DILG Full Disclosure Policy) — we propose to deliver the complete platform in **four phased tracks**. The sequence is deliberately ordered so that the public-information and emergency surfaces ship first (Phase 1) — giving the LGU value on day one — and the operational, administrative, and analytics layers follow.
 
 The platform consists of two interconnected experiences sharing one backend, one database, and one notification fabric:
 
@@ -36,8 +36,11 @@ Our delivery centers on these and builds outward.
 | -------------- | --------------------------------------------------------- |
 | **Platform**   | iGubat — LGU Digital Services Application                 |
 | **Domain**     | Local Government Unit (LGU) digital services, Philippines |
-| **Geography**  | Municipality of Igubat, all barangays                     |
-| **Compliance** | Data Privacy Act of 2012 (Republic Act No. 10173)         |
+| **Geography**  | Municipality of Gubat, Province of Sorsogon (Bicol Region) — coastal town on the Pacific, 42 barangays |
+| **Compliance** | Data Privacy Act of 2012 (RA 10173); DILG Full Disclosure Policy / FDPP; RA 9184 procurement disclosures; RA 7160 local budget, ordinances, and executive orders; RA 11032 citizen access to records |
+
+
+**Local Context (Gubat, Sorsogon).** Gubat is a coastal municipality promoted as **"The Surfing Capital of Sorsogon"** — its Buenavista and Rizal beaches draw beginner and experienced surfers, alongside attractions such as the Dulangan-Nasipit estuary (bioluminescence). Its cultural identity centers on the **Ginubat Festival** (June, town fiesta of San Antonio de Padua) and heritage landmarks like the **San Antonio de Padua Parish Church (1778)** and the **Castillo de Gubat** watchtower. The town is known for its own delicacies and products — **timitim** (cassava-and-pili cake), **salanigo** (hand-woven abaca slippers, an OTOP product), **binut-ong**, **dalu-dalo**, **sikad-sikad**, and **pili nuts** — in addition to the broader Bicol/Sorsogon table (laing, Bicol Express, kinunot). The platform showcases this identity through a dedicated **"Discover Gubat"** surface (Module 12).
 
 
 **User Types (canonical, four total):**
@@ -88,7 +91,12 @@ graph TD
     A --> M6[Issue Reports]
     A --> M7[Emergency]
     A --> M8[Notifications]
+    A --> M12[Discover Gubat]
+    A --> M13[Transparency & Good Governance]
+    M13 --> M8
     B[Web Admin Portal] --> M4
+    B --> M12
+    B --> M13
     B --> M5
     B --> M6
     B --> M7
@@ -125,7 +133,7 @@ graph TD
 **Home and Navigation Module**
 
 - Time-of-day greeting (Filipino/Visayan salutations).
-- Quick-action grid (Services, Citizen Guide, E-Services, Emergency, Utilities, Transport, Business, View More).
+- Quick-action grid (Services, Citizen Guide, E-Services, Emergency, Utilities, Transport, Business, Discover Gubat, View More).
 - Personalized greeting and notification badge for Authenticated User.
 
 **News and Announcements Module**
@@ -141,10 +149,24 @@ graph TD
 - Category shortcuts (Hospitals, BFP, PNP, Disaster Response).
 - Directory entries with name, address, contact number, hours.
 
+**Tourism, Culture &amp; Local Products Module ("Discover Gubat")**
+
+- Public "Discover Gubat" surface with three sections: **Tourist Spots**, **Festivals &amp; Culture**, and **Local Delicacies &amp; Products**.
+- Tourist spots with photos, descriptions, category (Beaches &amp; Surfing, Nature &amp; Eco-Tourism, Heritage &amp; Landmarks), and map location.
+- Festival/culture articles (e.g., Ginubat Festival, heritage church and watchtower, local dialect and traditions).
+- Local delicacy/product directory (e.g., timitim, salanigo, binut-ong, pili nuts) with where-to-buy / pasalubong notes.
+- Moderator authoring with the canonical **Draft | Published | Archived** lifecycle; offline-cached for citizens; read-only/informational in v1.
+
+**Transparency and Good Governance Module (Module 13)**
+
+- Public mobile section ("Know where your taxes go") above the news feed with six content types: **Program and Projects, Bids and Projects, Financial Reports, Annual Budget, Legislative Ordinances, Executive Orders** — fulfilling the DILG Full Disclosure Policy and RA 9184 / RA 7160 / RA 11032.
+- Read-only for Guest and Authenticated User: browse by category (most-recent first), filter by fiscal year/status, open item detail with type-specific metadata, download attachments via signed URL; offline-cached.
+- Web CMS for Moderators using the canonical **Draft → Scheduled → Published → Archived** lifecycle (type selector, type-specific fields, attachments, schedule, notify-subscribers); Admin-only permanent delete and CSV export.
+
 **Cross-Cutting**
 
 - File and Media Management foundational scope (image upload, signed URLs, virus scan).
-- Connectivity and Offline Support (cache last 20 articles, hotlines, citizen guide).
+- Connectivity and Offline Support (cache last 20 articles, hotlines, citizen guide, Discover Gubat content, and Transparency items).
 
 ---
 
@@ -231,11 +253,13 @@ graph TD
 **Phase 1 — Citizen Foundation and Public Access**
 
 - Authentication, Citizen Profile, Home and Navigation, News and Announcements, Emergency Hotline and Directory.
+- Tourism, Culture &amp; Local Products ("Discover Gubat").
+- Transparency and Good Governance (Module 13) — public read-only disclosures.
 - Foundational Notification System (transactional email, OTP delivery).
-- Offline cache for news, hotlines, citizen guide.
+- Offline cache for news, hotlines, citizen guide, Discover Gubat, and Transparency content.
 - Initial deployment, environments, app store enrollment.
 
-> **Outcome:** Residents can install the iGubat app and immediately access official news, the citizen guide, and emergency hotlines. The LGU can publish content. The registration funnel is open even before request/report features ship.
+> **Outcome:** Residents can install the iGubat app and immediately access official news, the citizen guide, emergency hotlines, the Discover Gubat tourism/culture/products surface, and the Transparency & Good Governance disclosures — seeing what the LGU is doing, what it is buying, how it spends, and what it has enacted, fulfilling the Full Disclosure Policy. The LGU can publish content. The registration funnel is open even before request/report features ship.
 
 **Phase 2 — Service Operations**
 
@@ -266,7 +290,7 @@ graph TD
 
 | Phase                                              | Scope Summary                                                                                                                    |
 | -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| **Phase 1 — Citizen Foundation and Public Access** | Authentication, Citizen Profile, Home/Navigation, News, Emergency, foundational Notifications, Offline cache, initial deployment |
+| **Phase 1 — Citizen Foundation and Public Access** | Authentication, Citizen Profile, Home/Navigation, News, Emergency, Discover Gubat (Tourism/Culture/Products), Transparency & Good Governance, foundational Notifications, Offline cache, initial deployment |
 | **Phase 2 — Service Operations**                   | Service Requests, Issue Reports, full Notifications, Geolocation/Mapping                                                         |
 | **Phase 3 — Administration and Oversight**         | User &amp; Staff Management, Audit Log, portal hardening                                                                         |
 | **Phase 4 — Analytics and System Maturity**        | Analytics &amp; Reports, System Settings, performance, training                                                                  |
@@ -344,13 +368,13 @@ graph TD
 - **Payment Schedule:** Standard milestone schedule — mobilization fee upon contract signing, balance distributed across phase sign-offs.
 - **Maintenance Retainer:** Billed monthly, starting after the warranty period ends.
 
-> Specific commercial figures will be quoted to the Municipality of Igubat under a separate commercial proposal.
+> Specific commercial figures will be quoted to the Municipality of Gubat, Sorsogon, under a separate commercial proposal.
 
 ---
 
 ## 8. Indicative Timeline
 
-The full build is delivered in four sequential phases. The LGU can begin publishing news and reaching residents with emergency information at the end of Phase 1, well before the full platform ships.
+The full build is delivered in four sequential phases. The LGU can begin publishing news, sharing Discover Gubat content, disclosing Transparency & Good Governance records, and reaching residents with emergency information at the end of Phase 1, well before the full platform ships.
 
 
 | Phase                | Indicative Duration | Scope                                                      |
@@ -383,4 +407,4 @@ The proposed team for this engagement:
 
 ---
 
-*Document version 1.0 — aligned to `igubat_tor.md` v3.1. Prepared for the Municipality of Igubat, ICT Office.*
+*Document version 1.0 — aligned to `igubat_tor.md` v3.2. Prepared for the Municipality of Gubat, Sorsogon, ICT Office.*

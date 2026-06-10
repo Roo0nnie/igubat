@@ -24,6 +24,7 @@
 		"@nestjs/core": "catalog:",
 		"@nestjs/microservices": "^11.1.11",
 		"@nestjs/platform-express": "^11.1.11",
+		"@nestjs/schedule": "^6.1.3",
 		"@nestjs/swagger": "^11.2.4",
 		"@nestjs/terminus": "^11.0.0",
 		"@orpc/contract": "catalog:",

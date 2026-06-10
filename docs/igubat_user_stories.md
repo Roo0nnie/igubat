@@ -2,9 +2,9 @@
 
 ## iGubat — LGU Digital Services Application
 
-> Derived from `igubat_tor.md` v3.1. Roles map to the four canonical platform identities: **Guest**, **Authenticated User**, **Moderator**, **Admin**. The role **System** is used where the application itself is the actor (background notifications, audit logging, retries).
+> Derived from `igubat_tor.md` v3.2. Roles map to the four canonical platform identities: **Guest**, **Authenticated User**, **Moderator**, **Admin**. The role **System** is used where the application itself is the actor (background notifications, audit logging, retries).
 
-Sections marked *(Focused Development)* are the highest-priority delivery areas per TOR v3.1 §6 and must reach production-ready state before secondary modules ship.
+Sections marked *(Focused Development)* are the highest-priority delivery areas per TOR v3.2 §6 and must reach production-ready state before secondary modules ship.
 
 Story format:
 
@@ -267,8 +267,8 @@ Story format:
 
 **Acceptance Criteria:**
 
-- Greeting varies by time-of-day (e.g., "Maayong Buntag, Igubat!" in the morning).
-- Quick-action tiles: Services, Citizen Guide, E-Services, Emergency, Utilities, Transport, Business, View More.
+- Greeting varies by time-of-day (e.g., "Maayong Buntag, Gubat!" in the morning).
+- Quick-action tiles: Services, Citizen Guide, E-Services, Emergency, Utilities, Transport, Business, Discover Gubat, View More.
 - A "Help us improve our city" banner is visible with a sign-in CTA.
 
 ---
@@ -1266,4 +1266,192 @@ Story format:
 
 ---
 
-*Document version 1.0 — aligned to `igubat_tor.md` v3.1. Roles: Guest, Authenticated User, Moderator, Admin, System. 14 sections, 80+ user stories.*
+## 15. Tourism, Culture &amp; Local Products (Discover Gubat)
+
+### Story 15.1 — Guest Browses Tourist Spots
+
+**As a** Guest  
+**I want to** browse Gubat's tourist spots by category with photos and a map location  
+**So that** I can discover places to visit in the municipality.
+
+**Acceptance Criteria:**
+
+- The Discover Gubat tile on Home opens the surface with three sections: Tourist Spots, Festivals & Culture, Local Delicacies & Products.
+- Tourist Spot categories: Beaches & Surfing, Nature & Eco-Tourism, Heritage & Landmarks.
+- A tourist spot detail shows name, photos, description, category, and a map location (e.g., Buenavista Beach, Rizal Beach, Castillo de Gubat, San Antonio de Padua Parish Church).
+- All content is read-only; no authentication is required.
+
+---
+
+### Story 15.2 — Guest Reads a Festival/Culture Article
+
+**As a** Guest  
+**I want to** read articles about Gubat's festivals, history, and heritage  
+**So that** I understand the town's cultural identity.
+
+**Acceptance Criteria:**
+
+- The Festivals & Culture section lists culture articles (e.g., the Ginubat Festival, town heritage, local dialect and traditions).
+- An article detail shows title, body, images, and publication date.
+
+---
+
+### Story 15.3 — Guest Browses Local Delicacies and Products
+
+**As a** Guest  
+**I want to** browse Gubat's local delicacies and products with where-to-buy information  
+**So that** I know what to taste and take home as pasalubong.
+
+**Acceptance Criteria:**
+
+- Product categories: Delicacies/Kakanin, Pasalubong, Handicrafts/OTOP, Seafood, Pili Products.
+- A product detail shows name, type/category, description, photo, and a where-to-buy / pasalubong note (e.g., timitim, salanigo, binut-ong, dalu-dalo, sikad-sikad, pili nuts).
+- The surface is informational only — no ordering, payment, or reservation in v1.
+
+---
+
+### Story 15.4 — Authenticated User Receives Push on New Discover Gubat Item
+
+**As an** Authenticated User with Discover Gubat notifications enabled  
+**I want to** receive a push notification when a new tourist spot, culture article, or local product is published  
+**So that** I learn about new things to explore.
+
+**Acceptance Criteria:**
+
+- Push is sent on publish only when the Moderator enabled "Notify subscribers" and the user has the category enabled.
+- The notification deep-links to the relevant Discover Gubat detail.
+
+---
+
+### Story 15.5 — Moderator Manages Discover Gubat Entries
+
+**As a** Moderator  
+**I want to** create, edit, publish, schedule, and archive tourist spots, culture articles, and local products  
+**So that** the Discover Gubat surface stays accurate and current.
+
+**Acceptance Criteria:**
+
+- Entries follow the canonical lifecycle: **Draft | Published | Archived**.
+- I can upload photos, assign a category, set a featured image, and set a map location for tourist spots.
+- I can preview an entry as a citizen would see it before publishing.
+- Archived entries disappear from the public surface but remain in the system.
+
+---
+
+### Story 15.6 — Admin Permanently Deletes a Discover Gubat Entry
+
+**As an** Admin  
+**I want to** permanently delete a tourist spot, culture article, or local product entry  
+**So that** I can remove content that should not be retained.
+
+**Acceptance Criteria:**
+
+- Delete defaults to soft-delete (30-day retention); permanent delete is Admin-only and requires explicit confirmation.
+- The action is logged in the audit log.
+
+---
+
+### Story 15.7 — Discover Gubat Is Available Offline
+
+**As a** Guest or Authenticated User  
+**I want to** access recently loaded Discover Gubat content when offline  
+**So that** I can still explore tourism, culture, and product information without connectivity.
+
+**Acceptance Criteria:**
+
+- Tourist spots, culture articles, and local products loaded online are cached and render offline.
+- Cached Discover Gubat content shows a "Last updated" timestamp.
+
+---
+
+## 16. Transparency &amp; Good Governance *(Focused Development)*
+
+### Story 16.1 — Guest Sees a Transparency Section on Home
+
+**As a** Guest **I want to** see a Transparency &amp; Good Governance section on Home **so that** I can find what the LGU is doing, buying, spending, and enacting.
+
+**Acceptance Criteria:** 2×3 grid of six tiles (Program and Projects, Bids and Projects, Financial Reports, Annual Budget, Legislative Ordinances, Executive Orders); subtitle reads "Know where your taxes go"; section sits above "Discover Latest News".
+
+---
+
+### Story 16.2 — Guest Opens a Category List
+
+**As a** Guest **I want to** open a category and see its published items **so that** I can browse the latest disclosures.
+
+**Acceptance Criteria:** published items only, sorted most-recent first; paginated; fiscal-year filter chip and free-text search by title/reference number.
+
+---
+
+### Story 16.3 — Guest Opens an Item and Downloads Attachments
+
+**As a** Guest **I want to** open an item and read it **so that** I can review the full disclosure and its documents.
+
+**Acceptance Criteria:** item detail shows a type-specific metadata band, summary, full body, and an attachments list opened via signed URL (PDF/JPG/PNG).
+
+---
+
+### Story 16.4 — Authenticated User Subscribes to Transparency Notifications
+
+**As an** Authenticated User **I want to** toggle the `transparency` notification category **so that** I am alerted when a new transparency item is published.
+
+**Acceptance Criteria:** preference appears in notification settings; when enabled, in-app + push + email are dispatched on publish.
+
+---
+
+### Story 16.5 — Authenticated User Deep-Links from a Push
+
+**As an** Authenticated User **I want to** tap a transparency push **so that** I land directly on the item detail.
+
+**Acceptance Criteria:** push `metadata.type = "transparency"` + `metadata.slug` deep-links to `/transparency/:type/:slug`.
+
+---
+
+### Story 16.6 — Moderator Creates a Transparency Item
+
+**As a** Moderator **I want to** create an item of any of the six types **so that** I can disclose LGU records.
+
+**Acceptance Criteria:** type selector → type-specific fields → attachments (≤10, ≤10 MB each) → Save Draft / Schedule / Publish Now with "Notify subscribers" checkbox.
+
+---
+
+### Story 16.7 — Moderator Schedules an Item
+
+**As a** Moderator **I want to** schedule an item **so that** it auto-publishes at the scheduled time.
+
+**Acceptance Criteria:** item enters `Scheduled`; the cron sweep promotes it to `Published` at `publishedAt`; subscribers notified if opted in.
+
+---
+
+### Story 16.8 — Moderator Archives an Item
+
+**As a** Moderator **I want to** archive an item **so that** it leaves the public list while the record is retained.
+
+**Acceptance Criteria:** archived items disappear from public lists but remain in the CMS and can be re-published.
+
+---
+
+### Story 16.9 — Admin Permanently Deletes an Item
+
+**As an** Admin **I want to** permanently delete an item **so that** content that should not be retained is removed.
+
+**Acceptance Criteria:** soft-delete (30-day retention) is the default; permanent delete is Admin-only, requires a confirmation modal, and writes an audit record.
+
+---
+
+### Story 16.10 — Admin Exports the Transparency List to CSV
+
+**As an** Admin **I want to** export the transparency item list to CSV **so that** I can report on disclosures.
+
+**Acceptance Criteria:** Export CSV is Admin-only; a direct API call without admin returns 403.
+
+---
+
+### Story 16.11 — Citizens View Cached Transparency Items Offline
+
+**As a** Guest or Authenticated User **I want to** view recently loaded transparency items offline **so that** I can read disclosures without connectivity.
+
+**Acceptance Criteria:** previously loaded list items render offline with a "Last updated · cached" banner; attachments require network unless previously opened.
+
+---
+
+*Document version 1.1 — aligned to `igubat_tor.md` v3.2. Roles: Guest, Authenticated User, Moderator, Admin, System. 16 sections, 95+ user stories.*

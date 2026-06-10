@@ -253,7 +253,14 @@ export const NotificationSchema = z.object({
 	title: z.string(),
 	body: z.string(),
 	type: z.enum(["in_app", "push", "email"]),
-	category: z.enum(["news", "service_request", "issue_report", "emergency", "general"]),
+	category: z.enum([
+		"news",
+		"service_request",
+		"issue_report",
+		"emergency",
+		"general",
+		"transparency",
+	]),
 	isRead: z.boolean(),
 	readAt: DateLikeSchema.nullable(),
 	metadata: z.unknown().nullable(),
@@ -265,6 +272,7 @@ export const NotificationPreferenceSchema = z.object({
 	serviceRequests: z.boolean(),
 	issueReports: z.boolean(),
 	emergencyBroadcasts: z.boolean(),
+	transparency: z.boolean(),
 	pushEnabled: z.boolean(),
 	emailEnabled: z.boolean(),
 })
@@ -388,4 +396,195 @@ export const CreateStaffSchema = z.object({
 		"ict_admin",
 	]),
 	departmentId: z.number().int().positive().optional(),
+})
+
+// ============================================================================
+// TRANSPARENCY & GOOD GOVERNANCE (Module 13)
+// ============================================================================
+
+export const TransparencyTypeSchema = z.enum([
+	"program_project",
+	"bid_procurement",
+	"financial_report",
+	"annual_budget",
+	"legislative_ordinance",
+	"executive_order",
+])
+
+export const TransparencyStatusSchema = z.enum(["draft", "scheduled", "published", "archived"])
+
+/**
+ * Per-type required fields stored in the item `metadata` JSON column. Modelled
+ * as a discriminated union on `type` so the admin editor and the backend
+ * validate exactly the fields the canonical spec requires for each type.
+ */
+export const TransparencyMetadataSchema = z.discriminatedUnion("type", [
+	z.object({
+		type: z.literal("program_project"),
+		projectStatus: z.enum(["planned", "ongoing", "completed", "suspended"]),
+		startDate: z.string(),
+		endDate: z.string().optional(),
+		costPhp: z.number().nonnegative(),
+		implementingOffice: z.string().min(1),
+		beneficiaries: z.string().optional(),
+		locationAddress: z.string().optional(),
+	}),
+	z.object({
+		type: z.literal("bid_procurement"),
+		approvedBudgetForContractPhp: z.number().nonnegative(),
+		procurementMode: z.enum(["public_bidding", "small_value", "shopping", "negotiated"]),
+		closingDate: z.string(),
+		awardedTo: z.string().optional(),
+		awardedAmountPhp: z.number().nonnegative().optional(),
+		bidStatus: z.enum(["posted", "pre_bid", "open", "awarded", "cancelled"]),
+	}),
+	z.object({
+		type: z.literal("financial_report"),
+		reportType: z.enum(["saob", "sre", "coa_annual", "quarterly_financial_statement", "other"]),
+		fiscalPeriod: z.string(),
+		preparedBy: z.string().optional(),
+	}),
+	z.object({
+		type: z.literal("annual_budget"),
+		budgetType: z.enum(["annual", "supplemental", "executive_budget"]),
+		totalAmountPhp: z.number().nonnegative(),
+		endorsedBy: z.string().optional(),
+	}),
+	z.object({
+		type: z.literal("legislative_ordinance"),
+		dateApproved: z.string(),
+		principalAuthor: z.string(),
+		sponsors: z.string().optional(),
+		sbSessionDate: z.string().optional(),
+	}),
+	z.object({
+		type: z.literal("executive_order"),
+		dateIssued: z.string(),
+		issuedBy: z.string(),
+		revokes: z.string().optional(),
+	}),
+])
+
+export const TransparencyAttachmentSchema = z.object({
+	id: z.number(),
+	fileName: z.string(),
+	fileUrl: z.string(),
+	mimeType: z.string(),
+	sizeBytes: z.number(),
+	sortOrder: z.number(),
+})
+
+export const TransparencyItemSummarySchema = z.object({
+	id: z.number(),
+	type: TransparencyTypeSchema,
+	referenceNumber: z.string().nullable(),
+	title: z.string(),
+	slug: z.string().nullable(),
+	summary: z.string().nullable(),
+	fiscalYear: z.number().nullable(),
+	effectiveDate: DateLikeSchema.nullable(),
+	barangay: z.string().nullable(),
+	status: TransparencyStatusSchema,
+	coverImageUrl: z.string().nullable(),
+	authorId: z.string().nullable(),
+	scheduledAt: DateLikeSchema.nullable(),
+	publishedAt: DateLikeSchema.nullable(),
+	archivedAt: DateLikeSchema.nullable(),
+	createdAt: DateLikeSchema,
+	updatedAt: DateLikeSchema,
+	authorName: z.string().nullable().optional(),
+})
+
+export const TransparencyItemDetailSchema = TransparencyItemSummarySchema.extend({
+	body: z.string(),
+	metadata: TransparencyMetadataSchema.nullable(),
+	notifyOnPublish: z.boolean(),
+	attachments: z.array(TransparencyAttachmentSchema),
+})
+
+const TransparencyAttachmentInputSchema = z.object({
+	fileName: z.string().min(1),
+	fileUrl: z.string().min(1),
+	mimeType: z.enum(["application/pdf", "image/jpeg", "image/png"]),
+	sizeBytes: z
+		.number()
+		.int()
+		.nonnegative()
+		.max(10 * 1024 * 1024, "Attachments must be <= 10 MB"),
+	sortOrder: z.number().int().nonnegative().optional(),
+})
+
+const TransparencyItemInputSchema = z.object({
+	type: TransparencyTypeSchema,
+	referenceNumber: z.string().optional(),
+	title: z.string().min(1),
+	summary: z.string().optional(),
+	body: z.string().optional(),
+	fiscalYear: z.number().int().optional(),
+	effectiveDate: z.string().optional(),
+	barangay: z.string().optional(),
+	coverImageUrl: z.string().optional(),
+	metadata: TransparencyMetadataSchema,
+	status: TransparencyStatusSchema.optional(),
+	notifyOnPublish: z.boolean().optional(),
+	scheduledAt: z.string().optional(),
+	attachments: z.array(TransparencyAttachmentInputSchema).max(10).optional(),
+})
+
+function assertMatchingTransparencyMetadataType(
+	input: {
+		type?: z.infer<typeof TransparencyTypeSchema>
+		metadata?: z.infer<typeof TransparencyMetadataSchema>
+	},
+	ctx: z.RefinementCtx
+) {
+	if (input.type && input.metadata && input.type !== input.metadata.type) {
+		ctx.addIssue({
+			code: "custom",
+			path: ["metadata", "type"],
+			message: "metadata.type must match type",
+		})
+	}
+}
+
+export const CreateTransparencyItemSchema = TransparencyItemInputSchema.superRefine(
+	assertMatchingTransparencyMetadataType
+)
+
+export const UpdateTransparencyItemSchema = TransparencyItemInputSchema.partial()
+	.extend({
+		id: z.coerce.number().int().positive(),
+	})
+	.superRefine(assertMatchingTransparencyMetadataType)
+
+export const TransparencyListQuerySchema = z
+	.object({
+		type: TransparencyTypeSchema.optional(),
+		status: TransparencyStatusSchema.optional(),
+		fiscalYear: z.coerce.number().int().optional(),
+		barangay: z.string().optional(),
+		search: z.string().optional(),
+		limit: z.coerce.number().int().positive().max(100).optional(),
+		cursor: z.coerce.number().int().nonnegative().optional(),
+	})
+	.optional()
+
+export const PublishTransparencyItemSchema = IdParamSchema.extend({
+	notifySubscribers: z.boolean(),
+	publishAt: z.string().optional(),
+})
+
+const QueryBooleanSchema = z.preprocess(value => {
+	if (typeof value === "boolean") return value
+	if (typeof value !== "string") return value
+
+	const normalized = value.trim().toLowerCase()
+	if (["true", "1", "yes", "on"].includes(normalized)) return true
+	if (["false", "0", "no", "off", ""].includes(normalized)) return false
+
+	return value
+}, z.boolean())
+
+export const DeleteTransparencyItemSchema = IdParamSchema.extend({
+	permanent: QueryBooleanSchema.optional(),
 })

@@ -11,7 +11,9 @@ import {
 	CreateCitizenReportSchema,
 	CreateServiceRequestSchema,
 	CreateStaffSchema,
+	CreateTransparencyItemSchema,
 	DashboardSchema,
+	DeleteTransparencyItemSchema,
 	EmergencyBroadcastSchema,
 	EmergencyDirectorySchema,
 	EventSchema,
@@ -22,15 +24,20 @@ import {
 	NotificationPreferenceSchema,
 	NotificationSchema,
 	PolicyDocumentSchema,
+	PublishTransparencyItemSchema,
 	ServiceCategorySchema,
 	ServiceRequestDetailSchema,
 	ServiceRequestSchema,
 	ServiceTypeSchema,
 	SlugParamSchema,
 	SystemSettingSchema,
+	TransparencyItemDetailSchema,
+	TransparencyItemSummarySchema,
+	TransparencyListQuerySchema,
 	UpdateProfileSchema,
 	UpdateReportStatusSchema,
 	UpdateRequestStatusSchema,
+	UpdateTransparencyItemSchema,
 	UpsertArticleSchema,
 	UpsertDirectoryEntrySchema,
 	UpsertSettingSchema,
@@ -143,6 +150,26 @@ export const igubatContract = oc.prefix("/igubat").router(
 					})
 					.input(SlugParamSchema)
 					.output(PolicyDocumentSchema),
+				transparency: oc.router({
+					list: oc
+						.route({
+							method: "GET",
+							path: "/transparency",
+							tags: ["iGubat Transparency"],
+							spec: spec => ({ ...spec, security: [] }),
+						})
+						.input(TransparencyListQuerySchema)
+						.output(z.array(TransparencyItemSummarySchema)),
+					detail: oc
+						.route({
+							method: "GET",
+							path: "/transparency/{slug}",
+							tags: ["iGubat Transparency"],
+							spec: spec => ({ ...spec, security: [] }),
+						})
+						.input(SlugParamSchema)
+						.output(TransparencyItemDetailSchema),
+				}),
 			})
 		),
 		me: oc.prefix("/me").router(
@@ -280,6 +307,64 @@ export const igubatContract = oc.prefix("/igubat").router(
 					.route({ method: "POST", path: "/settings", tags: ["iGubat Admin"] })
 					.input(UpsertSettingSchema)
 					.output(SystemSettingSchema),
+				transparency: oc.router({
+					exportCsv: oc
+						.route({
+							method: "GET",
+							path: "/transparency/export",
+							tags: ["iGubat Transparency"],
+						})
+						.input(TransparencyListQuerySchema)
+						.output(z.object({ fileName: z.string(), content: z.string() })),
+					list: oc
+						.route({ method: "GET", path: "/transparency", tags: ["iGubat Transparency"] })
+						.input(TransparencyListQuerySchema)
+						.output(z.array(TransparencyItemSummarySchema)),
+					detail: oc
+						.route({
+							method: "GET",
+							path: "/transparency/{id}",
+							tags: ["iGubat Transparency"],
+						})
+						.input(IdParamSchema)
+						.output(TransparencyItemDetailSchema),
+					create: oc
+						.route({ method: "POST", path: "/transparency", tags: ["iGubat Transparency"] })
+						.input(CreateTransparencyItemSchema)
+						.output(TransparencyItemDetailSchema),
+					update: oc
+						.route({
+							method: "PATCH",
+							path: "/transparency/{id}",
+							tags: ["iGubat Transparency"],
+						})
+						.input(UpdateTransparencyItemSchema)
+						.output(TransparencyItemDetailSchema),
+					publish: oc
+						.route({
+							method: "POST",
+							path: "/transparency/{id}/publish",
+							tags: ["iGubat Transparency"],
+						})
+						.input(PublishTransparencyItemSchema)
+						.output(TransparencyItemDetailSchema),
+					archive: oc
+						.route({
+							method: "POST",
+							path: "/transparency/{id}/archive",
+							tags: ["iGubat Transparency"],
+						})
+						.input(IdParamSchema)
+						.output(TransparencyItemDetailSchema),
+					delete: oc
+						.route({
+							method: "DELETE",
+							path: "/transparency/{id}",
+							tags: ["iGubat Transparency"],
+						})
+						.input(DeleteTransparencyItemSchema)
+						.output(z.object({ success: z.boolean(), permanent: z.boolean() })),
+				}),
 			})
 		),
 	})

@@ -2,7 +2,9 @@ import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mobile/app.dart';
+import 'package:mobile/core/navigation/app_router.dart';
 import 'package:mobile/services/api/api_client.dart';
 import 'package:mobile/services/notifications/notification_service.dart';
 import 'package:mobile/services/storage/secure_storage_service.dart';
@@ -49,24 +51,63 @@ Future<void> main() async {
 
 /// Global handler for notification tap and action button events.
 ///
-/// This runs on the main isolate after [runApp], so it has access to the
-/// navigator and can route the user to the appropriate screen. Extend this
-/// function to add routing logic based on the payload.
+/// This runs on the main isolate after [runApp], so it can route the user to
+/// notification targets when the root navigator context is available.
 @pragma('vm:entry-point')
 Future<void> _handleNotificationAction(ReceivedAction receivedAction) async {
   final payload = receivedAction.payload;
   if (payload == null) return;
 
   final screen = payload['screen'];
+  final notificationType = payload['type'] ?? payload['metadata.type'];
   debugPrint(
     'Notification action received: '
     'buttonKey=${receivedAction.buttonKeyPressed}, '
-    'screen=$screen',
+    'screen=$screen, '
+    'type=$notificationType',
   );
 
-  // TODO: Add navigation logic here once a global navigator key is available.
-  // Example:
-  // if (screen == 'todos') {
-  //   navigatorKey.currentState?.pushNamed('/todos');
-  // }
+  if (notificationType == 'transparency') {
+    final slug = payload['slug'] ?? payload['metadata.slug'];
+    if (slug == null || slug.isEmpty) return;
+
+    final typeSlug = _transparencyRouteType(
+      payload['routeType'] ??
+          payload['metadata.routeType'] ??
+          payload['transparencyType'] ??
+          payload['metadata.transparencyType'] ??
+          payload['category'] ??
+          payload['metadata.category'],
+    );
+    final context = rootNavigatorKey.currentContext;
+    if (context == null) return;
+
+    GoRouter.of(
+      context,
+    ).go('/transparency/$typeSlug/${Uri.encodeComponent(slug)}');
+  }
+}
+
+String _transparencyRouteType(String? value) {
+  switch ((value ?? '').toLowerCase().replaceAll('_', '-')) {
+    case 'program-project':
+    case 'program-projects':
+      return 'program-projects';
+    case 'bid-procurement':
+    case 'bids-projects':
+      return 'bids-projects';
+    case 'financial-report':
+    case 'financial-reports':
+      return 'financial-reports';
+    case 'annual-budget':
+      return 'annual-budget';
+    case 'legislative-ordinance':
+    case 'legislative-ordinances':
+      return 'legislative-ordinances';
+    case 'executive-order':
+    case 'executive-orders':
+      return 'executive-orders';
+    default:
+      return 'program-projects';
+  }
 }

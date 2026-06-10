@@ -2,14 +2,14 @@
 
 **Document Type:** Structured Workflow Specification  
 **Audience:** AI agents, developers, product managers, designers, ICT Office stakeholders  
-**Source TOR:** `igubat_tor.md` v3.1  
+**Source TOR:** `igubat_tor.md` v3.2  
 **Related:** `igubat_overall_system.md`, `igubat_admin_portal.md`, `igubat_user_stories.md`
 
 ---
 
 ## 1. Overview
 
-This document describes the end-to-end workflow that a resident of the Municipality of Igubat follows on the citizen mobile application, from first launch through registration, daily authenticated use, and offline/emergency scenarios.
+This document describes the end-to-end workflow that a resident of the Municipality of Gubat, Sorsogon, follows on the citizen mobile application, from first launch through registration, daily authenticated use, public Transparency & Good Governance browsing, and offline/emergency scenarios.
 
 The flow accommodates two distinct user types:
 
@@ -39,9 +39,10 @@ The citizen enters the workflow at the **Splash screen** on first app launch, wh
 
 - The app launches into a Splash screen with the iGubat logo, then routes to **Home**.
 - The Home screen presents:
-  - Time-of-day greeting in Filipino/Visayan (e.g., **"Maayong Buntag, Igubat!"**) for Guests; **"Maayong Buntag, Juan!"** for Authenticated Users.
+  - Time-of-day greeting in Filipino/Visayan (e.g., **"Maayong Buntag, Gubat!"**) for Guests; **"Maayong Buntag, Juan!"** for Authenticated Users.
   - A persistent **notification bell** in the header. For Guests it routes to the Sign-In screen; for Authenticated Users it shows an unread count and opens the in-app inbox.
-  - The **quick-action grid** with tiles: Services, Citizen Guide, E-Services, Emergency, Utilities, Transport, Business, View More.
+  - The **quick-action grid** with tiles: Services, Citizen Guide, E-Services, Emergency, Utilities, Transport, Business, Discover Gubat, View More.
+  - A **Transparency & Good Governance** section above the news feed, rendered as a 2×3 tile grid for the six disclosure categories with the subtitle **"Know where your taxes go"**.
   - A "Help us improve our city" banner with a sign-in CTA (visible to Guests).
 
 **Decision point:**
@@ -89,8 +90,10 @@ The Guest can complete the following journeys without authenticating:
 - **Emergency:** Open Emergency from the quick-action grid or persistent shortcut. Use the **"For Emergencies, Call 911"** slide-to-call card. Use one-tap call or copy-to-clipboard on **COMCEN hotlines (Smart, TNT, Landline)**. Tap a category shortcut (Hospitals, BFP, PNP, Disaster Response) to view the corresponding directory.
 - **Citizen Guide:** Open static guide pages (cached for offline).
 - **Services Directory:** Open Services to read descriptions of available LGU services. Attempting "Submit" routes to the Sign-In screen (Step 2).
+- **Discover Gubat:** Open the **Discover Gubat** tile to explore the municipality's identity across three sections — **Tourist Spots** (e.g., Buenavista and Rizal beaches, Castillo de Gubat, San Antonio de Padua Church), **Festivals & Culture** (e.g., the Ginubat Festival, heritage and local traditions), and **Local Delicacies & Products** (e.g., timitim, salanigo, binut-ong, pili nuts) with where-to-buy / pasalubong notes. Tourist spots show photos and a map location; all content is read-only and cached for offline viewing.
+- **Transparency & Good Governance:** From the Home section (a 2×3 tile grid above the news feed, subtitle "Know where your taxes go"), open any of six categories of LGU disclosures — **Program and Projects, Bids and Projects, Financial Reports, Annual Budget, Legislative Ordinances, Executive Orders**. Browse published items most-recent first, filter by fiscal year/status, tap an item to read its type-specific metadata and full text, and download attached PDFs via signed URLs. All content is public and cached for offline viewing.
 
-**End state (for Guest):** The Guest can fulfill information needs and reach emergency services. Submission flows require Step 2.
+**End state (for Guest):** The Guest can fulfill information needs, explore Gubat's tourism, culture, and local products, and reach emergency services. Submission flows require Step 2.
 
 ### Step 4 — Authenticated Daily Use
 
@@ -131,14 +134,14 @@ The Authenticated User has all Guest access, plus the surfaces below.
 
 - Tap the notification bell to open the in-app inbox.
 - View all received notifications, mark as read individually or all at once.
-- Deep-link routes carry the user to the relevant detail (article, request, report).
+- Deep-link routes carry the user to the relevant detail (article, request, report, transparency item).
 
 #### Step 4e — Profile and Preferences
 
 - View and update **profile fields** (name, address, barangay, contact).
 - **Upload/change profile photo**.
 - **Change password** (requires current password).
-- Manage **notification preferences** per category (News, Service Request status, Issue Report status, Emergency Broadcasts). Muting Emergency Broadcasts requires a confirmation dialog.
+- Manage **notification preferences** per category (News, Service Request status, Issue Report status, Discover Gubat, Transparency, Emergency Broadcasts). Muting Emergency Broadcasts requires a confirmation dialog.
 - Toggle **appearance** between Light and Dark mode.
 - **Sign out** invalidates the session and returns to the Guest Home.
 
@@ -151,7 +154,7 @@ The Authenticated User has all Guest access, plus the surfaces below.
 ### Step 6 — Offline Scenario
 
 - When connectivity is lost, the app surfaces an **offline notice** banner.
-- **Cached content** remains accessible: last 20 news articles, emergency hotlines/directory, citizen guide pages — each with a **"Last updated"** timestamp.
+- **Cached content** remains accessible: last 20 news articles, emergency hotlines/directory, citizen guide pages, Discover Gubat content (tourist spots, festival/culture articles, local products), and Transparency items per content type — each with a **"Last updated"** timestamp. Transparency attachment metadata remains visible offline; attachment files require network unless previously opened.
 - **Submissions** attempted while offline are queued. The System displays an "Offline — will retry" indicator and **automatically retries** when connectivity returns, preserving the original timestamp where appropriate.
 - The user can continue to read cached content and place phone calls via the device dialer.
 
@@ -177,7 +180,7 @@ The Authenticated User has all Guest access, plus the surfaces below.
 
 The mobile workflow terminates (or holds) in one of the following states:
 
-1. **Guest Browsing Complete** — the Guest fulfilled public-information needs (News, Emergency, Citizen Guide, Services directory) without registering.
+1. **Guest Browsing Complete** — the Guest fulfilled public-information needs (News, Emergency, Citizen Guide, Services directory, Discover Gubat, Transparency & Good Governance) without registering.
 2. **Authenticated and Active** — the Authenticated User can submit requests, file reports, and receive personalized notifications. Recurring use is the steady state.
 3. **Submitted and Awaiting Action** — the citizen has a Service Request in `Pending`/`In Review`/`Approved`/`For Pickup` or an Issue Report in `Received`/`In Progress`, waiting on the Moderator.
 4. **Offline with Queued Submission** — the citizen attempted a submission without connectivity; the System will auto-retry on reconnect.
@@ -187,7 +190,7 @@ The mobile workflow terminates (or holds) in one of the following states:
 
 ## 7. Key System Behaviors
 
-- **No authentication required for public surfaces.** Home (public), News, Emergency, Citizen Guide, and the Services directory are always available to Guests.
+- **No authentication required for public surfaces.** Home (public), News, Emergency, Citizen Guide, the Services directory, Discover Gubat (tourism, culture, local products), and Transparency & Good Governance disclosures are always available to Guests.
 - **Auth gating is contextual.** The Sign-In prompt is shown only at the moment a Guest attempts an authenticated action (submit/report/notifications), so public information is never blocked behind a wall.
 - **Privacy and consent at registration.** Privacy Notice display and explicit DPA consent are required before account creation.
 - **OTP for verification and password reset.** SMS (default) or email; rate-limited resend; single-use, time-bound codes.
@@ -196,8 +199,9 @@ The mobile workflow terminates (or holds) in one of the following states:
 - **Emergency broadcasts.** High-priority push delivered to all Authenticated Users; by default they bypass quiet hours and category mute, with an explicit citizen opt-out flow that requires confirmation.
 - **GPS only on report flow.** Location permission is requested only when needed, not on app start.
 - **Attachment validation.** All uploads validated for MIME and size (JPEG/PNG/GIF/PDF, ≤5 MB, max 3 per submission); scanned for malicious content; auto-compressed.
-- **Offline support.** Caches last 20 articles, emergency directory, and citizen guide; queues submissions; auto-retries; surfaces "Last updated" timestamps.
-- **Bilingual greetings.** Time-of-day greetings use Filipino/Visayan phrases relevant to Igubat.
+- **Offline support.** Caches last 20 articles, emergency directory, citizen guide, Discover Gubat, and Transparency items (per type); queues submissions; auto-retries; surfaces "Last updated" timestamps.
+- **Transparency disclosures are public.** The six Transparency categories are read-only and require no authentication; attachments are served via time-limited signed URLs. The new `transparency` notification category (Step 4d) is opt-in for Authenticated Users and deep-links a tapped push to the item detail.
+- **Bilingual greetings.** Time-of-day greetings use Filipino/Visayan phrases relevant to Gubat.
 - **Appearance.** Light and Dark themes; user-controlled.
 - **Session expiry.** Mobile sessions expire after a configurable idle period (default 7 days).
 - **Tamper-evident audit.** Significant actions (registration, login, submission, status changes received) are reflected in the centralized audit log on the server side (see `igubat_admin_portal.md`).
@@ -210,7 +214,9 @@ The mobile workflow terminates (or holds) in one of the following states:
 flowchart TD
     A[Splash] --> B[Home - Guest]
     B --> C{Choose path}
-    C -->|Public| D[News / Emergency / Guide / Services directory]
+    C -->|Public| D[News / Emergency / Guide / Services / Discover Gubat / Transparency]
+    D --> D1[Transparency Category List]
+    D1 --> D2[Transparency Item Detail]
     C -->|Submit/Report/Notifications| E[Sign-In]
     E --> F[Register]
     F --> G[OTP Verification]
@@ -231,4 +237,4 @@ flowchart TD
 
 ---
 
-*Document version 1.0 — aligned to `igubat_tor.md` v3.1. Roles in scope: Guest, Authenticated User, System. Related: `igubat_admin_portal.md` for the staff counterpart.*
+*Document version 1.0 — aligned to `igubat_tor.md` v3.2. Roles in scope: Guest, Authenticated User, System. Related: `igubat_admin_portal.md` for the staff counterpart.*

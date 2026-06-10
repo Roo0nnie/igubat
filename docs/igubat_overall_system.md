@@ -2,17 +2,17 @@
 
 **Document Type:** Structured Workflow Specification  
 **Audience:** AI agents, developers, product managers, designers, ICT Office stakeholders  
-**Source TOR:** `igubat_tor.md` v3.1
+**Source TOR:** `igubat_tor.md` v3.2
 
 ---
 
 ## 1. Overview
 
-This document describes the complete navigation structure and routing logic of the iGubat LGU Digital Services Application across both platforms — the **Citizen Mobile Application** and the **Web Administration Portal**. It enumerates every entry point a Guest, Authenticated User, Moderator, or Admin can reach, identifies which surfaces are in the **MVP (Phase 1 + 2)** and which are deferred to later phases, and cross-references the per-module deep-dive workflow documents.
+This document describes the complete navigation structure and routing logic of the iGubat LGU Digital Services Application across both platforms — the **Citizen Mobile Application** and the **Web Administration Portal**. It enumerates every entry point a Guest, Authenticated User, Moderator, or Admin can reach, including the public Discover Gubat and Transparency & Good Governance surfaces, identifies which surfaces are in the **MVP (Phase 1 + 2)** and which are deferred to later phases, and cross-references the per-module deep-dive workflow documents.
 
 Two clusters are designated **Focused Development**:
 
-1. **Citizen Onboarding and Public Access** — Authentication, Citizen Profile, Home and Navigation, News and Announcements, Emergency Hotline and Directory.
+1. **Citizen Onboarding and Public Access** — Authentication, Citizen Profile, Home and Navigation, News and Announcements, Emergency Hotline and Directory, Discover Gubat, and Transparency & Good Governance.
 2. **LGU Service Operations** — Service Requests, Issue and Concern Reports, Notification System.
 
 ---
@@ -63,6 +63,7 @@ Mobile App (iOS / Android)
 │   │   ├── Utilities          ──► Directory: Utilities
 │   │   ├── Transport          ──► Directory: Transport
 │   │   ├── Business           ──► Directory: Business
+│   │   ├── Discover Gubat      ──► Discover Gubat Home
 │   │   └── View More          ──► Full Directory
 │   └── "Help us improve our city" Banner ──► Sign-In CTA
 │
@@ -83,6 +84,22 @@ Mobile App (iOS / Android)
 │   │   ├── Police (PNP)
 │   │   └── Disaster Response
 │   └── Directory Detail (name, address, contact, hours)
+│
+├── Transparency & Good Governance  (Guest | Authenticated User)
+│   ├── Program and Projects ──► Category List ──► Item Detail (metadata band, attachments)
+│   ├── Bids and Projects
+│   ├── Financial Reports
+│   ├── Annual Budget
+│   ├── Legislative Ordinances
+│   └── Executive Orders
+│
+├── Discover Gubat  (Guest | Authenticated User)
+│   ├── Tourist Spots (Beaches & Surfing, Nature & Eco-Tourism, Heritage & Landmarks)
+│   │   └── Tourist Spot Detail (photos, description, map location)
+│   ├── Festivals & Culture
+│   │   └── Culture/Festival Article Detail
+│   └── Local Delicacies & Products (Delicacies/Kakanin, Pasalubong, Handicrafts/OTOP, Seafood, Pili)
+│       └── Local Product Detail (photo, description, where-to-buy)
 │
 ├── Services Catalog  (Guest [view] | Authenticated User [submit])
 │   ├── Facility Use
@@ -154,6 +171,15 @@ Web Administration Portal
 │   ├── Scheduled Broadcasts
 │   └── Broadcast History
 │
+├── Transparency       (Moderator | Admin)
+│   ├── Item List (type/status/fiscal-year filters, search, Export CSV — Admin)
+│   └── Item Editor (type selector, type-specific fields, attachments, publish/schedule/archive, permanent-delete — Admin)
+│
+├── Discover Gubat       (Moderator | Admin)
+│   ├── Tourist Spots (create/edit/publish/archive, photos, map location)
+│   ├── Festivals & Culture (article authoring, scheduling, preview)
+│   └── Local Delicacies & Products (create/edit/publish/archive, where-to-buy)
+│
 ├── Users                (Admin only)        ◄── HIDDEN FOR MODERATOR
 │   ├── Citizens (search, verify, deactivate, delete, export CSV)
 │   ├── Staff (create Moderator, edit, deactivate, reset password)
@@ -220,6 +246,13 @@ Web Administration Portal
 | M-24 | Notification Preferences   | Auth               | 2      | 1/2   | Per-category toggles                                                                         |
 | M-25 | Appearance                 | Auth               | 2      | 1     | Light / Dark toggle                                                                          |
 | M-26 | Offline Notice             | All                | 13     | 1     | Banner + queued submission state                                                             |
+| M-27 | Discover Gubat Home        | Guest, Auth        | 12     | 1     | Tourist Spots / Festivals & Culture / Local Delicacies & Products sections                   |
+| M-28 | Tourist Spot Detail        | Guest, Auth        | 12     | 1     | Photos, description, category, map location                                                  |
+| M-29 | Festival/Culture Detail    | Guest, Auth        | 12     | 1     | Title, body, images, date                                                                    |
+| M-30 | Local Product Detail       | Guest, Auth        | 12     | 1     | Photo, description, category, where-to-buy / pasalubong note                                 |
+| M-31 | Transparency Section (Home) | Guest, Auth       | 13     | 1     | 2×3 tile grid of six content types; subtitle "Know where your taxes go"                      |
+| M-32 | Transparency Category List | Guest, Auth        | 13     | 1     | Published items most-recent first; fiscal-year/status filters; search; cache banner          |
+| M-33 | Transparency Item Detail   | Guest, Auth        | 13     | 1     | Type-specific metadata band, summary, body, attachments via signed URL                       |
 
 
 ### 6.2 Web Administration Portal Screens
@@ -251,6 +284,9 @@ Web Administration Portal
 | W-22 | Audit Log              | Admin      | 11     | 3     | Filters, detail, CSV export                                                        |
 | W-23 | Settings               | Admin      | —      | 4     | Application/service/notification/file storage settings, system health              |
 | W-24 | My Profile (Staff)     | Mod, Admin | 9      | 1     | View profile, change password                                                      |
+| W-25 | Discover Gubat Manager | Mod, Admin | 12     | 1     | Tourist spots, festival/culture articles, local products; Draft/Published/Archived; map location, photos |
+| W-26 | Transparency Manager List | Mod, Admin | 13   | 1     | Type/status/fiscal-year filters, search; Export CSV (Admin); New Item; archive/permanent-delete |
+| W-27 | Transparency Item Editor | Mod, Admin | 13    | 1     | Type selector, type-specific fields, attachments, publish controls (Save Draft/Schedule/Publish + notify) |
 
 
 ---
@@ -261,15 +297,15 @@ Web Administration Portal
 
 **Mobile App:**
 
-- M-01 through M-21, M-22, M-23, M-24, M-25, M-26.
+- M-01 through M-21, M-22, M-23, M-24, M-25, M-26, M-27–M-30 (Discover Gubat), and M-31–M-33 (Transparency & Good Governance).
 
 **Web Administration Portal:**
 
-- W-01, W-02 (role-appropriate widgets), W-03–W-07 (service requests and issue reports), W-08–W-12 (content + media), W-13–W-16 (emergency directory and broadcasts), W-24 (staff profile).
+- W-01, W-02 (role-appropriate widgets), W-03–W-07 (service requests and issue reports), W-08–W-12 (content + media), W-13–W-16 (emergency directory and broadcasts), W-24 (staff profile), W-25 (Discover Gubat manager), W-26–W-27 (Transparency manager + editor).
 
 **Modules live at MVP:**
 
-- Authentication, Citizen Profile, Home/Navigation, News, Service Requests, Issue Reports, Emergency, Notifications, basic File/Media, Geolocation, Offline Cache.
+- Authentication, Citizen Profile, Home/Navigation, News, Service Requests, Issue Reports, Emergency, Notifications, Tourism/Culture/Local Products (Discover Gubat), Transparency & Good Governance, basic File/Media, Geolocation, Offline Cache.
 
 ### 7.2 Phase 3 — Administration and Oversight
 
@@ -328,4 +364,4 @@ sequenceDiagram
 
 ---
 
-*Document version 1.0 — aligned to `igubat_tor.md` v3.1. Canonical roles: Guest, Authenticated User, Moderator, Admin.*
+*Document version 1.0 — aligned to `igubat_tor.md` v3.2. Canonical roles: Guest, Authenticated User, Moderator, Admin.*

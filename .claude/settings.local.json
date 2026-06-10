@@ -99,7 +99,22 @@
       "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\({k:d[k] for k in [''''name'''',''''version'''',''''main'''',''''module'''',''''exports''''] if k in d}, indent=2\\)\\)\")",
       "Bash(node:*)",
       "Bash(pnpm test:e2e:web)",
-      "Bash(node_modules/.bin/playwright test:*)"
+      "Bash(node_modules/.bin/playwright test:*)",
+      "Bash(rtk find *)",
+      "Bash(rtk ls *)",
+      "Bash(rtk wc *)",
+      "Bash(rtk grep *)",
+      "Bash(rtk read *)",
+      "Bash(pnpm -C packages/db build)",
+      "Bash(pnpm -C packages/contracts build)",
+      "Bash(pnpm -C apps/backend typecheck)",
+      "Bash(pnpm -C packages/db typecheck)",
+      "Bash(pnpm -C packages/db generate)",
+      "Bash(rtk tsc *)",
+      "Bash(sed -n '1,40p' apps/mobile/lib/core/navigation/glass_page_route.dart)",
+      "Bash(sed -n '1,60p' apps/mobile/lib/shared/widgets/glass/glass_scaffold.dart)",
+      "Bash(flutter analyze *)",
+      "Bash(pnpm -C packages/contracts typecheck)"
     ]
   }
 }

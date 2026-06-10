@@ -7,6 +7,7 @@ import AuditLogsPage from "./audit-logs/page"
 import CitizensPage from "./citizens/page"
 import SettingsPage from "./settings/page"
 import StaffPage from "./staff/page"
+import TransparencyPage from "./transparency/page"
 
 const mocks = vi.hoisted(() => ({
 	requireStaff: vi.fn(),
@@ -35,6 +36,9 @@ vi.mock("@/features/admin-settings/components/settings-content", () => ({
 }))
 vi.mock("@/features/admin-staff/components/staff-content", () => ({
 	StaffContent: () => "staff",
+}))
+vi.mock("@/features/admin-transparency/components/transparency-list-page", () => ({
+	TransparencyListPage: () => "transparency",
 }))
 
 const moderator: PortalUser = {
@@ -82,4 +86,25 @@ describe("admin-only route guards", () => {
 			expect(mocks.forbidden).not.toHaveBeenCalled()
 		})
 	}
+})
+
+describe("staff route reachability", () => {
+	beforeEach(() => {
+		mocks.requireStaff.mockReset()
+		mocks.forbidden.mockClear()
+	})
+
+	it("Transparency: moderator is allowed through the staff-level page", () => {
+		mocks.requireStaff.mockResolvedValue(moderator)
+
+		expect(TransparencyPage()).toBeTruthy()
+		expect(mocks.forbidden).not.toHaveBeenCalled()
+	})
+
+	it("Transparency: admin is allowed through the staff-level page", () => {
+		mocks.requireStaff.mockResolvedValue(admin)
+
+		expect(TransparencyPage()).toBeTruthy()
+		expect(mocks.forbidden).not.toHaveBeenCalled()
+	})
 })

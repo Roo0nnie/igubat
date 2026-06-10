@@ -1,7 +1,7 @@
 # iGubat Manual Test Plan
 
 **Document Version:** 1.0  
-**Prepared from:** `igubat_tor.md` v3.1, `igubat_proposal.md`, `igubat_user_stories.md`, `igubat_overall_system.md`, `igubat_mobile_app.md`, `igubat_admin_portal.md`  
+**Prepared from:** `igubat_tor.md` v3.2, `igubat_proposal.md`, `igubat_user_stories.md`, `igubat_overall_system.md`, `igubat_mobile_app.md`, `igubat_admin_portal.md`  
 **Audience:** LGU ICT Office QA staff, development team QA, UAT participants
 
 ---
@@ -12,10 +12,10 @@ This manual test plan covers the iGubat application end-to-end across both platf
 
 The in-scope core for testing is:
 
-- **Mobile (Guest):** public Home, time-of-day greetings, news browsing, full article view, emergency screen with 911 slide-to-call, COMCEN hotlines, directory browsing, citizen guide (cached), offline behavior on public surfaces.
+- **Mobile (Guest):** public Home, time-of-day greetings, news browsing, full article view, emergency screen with 911 slide-to-call, COMCEN hotlines, directory browsing, citizen guide (cached), Discover Gubat (tourist spots, festivals & culture, local delicacies & products; cached), offline behavior on public surfaces.
 - **Mobile (Auth):** registration with DPA consent, OTP verification, login, lockout, password reset, profile and preferences, service request submission and lifecycle, issue report submission with GPS, in-app notification inbox, push delivery and preferences, cancel pending requests, offline submission queueing.
-- **Web (Moderator):** login, dashboard, service request queue and lifecycle transitions, issue report queue and map view, lifecycle transitions, article authoring/scheduling/archival, carousel and banner manager, media library (soft-delete), emergency directory management, broadcast composition/scheduling/send, broadcast history, change own password.
-- **Web (Admin):** all Moderator capabilities plus User Management (citizens and staff), Analytics dashboard with filters and export, Audit Log with filters and export (read-only), System Settings (application, service types, report categories, notifications, storage, health).
+- **Web (Moderator):** login, dashboard, service request queue and lifecycle transitions, issue report queue and map view, lifecycle transitions, article authoring/scheduling/archival, carousel and banner manager, media library (soft-delete), Discover Gubat management (tourist spots, culture articles, local products; Draft/Published/Archived), emergency directory management, broadcast composition/scheduling/send, broadcast history, change own password.
+- **Web (Admin):** all Moderator capabilities plus User Management (citizens and staff), Analytics dashboard with filters and export, Audit Log with filters and export (read-only), System Settings (application, service types, report categories, notifications, storage, health), Discover Gubat permanent delete.
 - **Role boundary enforcement:** Moderator denied access to User Management, Analytics, Audit, Settings (sidebar hidden + 403 on direct URL).
 - **NFRs:** Android 8+, iOS 14+, 500 concurrent users capacity, HTTPS/TLS, 99% uptime business hours, 3-second response, daily backups, DPA 2012 compliance.
 
@@ -54,6 +54,11 @@ Use a **staging environment** with SMS gateway, email provider, FCM/APNs, file u
 - **Carousel:** 5 featured items.
 - **Banners:** 3 active banners.
 - **Emergency Directory:** COMCEN entries (Smart, TNT, Landline), at least 2 hospitals, 1 BFP, 1 PNP, 1 disaster response unit.
+- **Discover Gubat content:**
+  - **Tourist Spots:** at least 3 Published (e.g., Buenavista Beach [Beaches & Surfing], Rizal Beach [Beaches & Surfing], Castillo de Gubat [Heritage & Landmarks]) with photos and map locations; 1 Draft.
+  - **Festivals & Culture:** at least 2 Published articles (e.g., Ginubat Festival, San Antonio de Padua Parish Church heritage).
+  - **Local Delicacies & Products:** at least 4 Published across categories (e.g., Timitim [Delicacies/Kakanin], Salanigo [Handicrafts/OTOP], Binut-ong [Pasalubong], Pili nuts [Pili Products]) with where-to-buy notes.
+- **Transparency & Good Governance content:** at least **2 items per content type** (one Draft, one Published) across all six types — Program and Projects, Bids and Projects, Financial Reports, Annual Budget, Legislative Ordinances, Executive Orders — each with 1–3 PDF/JPG/PNG attachments.
 - **Documents for upload tests:** valid JPEG (≤5 MB), valid PNG (≤5 MB), valid PDF (≤5 MB), oversized image (&gt;5 MB), unsupported file (e.g., `.exe`, `.zip`).
 - **Time-of-day windows:** ability to test morning, afternoon, evening greetings (or override device time).
 
@@ -81,12 +86,12 @@ Use a **staging environment** with SMS gateway, email provider, FCM/APNs, file u
   1. Launch the iGubat app.
   2. Observe the Splash, then arrive at Home.
   3. Note the greeting banner content.
-  4. Inspect the quick-action grid (Services, Citizen Guide, E-Services, Emergency, Utilities, Transport, Business, View More).
+  4. Inspect the quick-action grid (Services, Citizen Guide, E-Services, Emergency, Utilities, Transport, Business, Discover Gubat, View More).
   5. Tap the "Help us improve our city" banner.
   6. Tap the notification bell.
 - **Expected:**
-  - Greeting matches the time of day in Filipino/Visayan (e.g., "Maayong Buntag, Igubat!").
-  - All 8 quick-action tiles render.
+  - Greeting matches the time of day in Filipino/Visayan (e.g., "Maayong Buntag, Gubat!").
+  - All 9 quick-action tiles render (including Discover Gubat).
   - The improve-city banner routes to the Sign-In screen.
   - The bell routes to the Sign-In screen.
 
@@ -929,7 +934,7 @@ Use a **staging environment** with SMS gateway, email provider, FCM/APNs, file u
   2. Set to 1:00 PM; open Home.
   3. Set to 7:00 PM; open Home.
 - **Expected:**
-  - Greetings change appropriately (e.g., "Maayong Buntag/Hapon/Gabii, Igubat!" or the Tagalog equivalent).
+  - Greetings change appropriately (e.g., "Maayong Buntag/Hapon/Gabii, Gubat!" or the Tagalog equivalent).
 
 ---
 
@@ -963,6 +968,209 @@ Use a **staging environment** with SMS gateway, email provider, FCM/APNs, file u
 
 ---
 
+### IG-051 — Guest browses Discover Gubat tourist spots
+
+- **Priority:** High
+- **Role:** Guest
+- **Module:** Tourism, Culture & Local Products (Discover Gubat)
+- **Preconditions:** Discover Gubat tourist spots seeded and Published; device online.
+- **Steps:**
+  1. From Home, tap the **Discover Gubat** tile.
+  2. Open the **Tourist Spots** section.
+  3. Filter by category **Beaches & Surfing**.
+  4. Open a tourist spot (e.g., Buenavista Beach).
+  5. Inspect the detail (photos, description, category, map location).
+- **Expected:**
+  - Discover Gubat opens with three sections: Tourist Spots, Festivals & Culture, Local Delicacies & Products.
+  - Category filter limits the list correctly.
+  - Detail shows photos, description, category, and a map location.
+  - Content is read-only; no sign-in is required.
+
+---
+
+### IG-052 — Guest reads a festival/culture article
+
+- **Priority:** Medium
+- **Role:** Guest
+- **Module:** Tourism, Culture & Local Products (Discover Gubat)
+- **Preconditions:** At least one Published culture article (e.g., Ginubat Festival).
+- **Steps:**
+  1. Open Discover Gubat → **Festivals & Culture**.
+  2. Tap a culture article.
+- **Expected:**
+  - Article detail shows title, body, images, and publication date.
+
+---
+
+### IG-053 — Guest browses local delicacies and products with where-to-buy
+
+- **Priority:** Medium
+- **Role:** Guest
+- **Module:** Tourism, Culture & Local Products (Discover Gubat)
+- **Preconditions:** Local products seeded across categories.
+- **Steps:**
+  1. Open Discover Gubat → **Local Delicacies & Products**.
+  2. Browse categories (Delicacies/Kakanin, Pasalubong, Handicrafts/OTOP, Seafood, Pili Products).
+  3. Open a product (e.g., Timitim).
+- **Expected:**
+  - Product detail shows name, type/category, description, photo, and a where-to-buy / pasalubong note.
+  - No ordering, payment, or reservation controls are present (informational only).
+
+---
+
+### IG-054 — Discover Gubat content is cached for offline
+
+- **Priority:** Medium
+- **Role:** Guest or Authenticated User
+- **Module:** Tourism, Culture & Local Products / Connectivity and Offline Support
+- **Preconditions:** Online for first load.
+- **Steps:**
+  1. Open Discover Gubat; load tourist spots, a culture article, and product entries online.
+  2. Switch the device to airplane mode.
+  3. Re-open the Discover Gubat sections and a previously viewed detail.
+- **Expected:**
+  - Cached Discover Gubat content renders offline with a visible "Last updated" timestamp.
+
+---
+
+### IG-055 — Moderator manages a tourist spot through Draft → Published → Archived
+
+- **Priority:** High
+- **Role:** Moderator
+- **Module:** Tourism, Culture & Local Products (Discover Gubat)
+- **Preconditions:** Logged in to the portal.
+- **Steps:**
+  1. Open **Discover Gubat Manager** → Tourist Spots; click Create.
+  2. Enter name, category, description; upload a photo; set a featured image and a map location.
+  3. Click Preview, then Save as Draft.
+  4. Edit and schedule publication 5 minutes ahead (or publish immediately) with "Notify subscribers" enabled.
+  5. After publication, verify it appears in the mobile Discover Gubat surface.
+  6. Archive the entry.
+- **Expected:**
+  - Preview renders the citizen view.
+  - Draft appears under the Draft filter; scheduled entry transitions to Published at the scheduled time.
+  - Published entry appears on mobile; opted-in citizens receive a push.
+  - Archived entry disappears from the public surface but remains under the Archived filter.
+
+---
+
+### IG-056 — Admin permanently deletes a Discover Gubat entry
+
+- **Priority:** Medium
+- **Role:** Moderator; Admin
+- **Module:** Tourism, Culture & Local Products / RBAC
+- **Preconditions:** An existing Discover Gubat entry.
+- **Steps:**
+  1. As Moderator, delete an entry (soft-delete) and confirm it is recoverable within retention.
+  2. Confirm the Moderator has no permanent-delete control.
+  3. As Admin, permanently delete an entry with confirmation.
+- **Expected:**
+  - Soft-deleted entries are recoverable within the 30-day retention.
+  - Permanent delete is Admin-only, requires confirmation, is logged in the audit log, and is irreversible.
+
+---
+
+### IG-057 — Home shows Transparency section with six tiles
+
+- **Priority:** High
+- **Role:** Guest
+- **Module:** Transparency and Good Governance (13)
+- **Preconditions:** Device online; transparency items seeded.
+- **Steps:** 1. Launch the app and arrive at Home. 2. Scroll to the Transparency & Good Governance section.
+- **Expected:** A 2×3 grid of six tiles (Program and Projects, Bids and Projects, Financial Reports, Annual Budget, Legislative Ordinances, Executive Orders) renders above the news feed; subtitle reads "Know where your taxes go."
+
+---
+
+### IG-058 — Open each category list as Guest
+
+- **Priority:** High
+- **Role:** Guest
+- **Module:** Transparency and Good Governance (13)
+- **Steps:** 1. Tap each of the six tiles. 2. Observe the category list.
+- **Expected:** Each tile opens its category list; published items only, sorted most-recent first; fiscal-year/status filter chips and free-text search work.
+
+---
+
+### IG-059 — Open item detail and download attachment
+
+- **Priority:** High
+- **Role:** Guest
+- **Module:** Transparency and Good Governance (13)
+- **Steps:** 1. Open an item (e.g., Ordinance No. 2026-018). 2. Review the metadata band, summary, and body. 3. Tap a PDF attachment.
+- **Expected:** Type-specific metadata band renders; attachment opens via a signed URL.
+
+---
+
+### IG-060 — Authenticated User toggles transparency notification preference
+
+- **Priority:** Medium
+- **Role:** Authenticated User
+- **Module:** Transparency (13) / Notifications (8)
+- **Steps:** 1. Open notification preferences. 2. Toggle the **Transparency** category.
+- **Expected:** The `transparency` preference persists; when enabled, publishing a new item dispatches in-app + push + email.
+
+---
+
+### IG-061 — Offline shows cached items, attachment requires network
+
+- **Priority:** Medium
+- **Role:** Guest / Authenticated User
+- **Module:** Transparency (13) / Offline
+- **Steps:** 1. Open a category online to cache items. 2. Enable airplane mode. 3. Re-open the category and a previously viewed item.
+- **Expected:** Cached list items render offline with a "Last updated · cached" banner; opening a not-previously-downloaded attachment requires network.
+
+---
+
+### IG-062 — Moderator creates and publishes a Program/Project
+
+- **Priority:** High
+- **Role:** Moderator
+- **Module:** Transparency (13)
+- **Steps:** 1. Open Transparency → New Item. 2. Choose **Program and Projects**; fill common + type-specific fields; add an attachment. 3. Click **Publish Now**.
+- **Expected:** Item is created and appears Published in the list and on the mobile category list.
+
+---
+
+### IG-063 — Moderator schedules a Bid item; verify auto-publish
+
+- **Priority:** High
+- **Role:** Moderator
+- **Module:** Transparency (13)
+- **Steps:** 1. Create a **Bids and Projects** item with a near-future schedule time. 2. Wait for the scheduled time (or the cron sweep).
+- **Expected:** Item enters **Scheduled**, then auto-promotes to **Published** at `publishedAt`; subscribers notified if opted in; an audit entry is written.
+
+---
+
+### IG-064 — Admin permanently deletes an EO; verify audit entry
+
+- **Priority:** Medium
+- **Role:** Admin
+- **Module:** Transparency (13) / RBAC
+- **Steps:** 1. As Admin, permanently delete an Executive Order with confirmation. 2. Open the Audit Log.
+- **Expected:** A `transparency.permanent_delete` audit entry is recorded; the item is removed irreversibly.
+
+---
+
+### IG-065 — Admin exports transparency list CSV
+
+- **Priority:** Low
+- **Role:** Admin
+- **Module:** Transparency (13)
+- **Steps:** 1. As Admin, click **Export CSV** on the Transparency list. 2. Open the downloaded file.
+- **Expected:** A CSV with ref. no., title, type, fiscal year, status, and published date downloads.
+
+---
+
+### IG-066 — RBAC: Moderator cannot reach permanent-delete control
+
+- **Priority:** High
+- **Role:** Moderator
+- **Module:** Transparency (13) / RBAC
+- **Steps:** 1. As Moderator, open the Transparency list and editor. 2. Look for permanent-delete and Export CSV controls. 3. Attempt the delete API with `permanent=true`.
+- **Expected:** Permanent-delete and Export CSV controls are hidden; a direct API call returns 403.
+
+---
+
 ## 4. Smoke Test Checklist
 
 Run this checklist on every deploy to staging or production. Each item must pass before promoting.
@@ -975,6 +1183,8 @@ Run this checklist on every deploy to staging or production. Each item must pass
 - [ ] Emergency screen renders; 911 slide-to-call opens dialer.
 - [ ] COMCEN tap-to-call and copy-to-clipboard work.
 - [ ] Citizen Guide pages render.
+- [ ] Discover Gubat opens; tourist spots, a culture article, and local products render.
+- [ ] Transparency section visible on mobile Home; six tiles tappable; item detail loads.
 - [ ] Tapping notification bell routes to Sign-In.
 
 ### 4.2 Mobile App Smoke (Authenticated User)
@@ -998,6 +1208,7 @@ Run this checklist on every deploy to staging or production. Each item must pass
 - [ ] Article create, save Draft, schedule, publish, archive all work.
 - [ ] Carousel and banners render and reorder.
 - [ ] Media library upload + soft-delete work.
+- [ ] Discover Gubat manager: create a tourist spot, save Draft, publish, archive all work.
 - [ ] Emergency directory add/edit/deactivate work.
 - [ ] Broadcast composer sends after confirmation; History records it.
 - [ ] Users, Analytics, Audit, Settings are HIDDEN from sidebar.
@@ -1048,6 +1259,7 @@ iGubat manual testing can be accepted when:
 - **Issue Report lifecycle** works end-to-end with GPS capture, map view, and notifications.
 - **Emergency surfaces** (911, COMCEN, directory) work online and offline; broadcasts are delivered.
 - **Content management** (articles, carousel, banners, media) functions correctly with scheduling and archival.
+- **Discover Gubat** (tourist spots, festivals & culture, local delicacies & products) browses correctly for Guests, caches offline, is managed by Moderators through Draft/Published/Archived, and supports Admin-only permanent delete.
 - **User and Staff Management** functions correctly with audit logging on every change.
 - **Audit Log** is append-only, read-only, exportable.
 - **Analytics** renders with filters and exports.
@@ -1057,4 +1269,4 @@ iGubat manual testing can be accepted when:
 
 ---
 
-*Document version 1.0 — aligned to `igubat_tor.md` v3.1. Roles in scope: Guest, Authenticated User, Moderator, Admin, System. Canonical statuses and lifecycles per TOR §7.*
+*Document version 1.0 — aligned to `igubat_tor.md` v3.2. Roles in scope: Guest, Authenticated User, Moderator, Admin, System. Canonical statuses and lifecycles per TOR §7.*

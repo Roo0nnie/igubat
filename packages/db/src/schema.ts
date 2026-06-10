@@ -206,6 +206,79 @@ export const events = createTable("events", t => ({
 }))
 
 // ============================================================================
+// TRANSPARENCY & GOOD GOVERNANCE (Module 13)
+// ============================================================================
+
+/**
+ * The six Full Disclosure Policy content types surfaced on the mobile
+ * Transparency & Good Governance section. Stored as a text column with a
+ * `$type` narrowing so the same enum is shared by the public list query,
+ * the admin CMS, and the per-type `metadata` validators.
+ */
+export type TransparencyType =
+	| "program_project"
+	| "bid_procurement"
+	| "financial_report"
+	| "annual_budget"
+	| "legislative_ordinance"
+	| "executive_order"
+
+export const transparencyItems = createTable(
+	"transparency_items",
+	t => ({
+		id: t.serial("id").primaryKey(),
+		type: t.text("type").notNull().$type<TransparencyType>(),
+		referenceNumber: t.text("reference_number"),
+		title: t.text("title").notNull(),
+		slug: t.text("slug").unique(),
+		summary: t.text("summary"),
+		body: t.text("body").notNull().default(""),
+		fiscalYear: t.integer("fiscal_year"),
+		effectiveDate: t.timestamp("effective_date"),
+		barangay: t.text("barangay"),
+		status: t
+			.text("status")
+			.notNull()
+			.default("draft")
+			.$type<"draft" | "scheduled" | "published" | "archived">(),
+		metadata: t.json("metadata"),
+		coverImageUrl: t.text("cover_image_url"),
+		authorId: t.text("author_id").references(() => users.id, { onDelete: "set null" }),
+		// Snapshot of the "Notify subscribers" CMS checkbox at publish time.
+		notifyOnPublish: t.boolean("notify_on_publish").notNull().default(false),
+		scheduledAt: t.timestamp("scheduled_at"),
+		publishedAt: t.timestamp("published_at"),
+		archivedAt: t.timestamp("archived_at"),
+		deletedAt: t.timestamp("deleted_at"),
+		createdAt: t.timestamp("created_at").notNull().defaultNow(),
+		updatedAt: t.timestamp("updated_at").notNull().defaultNow(),
+	}),
+	t => [
+		// Drives the public/admin list query: filter by type + status, newest first.
+		index("transparency_items_type_status_published_idx").on(
+			t.type,
+			t.status,
+			t.publishedAt
+		),
+		index("transparency_items_fiscal_year_idx").on(t.fiscalYear),
+	]
+)
+
+export const transparencyAttachments = createTable("transparency_attachments", t => ({
+	id: t.serial("id").primaryKey(),
+	transparencyItemId: t
+		.integer("transparency_item_id")
+		.notNull()
+		.references(() => transparencyItems.id, { onDelete: "cascade" }),
+	fileUrl: t.text("file_url").notNull(),
+	fileName: t.text("file_name").notNull(),
+	mimeType: t.text("mime_type").notNull().default("application/pdf"),
+	sizeBytes: t.integer("size_bytes").notNull().default(0),
+	sortOrder: t.integer("sort_order").notNull().default(0),
+	createdAt: t.timestamp("created_at").notNull().defaultNow(),
+}))
+
+// ============================================================================
 // CITIZEN REPORTS
 // ============================================================================
 
@@ -446,7 +519,9 @@ export const notifications = createTable("notifications", t => ({
 		.text("category")
 		.notNull()
 		.default("general")
-		.$type<"news" | "service_request" | "issue_report" | "emergency" | "general">(),
+		.$type<
+			"news" | "service_request" | "issue_report" | "emergency" | "general" | "transparency"
+		>(),
 	isRead: t.boolean("is_read").notNull().default(false),
 	readAt: t.timestamp("read_at"),
 	metadata: t.json("metadata"),
@@ -464,6 +539,7 @@ export const notificationPreferences = createTable("notification_preferences", t
 	serviceRequests: t.boolean("service_requests").notNull().default(true),
 	issueReports: t.boolean("issue_reports").notNull().default(true),
 	emergencyBroadcasts: t.boolean("emergency_broadcasts").notNull().default(true),
+	transparency: t.boolean("transparency").notNull().default(true),
 	pushEnabled: t.boolean("push_enabled").notNull().default(true),
 	emailEnabled: t.boolean("email_enabled").notNull().default(true),
 	createdAt: t.timestamp("created_at").notNull().defaultNow(),
@@ -563,6 +639,8 @@ export const relations = defineRelations(
 		newsArticles,
 		contentPlacements,
 		events,
+		transparencyItems,
+		transparencyAttachments,
 		citizenReports,
 		citizenReportAttachments,
 		citizenReportStatusHistory,
@@ -682,6 +760,19 @@ export const relations = defineRelations(
 				to: r.users.id,
 			}),
 		},
+		transparencyItems: {
+			author: r.one.users({
+				from: r.transparencyItems.authorId,
+				to: r.users.id,
+			}),
+			attachments: r.many.transparencyAttachments(),
+		},
+		transparencyAttachments: {
+			transparencyItem: r.one.transparencyItems({
+				from: r.transparencyAttachments.transparencyItemId,
+				to: r.transparencyItems.id,
+			}),
+		},
 		citizenReports: {
 			author: r.one.users({
 				from: r.citizenReports.authorId,
@@ -705,6 +796,8 @@ export const schema = Object.assign(
 		newsArticles,
 		contentPlacements,
 		events,
+		transparencyItems,
+		transparencyAttachments,
 		citizenReports,
 		citizenReportAttachments,
 		citizenReportStatusHistory,

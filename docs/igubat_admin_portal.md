@@ -2,14 +2,14 @@
 
 **Document Type:** Structured Workflow Specification  
 **Audience:** AI agents, developers, product managers, designers, ICT Office stakeholders  
-**Source TOR:** `igubat_tor.md` v3.1  
+**Source TOR:** `igubat_tor.md` v3.2  
 **Related:** `igubat_overall_system.md`, `igubat_mobile_app.md`, `igubat_user_stories.md`
 
 ---
 
 ## 1. Overview
 
-This document describes the end-to-end workflow that LGU staff follow on the iGubat Web Administration Portal, from login through daily operations across the citizen request queue, issue report handling, content management, emergency directory and broadcasts, and (for Admin only) user management, analytics, audit logs, and system settings.
+This document describes the end-to-end workflow that LGU staff follow on the iGubat Web Administration Portal, from login through daily operations across the citizen request queue, issue report handling, content management, the Discover Gubat tourism/culture/products surface, the Transparency & Good Governance CMS, emergency directory and broadcasts, and (for Admin only) user management, analytics, audit logs, and system settings.
 
 This workflow accommodates two distinct staff roles:
 
@@ -123,6 +123,26 @@ Staff enter the portal at `/login`. Successful authentication routes the user to
 - Browse, upload, and **soft-delete** media assets (default 30-day retention). Search/filter by name, type, upload date.
 - **Admin** may force permanent delete with confirmation.
 
+#### Step 4d — Discover Gubat (Tourism, Culture &amp; Local Products)
+
+- The **Discover Gubat Manager** controls the public "Discover Gubat" surface across three content types:
+  - **Tourist Spots** — fields: name, category (Beaches &amp; Surfing, Nature &amp; Eco-Tourism, Heritage &amp; Landmarks), description, photos, featured image, and a map location (latitude/longitude). *Representative entries: Buenavista Beach, Rizal Beach, Castillo de Gubat, San Antonio de Padua Parish Church.*
+  - **Festivals &amp; Culture** — article entries authored in the rich text editor (Ginubat Festival, local history and heritage, dialect and traditions).
+  - **Local Delicacies &amp; Products** — fields: name, type/category (Delicacies/Kakanin, Pasalubong, Handicrafts/OTOP, Seafood, Pili Products), description, photo, and a where-to-buy / pasalubong note. *Representative entries: timitim, salanigo, binut-ong, dalu-dalo, sikad-sikad, pili nuts.*
+- Each entry uses the canonical content lifecycle: **Draft → Published → Archived**. The staff member can save as Draft, schedule a future publication, publish immediately, or archive (removed from the public surface; record retained).
+- A "Notify subscribers" checkbox on publish triggers an optional push to opted-in citizens.
+- **Preview** renders the citizen-view before publish.
+- Delete defaults to **soft-delete** (30-day retention); the **Admin** alone may force permanent delete with confirmation.
+
+#### Step 4e — Transparency (Programs, Bids, Finances, Budget, Ordinances, Executive Orders)
+
+- The **Transparency Manager** controls the public "Transparency & Good Governance" surface across six content types: **Program and Projects**, **Bids and Projects**, **Financial Reports**, **Annual Budget**, **Legislative Ordinances**, and **Executive Orders**.
+- The list page provides filters for type, status, fiscal year, and free-text search across title, reference number, and summary. **Export CSV** is visible to Admin only.
+- Create/Edit uses a wizard: type selector → type-specific metadata fields → attachments (PDF/JPG/PNG, ≤10 MB each, max 10) → publish controls.
+- The staff member can **Save Draft**, **Schedule**, or **Publish Now**; publish includes a **Notify subscribers** checkbox for opted-in citizens.
+- **Preview** renders the citizen-facing detail before publication.
+- **Archive** removes the item from public lists while retaining the record. Delete defaults to soft-delete; **permanent delete is Admin-only**, requires confirmation, and writes an audit record.
+
 ### Step 5 — Emergency Directory and Broadcasts (Moderator and Admin)
 
 #### Step 5a — COMCEN Hotlines and Directory
@@ -215,6 +235,8 @@ Staff enter the portal at `/login`. Successful authentication routes the user to
 | Service request status transition | Moderator/Admin in request detail | Apply next status per canonical lifecycle, with optional remarks; notification dispatched |
 | Issue report status transition    | Moderator/Admin in report detail  | Apply next status per canonical lifecycle; notification dispatched                        |
 | Article publish path              | Moderator clicks Save             | Draft, Schedule, or Publish (with optional notify-subscribers)                            |
+| Discover Gubat publish path       | Moderator saves a tourist spot / culture article / product | Draft, Schedule, or Publish (with optional notify-subscribers); same canonical lifecycle |
+| Transparency publish path         | Moderator saves a transparency item | Save Draft, Schedule, or Publish Now (with notify-subscribers); Admin-only CSV export and permanent delete |
 | Broadcast send                    | Moderator clicks Send             | Send immediately or schedule; confirmation modal required                                 |
 | Hard delete vs soft delete        | Delete action                     | Soft-delete by default; Admin can force permanent delete with confirmation                |
 | User Management access            | Sidebar / URL navigation          | Allowed for Admin; hidden + 403 for Moderator                                             |
@@ -240,7 +262,7 @@ The web portal workflow holds in one of the following steady states:
 ## 7. Key System Behaviors
 
 - **Strict RBAC at UI and API.** Moderator-restricted surfaces (User Management, Analytics, Audit Logs, Settings) are hidden from the sidebar and refused at the API even if the user constructs the URL manually.
-- **Canonical lifecycles are enforced server-side.** Status transitions outside the canonical paths are rejected.
+- **Canonical lifecycles are enforced server-side.** Status transitions outside the canonical paths are rejected. **Transparency & Good Governance (Module 13)** content reuses this same `Draft → Scheduled → Published → Archived` lifecycle: Moderators create/edit/schedule/publish/archive items across the six content types (with a type selector, type-specific fields, attachments, preview, and a notify-subscribers checkbox); scheduled items auto-publish via the server cron; permanent delete and CSV export are Admin-only.
 - **Notifications fire on every citizen-visible status change.** Push to the citizen + in-app inbox entry + (optional) email.
 - **Audit log is append-only.** No role can update or delete entries; Admin can read and export.
 - **Soft-delete is the default.** Files and content soft-delete with a 30-day retention; Admin may force permanent delete with confirmation.
@@ -279,6 +301,13 @@ The matrix below is the source-of-truth for portal access. Each cell answers "Ca
 | Banner Manager                                                   | ✓         | ✓     |
 | Media Library — upload, browse, soft-delete                      | ✓         | ✓     |
 | Media Library — permanent delete                                 |           | ✓     |
+| Discover Gubat: create/edit/schedule/publish/archive entries     | ✓         | ✓     |
+| Discover Gubat: notify subscribers on publish                    | ✓         | ✓     |
+| Discover Gubat: permanently delete entry                         |           | ✓     |
+| Transparency: create/edit/schedule/publish/archive item          | ✓         | ✓     |
+| Transparency: notify subscribers on publish                      | ✓         | ✓     |
+| Transparency: permanently delete item                            |           | ✓     |
+| Transparency: export item list to CSV                            |           | ✓     |
 | COMCEN hotlines: add/edit/deactivate                             | ✓         | ✓     |
 | Directory entries: add/edit/deactivate                           | ✓         | ✓     |
 | Directory entries: permanent delete                              |           | ✓     |
@@ -313,11 +342,15 @@ flowchart TD
     D1 --> SR[Service Requests Queue]
     D1 --> IR[Issue Reports Queue]
     D1 --> CT[Content - Articles, Carousel, Banners, Media]
+    D1 --> DG[Discover Gubat - Tourist Spots, Culture, Products]
+    D1 --> TR[Transparency]
     D1 --> EM[Emergency - Directory, Compose Broadcast, History]
     D1 --> SP[My Profile / Change Password]
     D2 --> SR
     D2 --> IR
     D2 --> CT
+    D2 --> DG
+    D2 --> TR
     D2 --> EM
     D2 --> UM[User Management - Admin only]
     D2 --> AN[Analytics - Admin only]
@@ -326,9 +359,11 @@ flowchart TD
     SR --> X1[Status Transition + Notify Citizen + Audit]
     IR --> X2[Status Transition + Notify Citizen + Audit]
     CT --> X3[Publish / Schedule / Archive + Audit]
+    DG --> X5[Publish / Schedule / Archive + Audit]
+    TR --> X6[Publish / Schedule / Archive + Audit]
     EM --> X4[Broadcast Send + Push to All + Audit]
 ```
 
 ---
 
-*Document version 1.0 — aligned to `igubat_tor.md` v3.1. Roles in scope: Moderator, Admin, System. Related: `igubat_mobile_app.md` for the citizen counterpart.*
+*Document version 1.0 — aligned to `igubat_tor.md` v3.2. Roles in scope: Moderator, Admin, System. Related: `igubat_mobile_app.md` for the citizen counterpart.*

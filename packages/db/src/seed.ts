@@ -31,6 +31,8 @@ import {
 	serviceTypes,
 	systemSettings,
 	tickets,
+	transparencyAttachments,
+	transparencyItems,
 	userLoginActivity,
 	users,
 	workflowTemplates,
@@ -114,7 +116,7 @@ function buildSeedUsers(
 			name: "Juan Dela Cruz",
 			email: "juan@example.com",
 			emailVerified: true,
-			image: null,
+			image: "https://i.pravatar.cc/300?u=seed-user-juan",
 			role: "registered_citizen",
 			mobileNumber: "09171234567",
 			barangay: "Cogon",
@@ -128,7 +130,7 @@ function buildSeedUsers(
 			name: "Maria Santos",
 			email: "maria@example.com",
 			emailVerified: true,
-			image: null,
+			image: "https://i.pravatar.cc/300?u=seed-user-maria",
 			role: "registered_citizen",
 			mobileNumber: "09181234567",
 			barangay: "Bagacay",
@@ -142,7 +144,7 @@ function buildSeedUsers(
 			name: "Pedro Reyes",
 			email: "pedro@example.com",
 			emailVerified: true,
-			image: null,
+			image: "https://i.pravatar.cc/300?u=seed-user-pedro",
 			role: "registered_citizen",
 			mobileNumber: "09191234567",
 			barangay: "Panganiban (Poblacion)",
@@ -156,7 +158,7 @@ function buildSeedUsers(
 			name: "Ana Villareal",
 			email: "ana@igubat.local",
 			emailVerified: true,
-			image: null,
+			image: "https://i.pravatar.cc/300?u=seed-user-ana",
 			role: "registered_citizen",
 			mobileNumber: "09201234567",
 			barangay: "Manook",
@@ -170,7 +172,7 @@ function buildSeedUsers(
 			name: "Carlos Unverified",
 			email: "unverified@igubat.local",
 			emailVerified: false,
-			image: null,
+			image: "https://i.pravatar.cc/300?u=seed-user-unverified",
 			role: "registered_citizen",
 			mobileNumber: "09211234567",
 			barangay: "Rizal",
@@ -185,7 +187,7 @@ function buildSeedUsers(
 			name: "Super Admin",
 			email: "admin@igubat.local",
 			emailVerified: true,
-			image: null,
+			image: "https://i.pravatar.cc/300?u=seed-user-admin",
 			role: "super_admin",
 			dpaConsent: false,
 			createdAt: now,
@@ -196,7 +198,7 @@ function buildSeedUsers(
 			name: "ICT Administrator",
 			email: "ict@igubat.local",
 			emailVerified: true,
-			image: null,
+			image: "https://i.pravatar.cc/300?u=seed-user-ict",
 			role: "ict_admin",
 			dpaConsent: false,
 			createdAt: now,
@@ -207,7 +209,7 @@ function buildSeedUsers(
 			name: "Elena Supervisor",
 			email: "supervisor@igubat.local",
 			emailVerified: true,
-			image: null,
+			image: "https://i.pravatar.cc/300?u=seed-user-supervisor",
 			role: "department_supervisor",
 			departmentId: deptIds.MSSD,
 			dpaConsent: false,
@@ -219,7 +221,7 @@ function buildSeedUsers(
 			name: "Ramon Officer",
 			email: "officer@igubat.local",
 			emailVerified: true,
-			image: null,
+			image: "https://i.pravatar.cc/300?u=seed-user-officer",
 			role: "frontline_officer",
 			departmentId: deptIds.BPLO,
 			dpaConsent: false,
@@ -231,7 +233,7 @@ function buildSeedUsers(
 			name: "Liza Transport Officer",
 			email: "officer2@igubat.local",
 			emailVerified: true,
-			image: null,
+			image: "https://i.pravatar.cc/300?u=seed-user-officer2",
 			role: "frontline_officer",
 			departmentId: deptIds["Transport Office"],
 			dpaConsent: false,
@@ -243,7 +245,7 @@ function buildSeedUsers(
 			name: "Content Editor",
 			email: "editor@igubat.local",
 			emailVerified: true,
-			image: null,
+			image: "https://i.pravatar.cc/300?u=seed-user-editor",
 			role: "content_editor",
 			dpaConsent: false,
 			createdAt: now,
@@ -254,7 +256,7 @@ function buildSeedUsers(
 			name: "Emergency Operator",
 			email: "emergency@igubat.local",
 			emailVerified: true,
-			image: null,
+			image: "https://i.pravatar.cc/300?u=seed-user-emergency",
 			role: "emergency_operator",
 			dpaConsent: false,
 			createdAt: now,
@@ -335,6 +337,8 @@ async function clearSeedDomainData(tx: Tx) {
 			)
 		)
 	await tx.delete(newsArticles).where(inArray(newsArticles.authorId, [...SEED_USER_IDS]))
+	// transparency_attachments cascade-delete with their parent items.
+	await tx.delete(transparencyItems).where(inArray(transparencyItems.authorId, [...SEED_USER_IDS]))
 	await tx.delete(contentPlacements)
 	await tx.delete(events)
 	await tx.delete(mediaAssets).where(inArray(mediaAssets.uploadedById, [...SEED_USER_IDS]))
@@ -487,7 +491,7 @@ async function seedDatabase() {
 					workflowSteps: WORKFLOW_STEPS,
 					processingDays: 3,
 					icon: "building-2",
-					imageUrl: "/images/placeholders/service-facility.png",
+					imageUrl: "https://picsum.photos/seed/service-facility/800/600",
 					isPopular: true,
 					isActive: true,
 					createdAt: now,
@@ -504,7 +508,7 @@ async function seedDatabase() {
 					workflowSteps: WORKFLOW_STEPS,
 					processingDays: 5,
 					icon: "heart-pulse",
-					imageUrl: "/images/placeholders/service-medical.png",
+					imageUrl: "https://picsum.photos/seed/service-medical/800/600",
 					isPopular: true,
 					isActive: true,
 					createdAt: now,
@@ -520,7 +524,7 @@ async function seedDatabase() {
 					workflowSteps: WORKFLOW_STEPS,
 					processingDays: 4,
 					icon: "bus",
-					imageUrl: "/images/placeholders/service-transport.png",
+					imageUrl: "https://picsum.photos/seed/service-transport/800/600",
 					isPopular: false,
 					isActive: true,
 					createdAt: now,
@@ -541,7 +545,7 @@ async function seedDatabase() {
 					workflowSteps: WORKFLOW_STEPS,
 					processingDays: 5,
 					icon: "briefcase",
-					imageUrl: "/images/placeholders/service-business-permit.png",
+					imageUrl: "https://picsum.photos/seed/service-business-permit/800/600",
 					isPopular: true,
 					isActive: true,
 					createdAt: now,
@@ -558,7 +562,7 @@ async function seedDatabase() {
 					workflowSteps: WORKFLOW_STEPS,
 					processingDays: 2,
 					icon: "badge-check",
-					imageUrl: "/images/placeholders/service-certification.png",
+					imageUrl: "https://picsum.photos/seed/service-certification/800/600",
 					isPopular: true,
 					isActive: true,
 					createdAt: now,
@@ -574,7 +578,7 @@ async function seedDatabase() {
 					workflowSteps: WORKFLOW_STEPS,
 					processingDays: 2,
 					icon: "file-text",
-					imageUrl: "/images/placeholders/service-clearance.png",
+					imageUrl: "https://picsum.photos/seed/service-clearance/800/600",
 					isPopular: false,
 					isActive: true,
 					createdAt: now,
@@ -651,7 +655,7 @@ async function seedDatabase() {
 					body: "The Municipality of Gubat is now accepting new and renewal business permit applications for the upcoming year. Visit the BPLO office or apply online via iGubat.",
 					category: "Business",
 					status: "published",
-					imageUrl: "/images/placeholders/news-business-permit.png",
+					imageUrl: "https://picsum.photos/seed/news-business-permit/800/600",
 					isFeatured: true,
 					authorId: "seed-user-editor",
 					publishedAt: new Date("2026-05-20T08:00:00Z"),
@@ -665,7 +669,7 @@ async function seedDatabase() {
 					body: "The Municipal Health Office invites all residents to a free medical mission at the town plaza. Bring valid IDs for verification.",
 					category: "Health",
 					status: "published",
-					imageUrl: "/images/placeholders/news-medical-mission.png",
+					imageUrl: "https://picsum.photos/seed/news-medical-mission/800/600",
 					isFeatured: false,
 					authorId: "seed-user-editor",
 					publishedAt: new Date("2026-05-18T09:30:00Z"),
@@ -679,7 +683,7 @@ async function seedDatabase() {
 					body: "Expect traffic rerouting along the national road from May 22-25 due to ongoing road repair operations.",
 					category: "Infrastructure",
 					status: "published",
-					imageUrl: "/images/placeholders/news-road-repair.png",
+					imageUrl: "https://picsum.photos/seed/news-road-repair/800/600",
 					authorId: "seed-user-editor",
 					publishedAt: new Date("2026-05-15T07:15:00Z"),
 					createdAt: new Date("2026-05-15T07:15:00Z"),
@@ -693,7 +697,7 @@ async function seedDatabase() {
 					body: "Join the LGU and volunteer groups for a coastal clean-up activity at Rizal Beach this Sunday.",
 					category: "Community",
 					status: "published",
-					imageUrl: "/images/placeholders/news-cleanup.png",
+					imageUrl: "https://picsum.photos/seed/news-cleanup/800/600",
 					authorId: "seed-user-editor",
 					publishedAt: new Date("2026-05-10T10:00:00Z"),
 					createdAt: new Date("2026-05-10T10:00:00Z"),
@@ -707,7 +711,7 @@ async function seedDatabase() {
 					body: "Please be informed of a scheduled power interruption on May 30 due to line maintenance in selected barangays.",
 					category: "Utilities",
 					status: "published",
-					imageUrl: "/images/placeholders/news-utilities.png",
+					imageUrl: "https://picsum.photos/seed/news-utilities/800/600",
 					authorId: "seed-user-editor",
 					publishedAt: new Date("2026-05-26T08:00:00Z"),
 					createdAt: new Date("2026-05-26T08:00:00Z"),
@@ -720,7 +724,7 @@ async function seedDatabase() {
 					body: "Reminder: Real property tax payment deadline is June 30. Avoid penalties by paying early at the Treasurer's Office or via iGubat.",
 					category: "Business",
 					status: "published",
-					imageUrl: "/images/placeholders/news-tax-deadline.png",
+					imageUrl: "https://picsum.photos/seed/news-tax-deadline/800/600",
 					authorId: "seed-user-editor",
 					publishedAt: new Date("2026-05-22T10:00:00Z"),
 					createdAt: new Date("2026-05-22T10:00:00Z"),
@@ -779,7 +783,7 @@ async function seedDatabase() {
 				{
 					type: "carousel",
 					title: "Business Permit Renewal",
-					imageUrl: "/images/placeholders/news-business-permit.png",
+					imageUrl: "https://picsum.photos/seed/news-business-permit/1200/600",
 					linkType: "article",
 					linkTarget: "business-permit-renewal-period-now-open",
 					sortOrder: 1,
@@ -790,7 +794,7 @@ async function seedDatabase() {
 				{
 					type: "carousel",
 					title: "Free Medical Mission",
-					imageUrl: "/images/placeholders/news-medical-mission.png",
+					imageUrl: "https://picsum.photos/seed/news-medical-mission/1200/600",
 					linkType: "article",
 					linkTarget: "free-medical-mission-this-saturday",
 					sortOrder: 2,
@@ -801,7 +805,7 @@ async function seedDatabase() {
 				{
 					type: "banner",
 					title: "Help us improve our city",
-					imageUrl: "/images/placeholders/banner-civic-help.png",
+					imageUrl: "https://picsum.photos/seed/banner-civic-help/1200/400",
 					linkType: "service",
 					linkTarget: "facility-use",
 					sortOrder: 1,
@@ -819,7 +823,7 @@ async function seedDatabase() {
 					description: "Opening ceremonies and community program at the Municipal Plaza.",
 					category: "Community",
 					location: "Municipal Plaza",
-					imageUrl: "/images/placeholders/event-fiesta.png",
+					imageUrl: "https://picsum.photos/seed/event-fiesta/800/600",
 					status: "published",
 					startsAt: new Date("2026-06-12T08:00:00Z"),
 					endsAt: new Date("2026-06-12T18:00:00Z"),
@@ -833,7 +837,7 @@ async function seedDatabase() {
 					description: "Last day for real property tax payments before penalties apply.",
 					category: "Business",
 					location: "Treasurer's Office",
-					imageUrl: "/images/placeholders/event-tax-deadline.png",
+					imageUrl: "https://picsum.photos/seed/event-tax-deadline/800/600",
 					status: "published",
 					startsAt: new Date("2026-06-30T08:00:00Z"),
 					endsAt: new Date("2026-06-30T17:00:00Z"),
@@ -847,7 +851,7 @@ async function seedDatabase() {
 					description: "Community assembly for residents of Barangay Cogon.",
 					category: "Community",
 					location: "Barangay Cogon Hall",
-					imageUrl: "/images/placeholders/event-assembly.png",
+					imageUrl: "https://picsum.photos/seed/event-assembly/800/600",
 					status: "published",
 					startsAt: new Date("2026-06-05T09:00:00Z"),
 					endsAt: new Date("2026-06-05T12:00:00Z"),
@@ -1196,19 +1200,19 @@ async function seedDatabase() {
 			const seedAttachments: Array<typeof serviceRequestAttachments.$inferInsert> = [
 				{
 					serviceRequestId: requestIdByTracking["BP-2026-0418"],
-					fileUrl: "/uploads/seed/business-permit-application.pdf",
+					fileUrl: "https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf",
 					fileName: "business-permit-application.pdf",
 					createdAt: now,
 				},
 				{
 					serviceRequestId: requestIdByTracking["MA-2026-0033"],
-					fileUrl: "/uploads/seed/medical-certificate.pdf",
+					fileUrl: "https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf",
 					fileName: "medical-certificate.pdf",
 					createdAt: now,
 				},
 				{
 					serviceRequestId: requestIdByTracking["BP-2026-0431"],
-					fileUrl: "/uploads/seed/incomplete-requirements.pdf",
+					fileUrl: "https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf",
 					fileName: "incomplete-requirements.pdf",
 					createdAt: now,
 				},
@@ -1385,6 +1389,7 @@ async function seedDatabase() {
 				serviceRequests: true,
 				issueReports: true,
 				emergencyBroadcasts: true,
+				transparency: true,
 				pushEnabled: true,
 				emailEnabled: true,
 				createdAt: now,
@@ -1517,9 +1522,9 @@ async function seedDatabase() {
 
 			const seedMediaAssets: Array<typeof mediaAssets.$inferInsert> = [
 				{
-					fileName: "news-business-permit.png",
-					fileUrl: "/images/placeholders/news-business-permit.png",
-					mimeType: "image/png",
+					fileName: "news-business-permit.jpg",
+					fileUrl: "https://picsum.photos/seed/news-business-permit/800/600",
+					mimeType: "image/jpeg",
 					sizeBytes: 0,
 					altText: "Business permit renewal placeholder image",
 					folder: "news",
@@ -1528,9 +1533,9 @@ async function seedDatabase() {
 					updatedAt: now,
 				},
 				{
-					fileName: "service-business-permit.png",
-					fileUrl: "/images/placeholders/service-business-permit.png",
-					mimeType: "image/png",
+					fileName: "service-business-permit.jpg",
+					fileUrl: "https://picsum.photos/seed/service-business-permit/800/600",
+					mimeType: "image/jpeg",
 					sizeBytes: 0,
 					altText: "Business permit service placeholder image",
 					folder: "services",
@@ -1539,9 +1544,9 @@ async function seedDatabase() {
 					updatedAt: now,
 				},
 				{
-					fileName: "event-fiesta.png",
-					fileUrl: "/images/placeholders/event-fiesta.png",
-					mimeType: "image/png",
+					fileName: "event-fiesta.jpg",
+					fileUrl: "https://picsum.photos/seed/event-fiesta/800/600",
+					mimeType: "image/jpeg",
 					sizeBytes: 0,
 					altText: "Town fiesta event placeholder image",
 					folder: "events",
@@ -1734,6 +1739,586 @@ async function seedDatabase() {
 			]
 			await tx.insert(tickets).values(seedTickets)
 
+			// Transparency & Good Governance (Module 13)
+			// Representative records across all six content types: two Published
+			// and one Draft per type. Attachments use placeholder file URLs.
+			type SeedTransparency = typeof transparencyItems.$inferInsert & {
+				attachments?: Array<Omit<typeof transparencyAttachments.$inferInsert, "transparencyItemId">>
+			}
+			const seedTransparencyItems: SeedTransparency[] = [
+				{
+					type: "program_project",
+					referenceNumber: "PRJ-2026-014",
+					title: "Buenavista Beach Mangrove Rehabilitation",
+					slug: "prj-2026-014-buenavista-beach-mangrove-rehabilitation",
+					summary:
+						"Rehabilitation and reforestation of 4.2 hectares of mangrove coastline in Brgy. Buenavista to restore coastal protection and fisheries.",
+					body: "## Overview\nThe LGU, in partnership with the MENRO, will replant 12,000 mangrove propagules across the Buenavista coastline.",
+					fiscalYear: 2026,
+					barangay: "Buenavista",
+					status: "published",
+					metadata: {
+						type: "program_project",
+						projectStatus: "ongoing",
+						startDate: "2026-02-01",
+						costPhp: 1850000,
+						implementingOffice: "MENRO",
+						beneficiaries: "Coastal fisherfolk of Brgy. Buenavista",
+						locationAddress: "Buenavista coastline, Gubat, Sorsogon",
+					},
+					coverImageUrl: "https://picsum.photos/seed/transparency-mangrove/800/600",
+					notifyOnPublish: true,
+					publishedAt: new Date("2026-03-01T08:00:00Z"),
+					attachments: [
+						{
+							fileName: "Mangrove_Project_Brief.pdf",
+							fileUrl: "https://files.gubat.gov.ph/transparency/prj-2026-014-brief.pdf",
+							mimeType: "application/pdf",
+							sizeBytes: 318_000,
+							sortOrder: 0,
+						},
+					],
+				},
+				{
+					type: "program_project",
+					referenceNumber: "PRJ-2026-009",
+					title: "Farm-to-Market Road Concreting — Brgy. Rizal",
+					slug: "prj-2026-009-farm-to-market-road-concreting-brgy-rizal",
+					summary:
+						"Concreting of 1.8 km farm-to-market road to improve agricultural transport for upland barangays.",
+					body: "## Scope\nConcreting of 1.8 km of road with line canals.",
+					fiscalYear: 2026,
+					barangay: "Rizal",
+					status: "published",
+					metadata: {
+						type: "program_project",
+						projectStatus: "planned",
+						startDate: "2026-07-01",
+						costPhp: 4250000,
+						implementingOffice: "Municipal Engineering Office",
+					},
+					notifyOnPublish: false,
+					publishedAt: new Date("2026-04-12T08:00:00Z"),
+					attachments: [
+						{
+							fileName: "PRJ-2026-009_Project_Profile.pdf",
+							fileUrl: "https://files.gubat.gov.ph/transparency/prj-2026-009-profile.pdf",
+							mimeType: "application/pdf",
+							sizeBytes: 286_000,
+							sortOrder: 0,
+						},
+					],
+				},
+				{
+					type: "program_project",
+					referenceNumber: "PRJ-2026-021",
+					title: "Solar Streetlight Installation Program (Draft)",
+					slug: "prj-2026-021-solar-streetlight-installation-program",
+					summary: "Installation of 60 solar streetlights across six barangays.",
+					body: "Draft project brief pending council endorsement.",
+					fiscalYear: 2026,
+					status: "draft",
+					metadata: {
+						type: "program_project",
+						projectStatus: "planned",
+						startDate: "2026-09-01",
+						costPhp: 2100000,
+						implementingOffice: "Municipal Engineering Office",
+					},
+					notifyOnPublish: false,
+					attachments: [
+						{
+							fileName: "PRJ-2026-021_Draft_Project_Brief.pdf",
+							fileUrl: "https://files.gubat.gov.ph/transparency/prj-2026-021-draft.pdf",
+							mimeType: "application/pdf",
+							sizeBytes: 194_000,
+							sortOrder: 0,
+						},
+					],
+				},
+				{
+					type: "bid_procurement",
+					referenceNumber: "IB-2026-007",
+					title: "Invitation to Bid — Concreting of Brgy. Rizal Road",
+					slug: "ib-2026-007-concreting-of-brgy-rizal-road",
+					summary:
+						"Public bidding for the concreting of Brgy. Rizal road. Sealed bids accepted until the closing date.",
+					body: "The Municipality of Gubat invites bids for the above contract per RA 9184.",
+					fiscalYear: 2026,
+					effectiveDate: new Date("2026-06-28T00:00:00Z"),
+					status: "published",
+					metadata: {
+						type: "bid_procurement",
+						approvedBudgetForContractPhp: 4250000,
+						procurementMode: "public_bidding",
+						closingDate: "2026-06-28",
+						bidStatus: "open",
+					},
+					notifyOnPublish: true,
+					publishedAt: new Date("2026-06-10T08:00:00Z"),
+					attachments: [
+						{
+							fileName: "IB-2026-007_Invitation.pdf",
+							fileUrl: "https://files.gubat.gov.ph/transparency/ib-2026-007.pdf",
+							mimeType: "application/pdf",
+							sizeBytes: 240_000,
+							sortOrder: 0,
+						},
+					],
+				},
+				{
+					type: "bid_procurement",
+					referenceNumber: "IB-2026-003",
+					title: "Rehabilitation of Public Market — Phase 2",
+					slug: "ib-2026-003-rehabilitation-of-public-market-phase-2",
+					summary: "Award notice for the rehabilitation of the public market, phase 2.",
+					body: "Notice of Award issued to the lowest calculated responsive bidder.",
+					fiscalYear: 2026,
+					status: "published",
+					metadata: {
+						type: "bid_procurement",
+						approvedBudgetForContractPhp: 9200000,
+						procurementMode: "public_bidding",
+						closingDate: "2026-04-15",
+						awardedTo: "Sorsogon Builders Inc.",
+						awardedAmountPhp: 8640000,
+						bidStatus: "awarded",
+					},
+					notifyOnPublish: false,
+					publishedAt: new Date("2026-05-02T08:00:00Z"),
+					attachments: [
+						{
+							fileName: "IB-2026-003_Notice_of_Award.pdf",
+							fileUrl: "https://files.gubat.gov.ph/transparency/ib-2026-003-award.pdf",
+							mimeType: "application/pdf",
+							sizeBytes: 222_000,
+							sortOrder: 0,
+						},
+					],
+				},
+				{
+					type: "bid_procurement",
+					referenceNumber: "RFQ-2026-031",
+					title: "Request for Quotation — School Furniture (Draft)",
+					slug: "rfq-2026-031-school-furniture",
+					summary: "Supply and delivery of school furniture for three barangay schools.",
+					body: "Draft RFQ pending BAC review.",
+					fiscalYear: 2026,
+					status: "draft",
+					metadata: {
+						type: "bid_procurement",
+						approvedBudgetForContractPhp: 1890000,
+						procurementMode: "small_value",
+						closingDate: "2026-07-05",
+						bidStatus: "posted",
+					},
+					notifyOnPublish: false,
+					attachments: [
+						{
+							fileName: "RFQ-2026-031_Draft_Request.pdf",
+							fileUrl: "https://files.gubat.gov.ph/transparency/rfq-2026-031-draft.pdf",
+							mimeType: "application/pdf",
+							sizeBytes: 158_000,
+							sortOrder: 0,
+						},
+					],
+				},
+				{
+					type: "financial_report",
+					referenceNumber: "SAOB-Q1-2026",
+					title: "Statement of Allotments, Obligations and Balances — Q1 2026",
+					slug: "saob-q1-2026",
+					summary: "Quarterly SAOB for the first quarter of fiscal year 2026.",
+					body: "See attached PDF for the full statement.",
+					fiscalYear: 2026,
+					status: "published",
+					metadata: {
+						type: "financial_report",
+						reportType: "saob",
+						fiscalPeriod: "Q1 2026",
+						preparedBy: "Municipal Accounting Office",
+					},
+					notifyOnPublish: true,
+					publishedAt: new Date("2026-04-20T08:00:00Z"),
+					attachments: [
+						{
+							fileName: "SAOB_Q1_2026.pdf",
+							fileUrl: "https://files.gubat.gov.ph/transparency/saob-q1-2026.pdf",
+							mimeType: "application/pdf",
+							sizeBytes: 512_000,
+							sortOrder: 0,
+						},
+					],
+				},
+				{
+					type: "financial_report",
+					referenceNumber: "COA-2025",
+					title: "COA Annual Audit Report — FY 2025",
+					slug: "coa-2025-annual-audit-report",
+					summary: "Commission on Audit annual audit report for fiscal year 2025.",
+					body: "Full COA annual audit report.",
+					fiscalYear: 2025,
+					status: "published",
+					metadata: {
+						type: "financial_report",
+						reportType: "coa_annual",
+						fiscalPeriod: "FY 2025",
+						preparedBy: "Commission on Audit",
+					},
+					notifyOnPublish: false,
+					publishedAt: new Date("2026-02-10T08:00:00Z"),
+					attachments: [
+						{
+							fileName: "COA_Annual_Audit_Report_FY2025.pdf",
+							fileUrl: "https://files.gubat.gov.ph/transparency/coa-2025-report.pdf",
+							mimeType: "application/pdf",
+							sizeBytes: 842_000,
+							sortOrder: 0,
+						},
+					],
+				},
+				{
+					type: "financial_report",
+					referenceNumber: "SRE-Q2-2026",
+					title: "Statement of Receipts and Expenditures — Q2 2026 (Draft)",
+					slug: "sre-q2-2026",
+					summary: "Draft quarterly SRE for the second quarter of fiscal year 2026.",
+					body: "Draft pending finalization.",
+					fiscalYear: 2026,
+					status: "draft",
+					metadata: {
+						type: "financial_report",
+						reportType: "sre",
+						fiscalPeriod: "Q2 2026",
+					},
+					notifyOnPublish: false,
+					attachments: [
+						{
+							fileName: "SRE_Q2_2026_Draft.pdf",
+							fileUrl: "https://files.gubat.gov.ph/transparency/sre-q2-2026-draft.pdf",
+							mimeType: "application/pdf",
+							sizeBytes: 376_000,
+							sortOrder: 0,
+						},
+					],
+				},
+				{
+					type: "annual_budget",
+					referenceNumber: "AB-2026",
+					title: "Annual Budget FY 2026",
+					slug: "ab-2026-annual-budget",
+					summary: "The approved annual budget of the Municipality of Gubat for fiscal year 2026.",
+					body: "## Executive Budget Message\nThe FY 2026 budget prioritizes coastal resilience, health, and education.",
+					fiscalYear: 2026,
+					status: "published",
+					metadata: {
+						type: "annual_budget",
+						budgetType: "annual",
+						totalAmountPhp: 312_000_000,
+						endorsedBy: "Hon. Sangguniang Bayan",
+					},
+					notifyOnPublish: true,
+					publishedAt: new Date("2026-01-15T08:00:00Z"),
+					attachments: [
+						{
+							fileName: "Annual_Budget_FY2026.pdf",
+							fileUrl: "https://files.gubat.gov.ph/transparency/ab-2026.pdf",
+							mimeType: "application/pdf",
+							sizeBytes: 1_240_000,
+							sortOrder: 0,
+						},
+					],
+				},
+				{
+					type: "annual_budget",
+					referenceNumber: "SB-2026-01",
+					title: "Supplemental Budget No. 1, FY 2026",
+					slug: "sb-2026-01-supplemental-budget",
+					summary: "First supplemental budget for fiscal year 2026.",
+					body: "Supplemental appropriations for disaster preparedness.",
+					fiscalYear: 2026,
+					status: "published",
+					metadata: {
+						type: "annual_budget",
+						budgetType: "supplemental",
+						totalAmountPhp: 18_500_000,
+					},
+					notifyOnPublish: false,
+					publishedAt: new Date("2026-05-20T08:00:00Z"),
+					attachments: [
+						{
+							fileName: "Supplemental_Budget_No_1_FY2026.pdf",
+							fileUrl: "https://files.gubat.gov.ph/transparency/sb-2026-01.pdf",
+							mimeType: "application/pdf",
+							sizeBytes: 438_000,
+							sortOrder: 0,
+						},
+					],
+				},
+				{
+					type: "annual_budget",
+					referenceNumber: "EB-2027",
+					title: "Executive Budget FY 2027 (Draft)",
+					slug: "eb-2027-executive-budget",
+					summary: "Draft executive budget proposal for fiscal year 2027.",
+					body: "Draft executive budget pending council deliberation.",
+					fiscalYear: 2027,
+					status: "draft",
+					metadata: {
+						type: "annual_budget",
+						budgetType: "executive_budget",
+						totalAmountPhp: 330_000_000,
+					},
+					notifyOnPublish: false,
+					attachments: [
+						{
+							fileName: "Executive_Budget_FY2027_Draft.pdf",
+							fileUrl: "https://files.gubat.gov.ph/transparency/eb-2027-draft.pdf",
+							mimeType: "application/pdf",
+							sizeBytes: 558_000,
+							sortOrder: 0,
+						},
+					],
+				},
+				{
+					type: "legislative_ordinance",
+					referenceNumber: "Ord. No. 2026-018",
+					title: "An Ordinance Reducing Single-Use Plastic in Public Markets",
+					slug: "ord-2026-018-single-use-plastic-reduction",
+					summary:
+						"This ordinance prohibits the use of single-use plastic carry bags by vendors in all public markets of the Municipality of Gubat.",
+					body: "## Section 1. Title\nThis ordinance shall be known as the Single-Use Plastic Reduction Ordinance.",
+					fiscalYear: 2026,
+					effectiveDate: new Date("2026-03-27T00:00:00Z"),
+					status: "published",
+					metadata: {
+						type: "legislative_ordinance",
+						dateApproved: "2026-03-12",
+						principalAuthor: "Hon. M. Dela Cruz",
+						sponsors: "Hon. R. Bautista, Hon. J. Reyes",
+						sbSessionDate: "2026-03-12",
+					},
+					notifyOnPublish: true,
+					publishedAt: new Date("2026-03-13T08:00:00Z"),
+					attachments: [
+						{
+							fileName: "Ordinance_2026-018_Full_Text.pdf",
+							fileUrl: "https://files.gubat.gov.ph/transparency/ord-2026-018.pdf",
+							mimeType: "application/pdf",
+							sizeBytes: 412_000,
+							sortOrder: 0,
+						},
+						{
+							fileName: "SB_Minutes_2026-03-12.pdf",
+							fileUrl: "https://files.gubat.gov.ph/transparency/sb-minutes-2026-03-12.pdf",
+							mimeType: "application/pdf",
+							sizeBytes: 186_000,
+							sortOrder: 1,
+						},
+					],
+				},
+				{
+					type: "legislative_ordinance",
+					referenceNumber: "Ord. No. 2026-012",
+					title: "An Ordinance Establishing the Municipal Disaster Response Fund",
+					slug: "ord-2026-012-disaster-response-fund",
+					summary: "Establishes a standing municipal disaster response fund.",
+					body: "Full text of the disaster response fund ordinance.",
+					fiscalYear: 2026,
+					effectiveDate: new Date("2026-02-20T00:00:00Z"),
+					status: "published",
+					metadata: {
+						type: "legislative_ordinance",
+						dateApproved: "2026-02-05",
+						principalAuthor: "Hon. J. Reyes",
+					},
+					notifyOnPublish: false,
+					publishedAt: new Date("2026-02-06T08:00:00Z"),
+					attachments: [
+						{
+							fileName: "Ordinance_2026-012_Full_Text.pdf",
+							fileUrl: "https://files.gubat.gov.ph/transparency/ord-2026-012.pdf",
+							mimeType: "application/pdf",
+							sizeBytes: 348_000,
+							sortOrder: 0,
+						},
+					],
+				},
+				{
+					type: "legislative_ordinance",
+					referenceNumber: "Ord. No. 2026-022",
+					title: "Anti-Noise Pollution Ordinance (Draft)",
+					slug: "ord-2026-022-anti-noise-pollution",
+					summary: "Draft ordinance regulating noise levels in residential zones.",
+					body: "Draft pending second reading.",
+					fiscalYear: 2026,
+					status: "draft",
+					metadata: {
+						type: "legislative_ordinance",
+						dateApproved: "2026-07-10",
+						principalAuthor: "Hon. R. Bautista",
+					},
+					notifyOnPublish: false,
+					attachments: [
+						{
+							fileName: "Ordinance_2026-022_Draft.pdf",
+							fileUrl: "https://files.gubat.gov.ph/transparency/ord-2026-022-draft.pdf",
+							mimeType: "application/pdf",
+							sizeBytes: 226_000,
+							sortOrder: 0,
+						},
+					],
+				},
+				{
+					type: "executive_order",
+					referenceNumber: "EO No. 2026-05",
+					title: "Implementation of Pacific Coast Cleanliness Drive",
+					slug: "eo-2026-05-pacific-coast-cleanliness-drive",
+					summary:
+						"Directs all barangays to conduct monthly coastal clean-up activities along the Pacific coast of Gubat.",
+					body: "## Executive Order No. 2026-05\nBy virtue of the powers vested in the Office of the Mayor...",
+					fiscalYear: 2026,
+					effectiveDate: new Date("2026-05-02T00:00:00Z"),
+					status: "published",
+					metadata: {
+						type: "executive_order",
+						dateIssued: "2026-05-01",
+						issuedBy: "Hon. Sharon Rose Aragon-Escoto",
+					},
+					notifyOnPublish: true,
+					publishedAt: new Date("2026-05-02T08:00:00Z"),
+					attachments: [
+						{
+							fileName: "EO_2026-05.pdf",
+							fileUrl: "https://files.gubat.gov.ph/transparency/eo-2026-05.pdf",
+							mimeType: "application/pdf",
+							sizeBytes: 168_000,
+							sortOrder: 0,
+						},
+					],
+				},
+				{
+					type: "executive_order",
+					referenceNumber: "EO No. 2026-03",
+					title: "Creation of the Municipal Investment Promotion Team",
+					slug: "eo-2026-03-investment-promotion-team",
+					summary: "Creates a team to streamline local investment under RA 11032.",
+					body: "Full text of the executive order.",
+					fiscalYear: 2026,
+					status: "published",
+					metadata: {
+						type: "executive_order",
+						dateIssued: "2026-03-10",
+						issuedBy: "Hon. Sharon Rose Aragon-Escoto",
+					},
+					notifyOnPublish: false,
+					publishedAt: new Date("2026-03-11T08:00:00Z"),
+					attachments: [
+						{
+							fileName: "EO_2026-03.pdf",
+							fileUrl: "https://files.gubat.gov.ph/transparency/eo-2026-03.pdf",
+							mimeType: "application/pdf",
+							sizeBytes: 152_000,
+							sortOrder: 0,
+						},
+					],
+				},
+				{
+					type: "executive_order",
+					referenceNumber: "EO No. 2026-07",
+					title: "Reorganization of the Local Health Board (Draft)",
+					slug: "eo-2026-07-local-health-board-reorganization",
+					summary: "Draft executive order reorganizing the local health board.",
+					body: "Draft pending legal review.",
+					fiscalYear: 2026,
+					status: "draft",
+					metadata: {
+						type: "executive_order",
+						dateIssued: "2026-06-01",
+						issuedBy: "Hon. Sharon Rose Aragon-Escoto",
+						revokes: "EO No. 2024-11",
+					},
+					notifyOnPublish: false,
+					attachments: [
+						{
+							fileName: "EO_2026-07_Draft.pdf",
+							fileUrl: "https://files.gubat.gov.ph/transparency/eo-2026-07-draft.pdf",
+							mimeType: "application/pdf",
+							sizeBytes: 146_000,
+							sortOrder: 0,
+						},
+					],
+				},
+			]
+
+			const transparencyNotificationLabels: Record<SeedTransparency["type"], string> = {
+				program_project: "Program and Project",
+				bid_procurement: "Bid and Procurement",
+				financial_report: "Financial Report",
+				annual_budget: "Annual Budget",
+				legislative_ordinance: "Legislative Ordinance",
+				executive_order: "Executive Order",
+			}
+			const insertedTransparencyItems: Array<{
+				id: number
+				type: SeedTransparency["type"]
+				title: string
+				slug: string | null
+				summary: string | null
+				status: SeedTransparency["status"]
+				publishedAt: Date | null
+			}> = []
+
+			for (const item of seedTransparencyItems) {
+				const { attachments, ...itemValues } = item
+				const [insertedItem] = await tx
+					.insert(transparencyItems)
+					.values({ ...itemValues, authorId: "seed-user-editor", createdAt: now, updatedAt: now })
+					.returning({
+						id: transparencyItems.id,
+						type: transparencyItems.type,
+						title: transparencyItems.title,
+						slug: transparencyItems.slug,
+						summary: transparencyItems.summary,
+						status: transparencyItems.status,
+						publishedAt: transparencyItems.publishedAt,
+					})
+				if (insertedItem) {
+					insertedTransparencyItems.push(insertedItem)
+				}
+				if (insertedItem && attachments?.length) {
+					await tx.insert(transparencyAttachments).values(
+						attachments.map(attachment => ({
+							...attachment,
+							transparencyItemId: insertedItem.id,
+						}))
+					)
+				}
+			}
+
+			const transparencyNotifications: Array<typeof notifications.$inferInsert> =
+				insertedTransparencyItems
+					.filter(item => item.status === "published")
+					.map((item, index) => ({
+						userId: "seed-user-juan",
+						title: `New ${transparencyNotificationLabels[item.type]} disclosure`,
+						body: `${item.title} has been published.`,
+						type: "in_app",
+						category: "transparency",
+						isRead: false,
+						metadata: {
+							type: "transparency",
+							slug: item.slug,
+							entityId: String(item.id),
+						},
+						createdAt: item.publishedAt
+							? new Date(item.publishedAt.getTime() + 5 * 60_000)
+							: new Date(now.getTime() + index * 60_000),
+					}))
+			if (transparencyNotifications.length > 0) {
+				await tx.insert(notifications).values(transparencyNotifications)
+			}
+
 			return {
 				users: seedUsers.length,
 				departments: seedDepartments.length,
@@ -1749,7 +2334,7 @@ async function seedDatabase() {
 				serviceRequests: seedServiceRequests.length,
 				serviceRequestAttachments: seedAttachments.length,
 				serviceRequestStatusHistory: seedRequestHistory.length,
-				notifications: seedNotifications.length,
+				notifications: seedNotifications.length + transparencyNotifications.length,
 				notificationPreferences: seedNotificationPreferences.length,
 				notificationDeliveryLogs: insertedNotifications.length,
 				auditLogs: seedAuditLogs.length,
@@ -1759,6 +2344,7 @@ async function seedDatabase() {
 				systemSettings: seedSystemSettings.length,
 				userLoginActivity: seedLoginActivity.length,
 				tickets: seedTickets.length,
+				transparencyItems: seedTransparencyItems.length,
 			}
 		})
 

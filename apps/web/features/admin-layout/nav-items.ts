@@ -50,6 +50,7 @@ export const NAV_GROUPS: NavGroup[] = [
 		items: [
 			{ title: "Content", url: "/content", icon: Newspaper, access: "staff" },
 			{ title: "Emergency", url: "/emergency", icon: Siren, access: "staff" },
+			{ title: "Transparency", url: "/transparency", icon: ShieldCheck, access: "staff" },
 			{ title: "Notifications", url: "/notifications", icon: Bell, access: "staff" },
 		],
 	},

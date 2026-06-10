@@ -7,6 +7,9 @@ import 'package:mobile/features/auth/presentation/screens/register_screen.dart';
 import 'package:mobile/features/auth/presentation/screens/otp_screen.dart';
 import 'package:mobile/features/onboarding/presentation/providers/onboarding_provider.dart';
 import 'package:mobile/features/onboarding/presentation/screens/onboarding_screen.dart';
+import 'package:mobile/features/transparency/data/models/transparency_type.dart';
+import 'package:mobile/features/transparency/presentation/screens/transparency_category_list_screen.dart';
+import 'package:mobile/features/transparency/presentation/screens/transparency_item_detail_screen.dart';
 import 'package:mobile/shared/widgets/main_scaffold.dart';
 
 part 'app_router.g.dart';
@@ -58,6 +61,8 @@ class AppRoutes {
   }
 }
 
+final rootNavigatorKey = GlobalKey<NavigatorState>();
+
 /// Provides the [GoRouter] instance configured with redirect logic
 /// based on onboarding and authentication state.
 ///
@@ -78,14 +83,14 @@ GoRouter appRouter(Ref ref) {
   });
 
   final router = GoRouter(
+    navigatorKey: rootNavigatorKey,
     initialLocation: AppRoutes.home,
     debugLogDiagnostics: true,
     refreshListenable: refreshNotifier,
     redirect: (context, state) {
       final isOnboardingDone = ref.read(hasCompletedOnboardingProvider);
       final authState = ref.read(authStateProvider);
-      final isAuthenticated =
-          !authState.isLoading && authState.value != null;
+      final isAuthenticated = !authState.isLoading && authState.value != null;
       final isOnOnboarding = state.matchedLocation == AppRoutes.onboarding;
       final isOnLogin = state.matchedLocation == AppRoutes.login;
       final isOnRegister = state.matchedLocation == AppRoutes.register;
@@ -135,12 +140,31 @@ GoRouter appRouter(Ref ref) {
         path: AppRoutes.home,
         builder: (context, state) => const MainScaffold(),
       ),
-    ],
-    errorBuilder: (context, state) => Scaffold(
-      body: Center(
-        child: Text('Page not found: ${state.uri}'),
+      // Transparency & Good Governance deep links. `:type` is a route slug
+      // (e.g. "legislative-ordinances"); push notifications carrying
+      // `metadata.slug` land directly on the item detail route.
+      GoRoute(
+        path: '/transparency/:type',
+        builder: (context, state) {
+          final type =
+              TransparencyTypeX.fromRouteSlug(
+                state.pathParameters['type'] ?? '',
+              ) ??
+              TransparencyType.programProject;
+          return TransparencyCategoryListScreen(type: type);
+        },
+        routes: [
+          GoRoute(
+            path: ':slug',
+            builder: (context, state) => TransparencyItemDetailScreen(
+              slug: state.pathParameters['slug'] ?? '',
+            ),
+          ),
+        ],
       ),
-    ),
+    ],
+    errorBuilder: (context, state) =>
+        Scaffold(body: Center(child: Text('Page not found: ${state.uri}'))),
   );
 
   ref.onDispose(() {

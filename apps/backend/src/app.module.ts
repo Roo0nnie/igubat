@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common"
 import { ConfigModule } from "@nestjs/config"
 import { APP_FILTER, APP_INTERCEPTOR, APP_PIPE } from "@nestjs/core"
+import { ScheduleModule } from "@nestjs/schedule"
 import { AuthModule } from "@thallesp/nestjs-better-auth"
 import { ZodSerializerInterceptor, ZodValidationPipe } from "nestjs-zod"
 
@@ -24,6 +25,8 @@ import { env } from "./config/env.config"
 		AuthModule.forRoot({ auth: getAuth(), disableControllers: true }),
 		// oRPC setup
 		ORPCCommonModule,
+		// Cron jobs
+		ScheduleModule.forRoot(),
 		// Versioned modules
 		V1Module,
 	],

@@ -22,6 +22,7 @@ import '../../../reports/presentation/screens/report_issue_screen.dart';
 import '../../../services/presentation/screens/request_details_screen.dart';
 import '../../../services/presentation/screens/service_request_stepper_screen.dart';
 import '../../../emergency/presentation/screens/emergency_screen.dart';
+import '../../../transparency/presentation/widgets/transparency_section.dart';
 import 'event_detail_screen.dart';
 import 'transaction_detail_screen.dart';
 
@@ -122,6 +123,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
                         sliver: SliverToBoxAdapter(child: _buildQuickActions(context)),
                       ),
+                      _buildTransparencySliver(context),
                       _sectionSliver(
                         context,
                         title: 'Key Services',
@@ -156,6 +158,40 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Transparency & Good Governance section: a titled header with the
+  /// "Know where your taxes go" subtitle above the 2x3 tile grid. Slotted
+  /// between Quick Actions and the rest of the Home feed.
+  Widget _buildTransparencySliver(BuildContext context) {
+    return SliverPadding(
+      padding: const EdgeInsets.fromLTRB(24, 28, 24, 0),
+      sliver: SliverToBoxAdapter(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'Transparency & Good Governance',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+                color: glassThemeOf(context).textOnGlass,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              'Know where your taxes go',
+              style: TextStyle(
+                fontSize: 13,
+                color: glassThemeOf(context).textOnGlassMuted,
+              ),
+            ),
+            const SizedBox(height: 16),
+            const TransparencySection(),
           ],
         ),
       ),

@@ -19,9 +19,20 @@ class ApiConstants {
   // server-side and establishes the authenticated session.
   static String get sendVerificationOtp =>
       '$versionedUrl/auth/email-otp/send-verification-otp';
-  static String get verifyEmailOtp => '$versionedUrl/auth/email-otp/verify-email';
+  static String get verifyEmailOtp =>
+      '$versionedUrl/auth/email-otp/verify-email';
 
   // Todo endpoints (NestJS - oRPC)
   static String get todos => '$versionedUrl/example/todos';
   static String todoById(int id) => '$versionedUrl/example/todos/$id';
+
+  // iGubat public endpoints
+  static String get publicTransparency =>
+      '$versionedUrl/igubat/public/transparency';
+  static String publicTransparencyItem(String slug) =>
+      '$versionedUrl/igubat/public/transparency/$slug';
+
+  // iGubat citizen endpoints
+  static String get notificationPreferences =>
+      '$versionedUrl/igubat/me/notification-preferences';
 }

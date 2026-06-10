@@ -24,6 +24,15 @@ const config: NextConfig = {
 	typescript: { ignoreBuildErrors: true },
 	reactCompiler: true,
 
+	/** Allow remote demo image hosts used by the database seed (next/image). */
+	images: {
+		remotePatterns: [
+			{ protocol: "https", hostname: "picsum.photos" },
+			{ protocol: "https", hostname: "fastly.picsum.photos" },
+			{ protocol: "https", hostname: "i.pravatar.cc" },
+		],
+	},
+
 	/**
 	 * Enables `forbidden()`/`unauthorized()` from `next/navigation` so admin-only
 	 * route guards can return a real HTTP 403 (rendered via `forbidden.tsx`)

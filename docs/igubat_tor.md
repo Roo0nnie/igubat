@@ -4,12 +4,12 @@
 
 ### Citizen Mobile Application and Web Administration Portal
 
-### Version 3.1 — Aligned to iGubat Proposal
+### Version 3.2 — Aligned to iGubat Proposal
 
 > **Project Title:** iGubat — Local Government Unit Digital Services Application  
-> **Prepared for:** Municipality of Igubat, Information and Communications Technology (ICT) Office  
+> **Prepared for:** Municipality of Gubat, Province of Sorsogon (Bicol Region), Information and Communications Technology (ICT) Office  
 > **Document Type:** Terms of Reference (TOR)  
-> **Document Version:** 3.1  
+> **Document Version:** 3.2  
 > **Source:** `igubat_proposal.md`  
 > **Governing Workflow Documents:**
 >
@@ -19,7 +19,7 @@
 > - `igubat_user_stories.md` — User Stories
 > - `igubat_manual_test_plan.md` — Manual Test Plan
 
-This TOR supersedes v3.0. It removes upstream transcript content, aligns the structure to the project template, and adds explicit Deliverables, Assumptions &amp; Dependencies, and Out of Scope sections. The four-role model (Guest, Authenticated User, Moderator, Admin) and the eleven (11) functional modules are preserved in full.
+This TOR supersedes v3.0. It removes upstream transcript content, aligns the structure to the project template, and adds explicit Deliverables, Assumptions & Dependencies, and Out of Scope sections. The four-role model (Guest, Authenticated User, Moderator, Admin) is preserved in full, and the module set is extended from eleven (11) to thirteen (13): the Tourism, Culture & Local Products module ("Discover Gubat") and **Module 13 — Transparency and Good Governance** (public disclosure of programs/projects, procurement bids, financial reports, annual budget, legislative ordinances, and executive orders per the DILG Full Disclosure Policy). *(v3.2 release note: Added Module 13 — Transparency and Good Governance.)*
 
 ---
 
@@ -46,7 +46,9 @@ This TOR supersedes v3.0. It removes upstream transcript content, aligns the str
 
 ## 1. PROJECT BACKGROUND
 
-The Municipality of Igubat seeks to develop a comprehensive digital platform — the **iGubat Application** — to modernize the delivery of local government services to its constituents. The platform makes LGU services accessible through a citizen-facing mobile application and manageable through a web-based administration portal for LGU staff.
+The Municipality of Gubat, Province of Sorsogon (Bicol Region), seeks to develop a comprehensive digital platform — the **iGubat Application** (the product name *iGubat* combines *i* with *Gubat*, the municipality it serves) — to modernize the delivery of local government services to its constituents. The platform makes LGU services accessible through a citizen-facing mobile application and manageable through a web-based administration portal for LGU staff.
+
+Gubat is a coastal municipality on the Pacific side of Sorsogon, made up of 42 barangays. It is promoted as **"The Surfing Capital of Sorsogon"** (anchored by Buenavista and Rizal beaches), celebrates the annual **Ginubat Festival** in June (town fiesta of its patron, San Antonio de Padua), and holds notable heritage in the **San Antonio de Padua Parish Church (1778)** and the Spanish-era **Castillo de Gubat** watchtower. The town is also known for its own delicacies and products — **timitim** (cassava-and-pili cake), **salanigo** (hand-woven abaca slippers, an OTOP product), **binut-ong**, **dalu-dalo**, **sikad-sikad**, and **pili nuts**. Beyond core LGU transactions, the platform is therefore an opportunity to showcase Gubat's tourism, culture, and local products to residents and visitors alike.
 
 The iGubat application aims to:
 
@@ -55,8 +57,9 @@ The iGubat application aims to:
 - Establish a direct, two-way communication channel between the LGU and residents.
 - Support data-driven decision-making within the LGU through aggregated reports and analytics.
 - Provide always-on access to emergency hotlines including the COMCEN (Community Emergency Communications Center), Philippine National Police (PNP), Bureau of Fire Protection (BFP), and partner hospitals.
+- Promote local tourism, culture, and homegrown products by surfacing Gubat's tourist spots, festivals and heritage, and local delicacies and pasalubong in a dedicated public surface.
 
-The system shall be built and operated by the LGU ICT Office and consumed by residents of all barangays of the Municipality of Igubat.
+The system shall be built and operated by the LGU ICT Office and consumed by residents of all barangays of the Municipality of Gubat, Sorsogon.
 
 ---
 
@@ -64,7 +67,7 @@ The system shall be built and operated by the LGU ICT Office and consumed by res
 
 ### 2.1
 
-Provide constituents of the Municipality of Igubat with a single, convenient digital access point for LGU services, official news, and emergency information.
+Provide constituents of the Municipality of Gubat, Sorsogon, with a single, convenient digital access point for LGU services, official news, and emergency information.
 
 ### 2.2
 
@@ -86,6 +89,10 @@ Ensure emergency-information continuity by guaranteeing offline access to COMCEN
 
 Promote inclusive service delivery by reaching residents across all barangays of the municipality through both Android and iOS devices.
 
+### 2.7
+
+Showcase the identity of Gubat — its tourist destinations, festivals and cultural heritage, and homegrown delicacies and products — to residents and visitors, supporting local tourism and livelihood promotion through a dedicated public surface.
+
 ---
 
 ## 3. SYSTEM PLATFORMS OVERVIEW
@@ -93,15 +100,15 @@ Promote inclusive service delivery by reaching residents across all barangays of
 The iGubat system shall be composed of two integrated platforms sharing one backend, one database, and one notification fabric.
 
 
-| #   | Platform                                           | Audience                  | Primary Purpose                                                                                         |
-| --- | -------------------------------------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------- |
-| A   | **Citizen Mobile Application** (iOS &amp; Android) | Guest, Authenticated User | Public information, account services, request submission, issue reporting, emergency access             |
-| B   | **Web Administration Portal** (desktop browsers)   | Moderator, Admin          | Queue processing, content management, emergency broadcasts, user management, analytics, audit, settings |
+| #   | Platform                                         | Audience                  | Primary Purpose                                                                                         |
+| --- | ------------------------------------------------ | ------------------------- | ------------------------------------------------------------------------------------------------------- |
+| A   | **Citizen Mobile Application** (iOS & Android)   | Guest, Authenticated User | Public information, account services, request submission, issue reporting, emergency access             |
+| B   | **Web Administration Portal** (desktop browsers) | Moderator, Admin          | Queue processing, content management, emergency broadcasts, user management, analytics, audit, settings |
 
 
 ### 3.1 Platform A — Citizen Mobile Application
 
-A cross-platform mobile application (iOS and Android) for use by constituents of the Municipality of Igubat.
+A cross-platform mobile application (iOS and Android) for use by constituents of the Municipality of Gubat, Sorsogon.
 
 - Allow citizens to access LGU services without an in-person visit to the Municipal Hall.
 - Submit and track service requests (Facility Use, Medical Assistance, Transportation Assistance) and local issue/concern reports.
@@ -113,7 +120,7 @@ A cross-platform mobile application (iOS and Android) for use by constituents of
 A web-based portal accessible by LGU staff on current desktop browsers (Chrome, Firefox, Edge, Safari).
 
 - Process and manage citizen service requests and issue/concern reports.
-- Manage all application content: news articles, announcements, homepage carousel, banners, emergency directory.
+- Manage all application content: news articles, announcements, homepage carousel, banners, emergency directory, Discover Gubat, and Transparency Content Management.
 - Monitor and manage citizen and staff user accounts.
 - Configure system settings, view analytics, and review the audit log.
 
@@ -121,7 +128,7 @@ A web-based portal accessible by LGU staff on current desktop browsers (Chrome, 
 
 ## 4. SYSTEM ARCHITECTURE AND MODULES
 
-The system shall follow a **modular architecture** designed for maintainability and scalability. The system shall be composed of the following eleven (11) core functional modules and three (3) cross-cutting capability layers.
+The system shall follow a **modular architecture** designed for maintainability and scalability. The system shall be composed of the following thirteen (13) core functional modules and three (3) cross-cutting capability layers.
 
 ### 4.1 Core Functional Modules
 
@@ -139,6 +146,8 @@ The system shall follow a **modular architecture** designed for maintainability 
 | 9   | **User and Staff Account Management Module** | Citizen account oversight, staff account lifecycle, role assignment                                                                |
 | 10  | **Analytics and Reports Module**             | Operational metrics, charts, exports                                                                                               |
 | 11  | **Audit and Activity Logging Module**        | Tamper-evident log of significant system actions                                                                                   |
+| 12  | **Tourism, Culture & Local Products Module** | "Discover Gubat" public surface: tourist spots, festivals and cultural heritage, and local delicacies and products directory       |
+| 13  | **Transparency and Good Governance Module**  | Public disclosure of programs/projects, procurement bids, financial reports, annual budget, legislative ordinances, and executive orders per DILG Full Disclosure Policy |
 
 
 ### 4.2 Cross-Cutting Capability Layers
@@ -173,12 +182,14 @@ The system shall support exactly **four (4)** canonical user roles across both p
 
 **Can:**
 
-- View the public home screen with the time-of-day greeting banner (e.g., "Maayong Buntag, Igubat!") and the quick-action grid.
+- View the public home screen with the time-of-day greeting banner (e.g., "Maayong Buntag, Gubat!") and the quick-action grid.
 - Browse and read all published news articles and announcements.
 - View the emergency screen: 911 slide-to-call, COMCEN hotlines (Smart, TNT, Landline), PNP, BFP, partner hospitals.
 - Use one-tap call and copy-to-clipboard on any hotline number.
 - Browse the LGU services directory and citizen guide (read-only).
 - Browse the emergency directory (hospitals, fire stations, police stations).
+- Browse the **Discover Gubat** surface (read-only): tourist spots, festivals and cultural heritage, and local delicacies and products.
+- Browse **Transparency & Good Governance** (read-only, public): Program and Projects, Bids and Projects, Financial Reports, Annual Budget, Legislative Ordinances, and Executive Orders.
 
 **Cannot:**
 
@@ -212,7 +223,11 @@ The system shall support exactly **four (4)** canonical user roles across both p
   - Receive push notification on every status change.
 - **Notifications**
   - Receive official LGU announcements and emergency broadcast alerts via push.
+  - Receive optional push notifications when a new Discover Gubat item (tourist spot, festival/culture article, or local product) is published, if the category is enabled.
+  - Subscribe to push notifications for new Transparency & Good Governance items, if the `transparency` category is enabled.
   - View complete in-app notification history.
+- **Discover Gubat**
+  - All Guest Discover Gubat access (tourist spots, festivals and culture, local delicacies and products).
 
 ### 5.3 Moderator
 
@@ -240,6 +255,12 @@ The system shall support exactly **four (4)** canonical user roles across both p
   - Add, edit, and deactivate entries in the COMCEN hotlines list and hospital/BFP/PNP directory.
   - Compose and send emergency broadcast push notifications to all app users.
   - View history of all sent broadcast alerts.
+- **Discover Gubat (Tourism, Culture & Local Products)**
+  - Create, edit, publish, schedule, and archive tourist spots, festival/culture articles, and local delicacy/product entries (canonical statuses: **Draft | Published | Archived**).
+  - Upload photos and assign categories to each entry; set a featured image and map location for tourist spots.
+- **Transparency CMS**
+  - Create, edit, publish, schedule, and archive transparency items of any of the six types: Program and Projects, Bids and Projects, Financial Reports, Annual Budget, Legislative Ordinances, and Executive Orders.
+  - Upload attachments, preview the citizen-facing detail, and optionally notify subscribers on publish.
 
 **Cannot:**
 
@@ -269,6 +290,12 @@ The system shall support exactly **four (4)** canonical user roles across both p
 - **Emergency Management**
   - Permanently delete any emergency directory entry.
   - View and manage the full broadcast alert history.
+- **Discover Gubat Oversight**
+  - All Moderator Discover Gubat access.
+  - Permanently delete any tourist spot, festival/culture article, or local product entry.
+- **Transparency Oversight**
+  - Permanently delete any transparency item with confirmation and audit logging.
+  - Export the transparency item list to CSV.
 - **Analytics and Reports**
   - View the full system analytics dashboard.
   - Filter analytics by date range, barangay, and service type.
@@ -292,7 +319,7 @@ Two clusters are designated **Focused Development** because they represent the h
 
 ### 6.1 Citizen Onboarding and Public Access *(Track 1)*
 
-**Why priority:** opens the citizen funnel and surfaces emergency content publicly. Even before authenticated features ship, the Municipality of Igubat must be able to publish news and reach residents with emergency information.
+**Why priority:** opens the citizen funnel and surfaces emergency content publicly. Even before authenticated features ship, the Municipality of Gubat, Sorsogon, must be able to publish news and reach residents with emergency information.
 
 **Scope:**
 
@@ -366,7 +393,7 @@ Each module defines its purpose and the specific functional requirements per app
 - View and update personal profile: name, address, barangay, contact number.
 - Upload or change a profile photo.
 - Change account password (requires current password verification).
-- Set notification preferences: enable or disable specific push notification types (news, service requests, issue reports, emergency broadcasts).
+- Set notification preferences: enable or disable specific push notification types (news, service requests, issue reports, Discover Gubat, transparency, emergency broadcasts).
 - Set appearance preference: light mode or dark mode.
 - View account registration date and account status.
 
@@ -389,8 +416,8 @@ Each module defines its purpose and the specific functional requirements per app
 
 **Guest:**
 
-- View a time-of-day greeting banner using Filipino/Visayan salutations (e.g., "Maayong Buntag, Igubat!" / "Magandang Umaga, Igubat!").
-- View a quick-action grid with navigation tiles: **Services, Citizen Guide, E-Services, Emergency, Utilities, Transport, Business, View More**.
+- View a time-of-day greeting banner using Filipino/Visayan salutations (e.g., "Maayong Buntag, Gubat!" / "Magandang Umaga, Gubat!").
+- View a quick-action grid with navigation tiles: **Services, Citizen Guide, E-Services, Emergency, Utilities, Transport, Business, Discover Gubat, View More**.
 - View a "Help us improve our city" banner with a sign-in call-to-action.
 - Notification bell icon redirects to sign-in when tapped.
 
@@ -547,7 +574,7 @@ Each module defines its purpose and the specific functional requirements per app
 
 **Authenticated User:**
 
-- Receive push notifications for: new articles, emergency broadcasts, service request status updates, and issue report status updates.
+- Receive push notifications for: new articles, new Discover Gubat items, new transparency items, emergency broadcasts, service request status updates, and issue report status updates.
 - View all received notifications in the in-app notification inbox.
 - Mark notifications as read or dismiss them.
 - Configure which notification types to receive in account settings.
@@ -555,6 +582,7 @@ Each module defines its purpose and the specific functional requirements per app
 **Moderator:**
 
 - Optionally trigger push notification to all app users when publishing a new article.
+- Optionally trigger push notification to opted-in citizens when publishing a Discover Gubat or Transparency item.
 - Compose and send emergency broadcast push notification alerts.
 
 **Admin:**
@@ -641,6 +669,68 @@ Each module defines its purpose and the specific functional requirements per app
 
 ---
 
+### 7.12 Module 12 — Tourism, Culture & Local Products ("Discover Gubat")
+
+**Purpose:** Showcase the identity of Gubat, Sorsogon — its tourist destinations, festivals and cultural heritage, and homegrown delicacies and products — through a dedicated public surface ("Discover Gubat") that promotes local tourism and livelihood. The surface is public (no authentication required) and available offline once cached.
+
+**Content sub-surfaces and canonical categories:**
+
+- **Tourist Spots** — entry fields: name, category, description, photos, and an optional map location/pin (latitude/longitude). Categories: **Beaches & Surfing, Nature & Eco-Tourism, Heritage & Landmarks**. (Representative Gubat content: Buenavista Beach and Rizal Beach (surfing), Dulangan-Nasipit estuary (bioluminescence), Castillo de Gubat watchtower, San Antonio de Padua Parish Church.)
+- **Festivals & Culture** — article/event entries on local festivals, history, heritage, dialect, and traditions. (Representative content: Ginubat Festival in June, town founding 1764, the Gubatnon/Southern Sorsoganon dialect, pottery in Brgy. Paradihon.)
+- **Local Delicacies & Products ("Taste & Take Home")** — directory entries: name, type, description, photo, and a where-to-buy / pasalubong note. Categories: **Delicacies/Kakanin, Pasalubong, Handicrafts/OTOP, Seafood, Pili Products**. (Representative content: timitim, salanigo abaca slippers (OTOP), binut-ong, dalu-dalo, sikad-sikad, pili nuts.)
+
+**Guest:**
+
+- Browse all published Discover Gubat content across the three sub-surfaces (read-only).
+- Open a tourist spot to view its photos, description, and map location.
+- Read a festival/culture article in full.
+- Browse local delicacies and products and read where-to-buy / pasalubong information.
+- Filter or browse by category within each sub-surface.
+
+**Authenticated User:**
+
+- All Guest Discover Gubat access.
+- Receive an optional push notification when a new Discover Gubat item is published, subject to notification preferences (cross-reference Module 8).
+
+**Moderator:**
+
+- Create, edit, publish, schedule, and archive Discover Gubat entries using the canonical content lifecycle: **Draft | Published | Archived**.
+- Upload and manage photos; assign categories; set a featured image; set the map location for tourist spots.
+- Preview an entry as a citizen would see it before publishing.
+- Optionally trigger a push notification to citizens when publishing a new entry.
+
+**Admin:**
+
+- All Moderator Discover Gubat access.
+- Permanently delete any tourist spot, festival/culture article, or local product entry (soft-delete is the default, with a 30-day retention; Admin may force permanent delete with confirmation).
+
+---
+
+### 7.13 Module 13 — Transparency and Good Governance
+
+**Purpose:** Give every constituent of Gubat a single mobile entry point to find, read, and download **what the LGU is doing, what it is buying, how it spends, and what it has enacted** — fulfilling the LGU's Full Disclosure Policy (DILG MC 2010-83 / FDPP) obligations and the "Know where your taxes go" promise. Regulatory anchors: **RA 9184** (procurement bids), **RA 7160** (annual budget, ordinances), **RA 11032** (citizen access to records).
+
+**Six content types** (single mobile section above "Discover Latest News", rendered as a 2×3 grid of tiles):
+
+1. **Program and Projects** — LGU programs/projects: status, schedule, location/barangay, implementing office, beneficiaries, cost, photos.
+2. **Bids and Projects** — procurement notices per RA 9184: ABC, closing date, mode, awarded contractor, bid status.
+3. **Financial Reports** — SAOB, SRE, COA Annual Audit Report, Quarterly Financial Statements (PDFs with fiscal period).
+4. **Annual Budget** — annual/supplemental/executive budget by fiscal year, total amount, PDF.
+5. **Legislative Ordinances** — Sangguniang Bayan ordinances/resolutions: ordinance number, principal author, dates, full text.
+6. **Executive Orders** — Office of the Mayor EOs: EO number, issuing official, dates, full text.
+
+**Lifecycle:** the canonical `Draft → Scheduled → Published → Archived` lifecycle (shared with News and Discover Gubat). Scheduled items auto-publish at `publishedAt`; soft-delete (30-day retention) is the default, with Admin-only permanent delete.
+
+**Guest / Authenticated User:** browse each category (published only, most-recent first), open item detail with a type-specific metadata band, download attachments (PDF/JPG/PNG) via signed URL, search/filter by fiscal year and status. Authenticated Users may subscribe to the `transparency` notification category and are deep-linked to item detail when tapping a push.
+
+**Moderator:** create/edit/save-draft/schedule/publish/archive items of any of the six types; upload up to 10 attachments (≤10 MB each); optionally notify subscribers on publish; preview as citizen.
+
+**Admin:** all Moderator capabilities plus permanently delete any item (confirmation + audit) and export the transparency item list to CSV.
+
+**Notifications & Audit:** publishing with "Notify subscribers" fans out in-app + push + email to opted-in Authenticated Users via Module 8. Every create/update/status-transition/permanent-delete/notify writes an `audit_logs` entry.
+
+---
+
 ## 8. NON-FUNCTIONAL REQUIREMENTS
 
 
@@ -701,6 +791,7 @@ The system shall support the following notification channels:
 - Uploaded files shall be accessible only through authenticated, **time-limited signed URLs**.
 - The admin portal shall include a media asset manager allowing Moderators to browse, upload, and delete media (with delete being soft).
 - File deletion shall default to **soft-delete (files retained for 30 days before permanent removal)**; Admin may force permanent delete.
+- **Transparency (Module 13) attachments** (PDF/JPG/PNG, ≤10 MB each, max 10 per item) share this same signed-URL + MIME-validation + virus-scan + soft-delete pipeline.
 
 ---
 
@@ -721,6 +812,8 @@ The system shall support the following notification channels:
   - The most recently loaded **20 news articles**.
   - The **emergency hotline numbers** and directory listings (COMCEN, hospitals, BFP, PNP).
   - The **citizen guide pages**.
+  - The **Discover Gubat** content most recently loaded: tourist spots, festival/culture articles, and the local delicacies and products directory.
+  - The latest **20 published Transparency items per content type**, plus attachment metadata; attachment files require network unless previously opened.
 - Cached content shall display a **"Last updated"** timestamp.
 - If a citizen attempts to submit a request or report without internet connection, the system shall display an offline notice and prompt retry when connectivity is restored.
 - The application shall automatically retry failed submissions when internet connection is detected, preserving the original submission timestamp.
@@ -738,10 +831,12 @@ Aligned to the four-phase sequence defined in `igubat_proposal.md` §5.
 - Module 3 — Home and Navigation (Section 7.3)
 - Module 4 — News and Announcements (Section 7.4)
 - Module 7 — Emergency Hotline and Directory (Section 7.7)
+- Module 12 — Tourism, Culture & Local Products / "Discover Gubat" (Section 7.12)
+- Module 13 — Transparency and Good Governance (Section 7.13)
 - Cross-cutting: File and Media Management foundational scope (Section 11), Connectivity and Offline Support (Section 13).
 - Initial deployment, environments, and hosting setup.
 
-> **Outcome:** The Municipality of Igubat can publish official content and reach residents with emergency information from day one. The citizen registration funnel is open.
+> **Outcome:** The Municipality of Gubat, Sorsogon, can publish official content, disclose transparency records, and reach residents with emergency information from day one. The citizen registration funnel is open.
 
 ### 14.2 Phase 2 — Service Operations
 
@@ -797,11 +892,11 @@ The LGU ICT Office will provide **cloud hosting** (or on-premises capacity) size
 
 ### 15.5
 
-The LGU ICT Office will provide **content for launch**: COMCEN hotlines, partner directory (hospitals, BFP, PNP), seed news articles, and the Privacy Notice text reviewed by the Data Protection Officer.
+The LGU ICT Office will provide **content for launch**: COMCEN hotlines, partner directory (hospitals, BFP, PNP), seed news articles, seed Discover Gubat content (tourist spots, festival/culture articles, and local delicacy/product entries with photos), seed Transparency items across all six disclosure types, and the Privacy Notice text reviewed by the Data Protection Officer.
 
 ### 15.6
 
-The Municipality of Igubat will designate at least **one Admin** before user-management features go live, and at least **one Moderator per operational module** before service operations features go live.
+The Municipality of Gubat, Sorsogon, will designate at least **one Admin** before user-management features go live, and at least **one Moderator per operational module** before service operations features go live.
 
 ### 15.7
 
@@ -809,7 +904,7 @@ The basemap and map tile provider (e.g., OpenStreetMap, Mapbox, Google Maps) wil
 
 ### 15.8
 
-The Municipality of Igubat will publish the application on the Google Play Store and Apple App Store under its own developer accounts; the LGU ICT Office will manage publication and store listings.
+The Municipality of Gubat, Sorsogon, will publish the application on the Google Play Store and Apple App Store under its own developer accounts; the LGU ICT Office will manage publication and store listings.
 
 ### 15.9
 
@@ -822,24 +917,26 @@ Barangay names and the canonical barangay master list will be supplied by the LG
 The following are **explicitly out of scope** for the current build. They remain available for reactivation in future phases.
 
 
-| Item                                                                                | Reason                                                              |
-| ----------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| Online payment of fees, taxes, or permits                                           | Platform does not handle payments in this release                   |
-| Civil registration (birth/marriage/death certificate issuance integration with PSA) | Requires PSA partnership and separate compliance review             |
-| Tax declaration and Real Property Tax (RPT) computation                             | Future LGU revenue track                                            |
-| Two-Factor Authentication (TOTP/Authenticator app) for citizens                     | Mobile-app OTP is sufficient in v1                                  |
-| Multi-language UI beyond bilingual greetings and core labels                        | Localization framework included but full translation deferred       |
-| Public-facing API for third-party integrations                                      | Internal API only in v1                                             |
-| Field-officer mobile companion app                                                  | Moderators operate from the web portal only                         |
-| Chatbot or AI assistant inside the mobile app                                       | Not in current proposal                                             |
-| Door-to-door barangay verification workflow                                         | Manual verification by Admin in v1                                  |
-| SMS-based two-way reporting                                                         | Push-based notifications only in v1                                 |
-| In-app live video streaming of LGU sessions                                         | Out of scope; links to external streams may be embedded in articles |
-| Integration with national LGU systems (DICT eGov platforms)                         | Deferred pending DICT coordination                                  |
+| Item                                                                                | Reason                                                                       |
+| ----------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| Online payment of fees, taxes, or permits                                           | Platform does not handle payments in this release                            |
+| Civil registration (birth/marriage/death certificate issuance integration with PSA) | Requires PSA partnership and separate compliance review                      |
+| Tax declaration and Real Property Tax (RPT) computation                             | Future LGU revenue track                                                     |
+| Two-Factor Authentication (TOTP/Authenticator app) for citizens                     | Mobile-app OTP is sufficient in v1                                           |
+| Multi-language UI beyond bilingual greetings and core labels                        | Localization framework included but full translation deferred                |
+| Public-facing API for third-party integrations                                      | Internal API only in v1                                                      |
+| Field-officer mobile companion app                                                  | Moderators operate from the web portal only                                  |
+| Chatbot or AI assistant inside the mobile app                                       | Not in current proposal                                                      |
+| Door-to-door barangay verification workflow                                         | Manual verification by Admin in v1                                           |
+| SMS-based two-way reporting                                                         | Push-based notifications only in v1                                          |
+| In-app live video streaming of LGU sessions                                         | Out of scope; links to external streams may be embedded in articles          |
+| Integration with national LGU systems (DICT eGov platforms)                         | Deferred pending DICT coordination                                           |
+| Booking, reservation, or ticketing for tourist spots, accommodations, or events     | Discover Gubat is an informational surface only in v1                        |
+| E-commerce, online ordering, or payments for local products/delicacies              | Local products are showcased as a read-only directory in v1; no transactions |
 
 
 ---
 
-*Document version 3.1 — aligned to `igubat_proposal.md`. Canonical roles: Guest, Authenticated User, Moderator, Admin. Canonical service statuses: Pending → In Review → Approved | Rejected | For Pickup → Completed. Canonical report statuses: Received → In Progress → Resolved → Closed. Canonical article statuses: Draft | Published | Archived.*
+*Document version 3.2 — aligned to `igubat_proposal.md`. Canonical roles: Guest, Authenticated User, Moderator, Admin. Canonical service statuses: Pending → In Review → Approved | Rejected | For Pickup → Completed. Canonical report statuses: Received → In Progress → Resolved → Closed. Canonical article statuses (also used by Discover Gubat and Transparency entries): Draft | Scheduled | Published | Archived.*
 
-*Prepared for the Municipality of Igubat, ICT Office.*
+*Prepared for the Municipality of Gubat, Sorsogon, ICT Office.*
