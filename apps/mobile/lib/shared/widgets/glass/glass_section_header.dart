@@ -34,7 +34,7 @@ class GlassSectionHeader extends StatelessWidget {
             style: TextButton.styleFrom(
               foregroundColor: AppTheme.secondaryColor,
               padding: EdgeInsets.zero,
-              minimumSize: const Size(48, 48),
+              minimumSize: const Size(36, 36),
             ),
             child: Text(
               actionLabel!,

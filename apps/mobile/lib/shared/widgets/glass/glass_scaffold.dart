@@ -96,18 +96,17 @@ class GlassScaffold extends StatelessWidget {
   }
 }
 
-class _GlassAppBar extends StatelessWidget {
-  const _GlassAppBar({
-    required this.title,
-    this.leading,
-    this.actions,
+/// Frosted primary-color toolbar shell shared by tab app bars and the
+/// collapsed Home header.
+class GlassToolbarShell extends StatelessWidget {
+  const GlassToolbarShell({
+    super.key,
     required this.isDark,
+    required this.child,
   });
 
-  final String title;
-  final Widget? leading;
-  final List<Widget>? actions;
   final bool isDark;
+  final Widget child;
 
   @override
   Widget build(BuildContext context) {
@@ -135,31 +134,53 @@ class _GlassAppBar extends StatelessWidget {
               ),
             ],
           ),
-          child: SafeArea(
-            bottom: false,
-            child: IconTheme(
-              data: const IconThemeData(color: Colors.white),
-              child: SizedBox(
-                height: kToolbarHeight,
-                child: NavigationToolbar(
-                  leading: leading,
-                  middle: Text(
-                    title,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                    ),
-                  ),
-                  centerMiddle: true,
-                  trailing: actions != null
-                      ? Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: actions!,
-                        )
-                      : null,
+          child: child,
+        ),
+      ),
+    );
+  }
+}
+
+class _GlassAppBar extends StatelessWidget {
+  const _GlassAppBar({
+    required this.title,
+    this.leading,
+    this.actions,
+    required this.isDark,
+  });
+
+  final String title;
+  final Widget? leading;
+  final List<Widget>? actions;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassToolbarShell(
+      isDark: isDark,
+      child: SafeArea(
+        bottom: false,
+        child: IconTheme(
+          data: const IconThemeData(color: Colors.white),
+          child: SizedBox(
+            height: kToolbarHeight,
+            child: NavigationToolbar(
+              leading: leading,
+              middle: Text(
+                title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
                 ),
               ),
+              centerMiddle: true,
+              trailing: actions != null
+                  ? Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: actions!,
+                    )
+                  : null,
             ),
           ),
         ),

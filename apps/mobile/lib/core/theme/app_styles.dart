@@ -34,6 +34,15 @@ class AppLayout {
   static const double navHorizontalMargin = 20.0;
   static const double navBorderRadius = 24.0;
 
+  /// Screen-edge and section rhythm (matches Emergency tab density).
+  static const double screenHorizontal = 24.0;
+  static const double screenTop = 16.0;
+  static const double sectionGap = 20.0;
+  static const double titleToContent = 12.0;
+  static const double blockGap = 12.0;
+  static const double listItemGap = 12.0;
+  static const double gridGap = 12.0;
+
   /// Scroll padding only — keeps content scrollable behind the floating nav.
   static double scrollBottomPadding(BuildContext context) {
     return navHeight +

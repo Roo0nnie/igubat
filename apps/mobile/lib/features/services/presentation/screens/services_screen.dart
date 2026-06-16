@@ -60,9 +60,9 @@ class _ServicesScreenState extends State<ServicesScreen> {
       onRefresh: () async => Future.delayed(const Duration(milliseconds: 600)),
       body: ListView(
         padding: EdgeInsets.fromLTRB(
-          24,
-          16,
-          24,
+          AppLayout.screenHorizontal,
+          AppLayout.screenTop,
+          AppLayout.screenHorizontal,
           AppLayout.scrollBottomPadding(context),
         ),
         children: [
@@ -75,12 +75,12 @@ class _ServicesScreenState extends State<ServicesScreen> {
             'Select a category to view available services and submit requests.',
             style: TextStyle(color: glass.textOnGlassMuted, fontSize: 14),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: AppLayout.blockGap),
           GlassSearchBar(
             hintText: 'Search services...',
             onChanged: (v) => setState(() => _searchQuery = v),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.s16),
           SizedBox(
             height: 40,
             child: ListView.separated(
@@ -106,15 +106,15 @@ class _ServicesScreenState extends State<ServicesScreen> {
               },
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: AppSpacing.s16),
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              childAspectRatio: 0.78,
+              crossAxisSpacing: AppLayout.gridGap,
+              mainAxisSpacing: AppLayout.gridGap,
+              childAspectRatio: 0.92,
             ),
             itemCount: _filteredServices.length,
             itemBuilder: (context, index) {
@@ -144,7 +144,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
                           const GlassBadge(label: 'Popular', compact: true),
                       ],
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: AppSpacing.s8),
                     Text(
                       service.title,
                       style: TextStyle(
