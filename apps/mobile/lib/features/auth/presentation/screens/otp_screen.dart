@@ -1,10 +1,10 @@
 import 'dart:async';
 
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mobile/core/error/failures.dart';
 import 'package:mobile/core/navigation/app_router.dart';
 import 'package:mobile/core/widgets/igubat_logo.dart';
 import 'package:mobile/features/auth/presentation/providers/auth_provider.dart';
@@ -77,43 +77,29 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
       GoRouterState.of(context).uri.queryParameters[AppRoutes.emailQueryParam] ??
       '';
 
-  String? _extractBackendMessage(DioException error) {
-    final data = error.response?.data;
-    if (data is Map && data['message'] != null) {
-      return data['message'].toString();
-    }
-    if (data is String && data.isNotEmpty) return data;
-    return error.response?.statusMessage ?? error.message;
-  }
-
   String _otpErrorMessage(Object? error) {
-    if (error is DioException) {
-      final message = _extractBackendMessage(error);
-      switch (message) {
-        case 'Invalid OTP':
-          return 'The code is incorrect. Please check the latest OTP and '
-              'try again.';
-        case 'OTP expired':
-          return 'This code has expired. Tap Resend code to get a new one.';
-        case 'Too many attempts':
-          return 'Too many incorrect attempts. Please request a new code.';
-        case 'User not found':
-          return 'We could not find this account. Please register again.';
-        case 'Invalid email':
-          return 'We could not verify this email. Please register again.';
-      }
-      if (error.response?.statusCode == 429) {
-        return 'Please wait before requesting or verifying another code.';
-      }
-      return message ?? 'Could not verify the code. Please try again.';
+    if (error is! Failure) {
+      return 'Could not verify the code. Please try again.';
     }
-
-    final message = error?.toString();
-    if (message != null && message.contains('no session was returned')) {
+    final message = error.message;
+    switch (message) {
+      case 'Invalid OTP':
+        return 'The code is incorrect. Please check the latest OTP and '
+            'try again.';
+      case 'OTP expired':
+        return 'This code has expired. Tap Resend code to get a new one.';
+      case 'Too many attempts':
+        return 'Too many incorrect attempts. Please request a new code.';
+      case 'User not found':
+        return 'We could not find this account. Please register again.';
+      case 'Invalid email':
+        return 'We could not verify this email. Please register again.';
+    }
+    if (message.contains('no session was returned')) {
       return 'Your email was verified, but the app could not start your '
           'session. Please sign in.';
     }
-    return 'Could not verify the code. Please try again.';
+    return message;
   }
 
   void _handleResend() async {

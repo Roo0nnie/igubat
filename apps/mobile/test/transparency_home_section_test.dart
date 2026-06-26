@@ -2,24 +2,26 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/core/theme/app_theme.dart';
-import 'package:mobile/features/auth/data/auth_repository.dart';
-import 'package:mobile/features/auth/data/models/session_model.dart';
+import 'package:mobile/core/usecases/result.dart';
+import 'package:mobile/features/auth/data/repositories/auth_repository_impl.dart';
+import 'package:mobile/features/auth/domain/entities/session.dart';
+import 'package:mobile/features/auth/domain/repositories/auth_repository.dart';
 import 'package:mobile/features/home/presentation/screens/home_screen.dart';
 import 'package:mobile/features/transparency/data/models/transparency_type.dart';
 import 'package:mobile/features/transparency/presentation/widgets/transparency_tile.dart';
 
 class _GuestAuthRepository implements AuthRepository {
   @override
-  Future<SessionModel?> getSession() async => null;
+  FutureResult<Session?> getCurrentSession() async => const Right(null);
 
   @override
-  Future<SessionModel?> signIn({
+  FutureResult<Session?> signIn({
     required String email,
     required String password,
-  }) async => null;
+  }) async => const Right(null);
 
   @override
-  Future<void> signUp({
+  FutureResult<Unit> signUp({
     required String email,
     required String password,
     required String name,
@@ -27,19 +29,20 @@ class _GuestAuthRepository implements AuthRepository {
     required String barangay,
     required String address,
     required bool dpaConsent,
-  }) async {}
+  }) async => const Right(unit);
 
   @override
-  Future<void> sendVerificationOtp({required String email}) async {}
+  FutureResult<Unit> sendVerificationOtp({required String email}) async =>
+      const Right(unit);
 
   @override
-  Future<SessionModel?> verifyEmailOtp({
+  FutureResult<Session?> verifyEmailOtp({
     required String email,
     required String otp,
-  }) async => null;
+  }) async => const Right(null);
 
   @override
-  Future<void> signOut() async {}
+  FutureResult<Unit> signOut() async => const Right(unit);
 }
 
 void main() {

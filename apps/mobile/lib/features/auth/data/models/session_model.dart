@@ -1,5 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:mobile/features/auth/data/models/user_model.dart';
+import 'package:mobile/features/auth/domain/entities/session.dart';
 
 part 'session_model.freezed.dart';
 part 'session_model.g.dart';
@@ -37,10 +38,25 @@ abstract class SessionData with _$SessionData {
 /// factory so the rest of the app always sees `session.token` and `user`.
 @freezed
 abstract class SessionModel with _$SessionModel {
+  const SessionModel._();
+
   const factory SessionModel({
     required SessionData session,
     required UserModel user,
   }) = _SessionModel;
+
+  /// Maps this DTO to the [Session] domain entity.
+  Session toEntity() => Session(
+    token: SessionToken(
+      value: session.token,
+      id: session.id,
+      userId: session.userId,
+      expiresAt: session.expiresAt,
+      createdAt: session.createdAt,
+      updatedAt: session.updatedAt,
+    ),
+    user: user.toEntity(),
+  );
 
   /// Parses both Better Auth response shapes into one model.
   factory SessionModel.fromAuthResponse(Map<String, dynamic> json) {

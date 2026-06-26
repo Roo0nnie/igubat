@@ -1,13 +1,12 @@
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mobile/core/error/failures.dart';
 import 'package:mobile/core/navigation/app_router.dart';
 import 'package:mobile/core/widgets/igubat_logo.dart';
 import 'package:mobile/features/auth/presentation/providers/auth_provider.dart';
 import 'package:mobile/features/auth/presentation/providers/auth_redirect_provider.dart';
-import 'package:mobile/shared/widgets/app_button.dart';
 import 'package:mobile/shared/widgets/glass/glass_background.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -46,17 +45,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       if (!context.mounted) return;
 
       final error = authState.error;
-      String message;
-      if (error is DioException) {
-        final data = error.response?.data;
-        if (data is Map<String, dynamic> && data.containsKey('message')) {
-          message = data['message'].toString();
-        } else {
-          message = error.response?.statusMessage ?? error.message ?? 'Unknown network error';
-        }
-      } else {
-        message = error.toString();
-      }
+      final message = error is Failure
+          ? error.message
+          : (error?.toString() ?? 'Unknown error. Please try again.');
 
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()

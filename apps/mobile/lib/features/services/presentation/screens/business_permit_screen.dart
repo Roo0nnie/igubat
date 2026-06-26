@@ -13,7 +13,8 @@ import '../../../../shared/widgets/glass/glass_button.dart';
 import '../../../../shared/widgets/glass/glass_card.dart';
 import '../../../../shared/widgets/glass/glass_scaffold.dart';
 import '../../../../shared/widgets/glass/glass_surface.dart';
-import 'request_details_screen.dart';
+import '../../../applications/presentation/screens/applications_screen.dart';
+import '../providers/services_provider.dart';
 
 /// Business Permit service detail (TOR Module 5).
 ///
@@ -24,6 +25,10 @@ import 'request_details_screen.dart';
 /// until the user authenticates.
 class BusinessPermitScreen extends ConsumerWidget {
   const BusinessPermitScreen({super.key});
+
+  /// Catalog slug for the Business Permit service. Used to load the live
+  /// service-type detail (description) from `/public/services/:slug`.
+  static const String _serviceSlug = 'business-permit';
 
   Color _statusColor(String status) {
     switch (status) {
@@ -42,6 +47,16 @@ class BusinessPermitScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isAuthenticated = ref.watch(isAuthenticatedProvider);
     final user = ref.watch(currentUserProvider);
+    // Live Business Permit service detail. The description drives the intro
+    // card copy; while loading or if the slug is unavailable we keep the
+    // existing static copy so the screen never breaks.
+    final serviceAsync = ref.watch(serviceTypeBySlugProvider(_serviceSlug));
+    final serviceDescription = serviceAsync.maybeWhen(
+      data: (type) => (type.description?.trim().isNotEmpty ?? false)
+          ? type.description!.trim()
+          : null,
+      orElse: () => null,
+    );
     // Scope the history to the signed-in citizen's own submissions: this is a
     // citizen-facing surface (Module 5), so other applicants' names and
     // statuses must never be rendered here. Guests resolve to no user and see
@@ -65,7 +80,8 @@ class BusinessPermitScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Apply for a new permit or renew an existing one.',
+                    serviceDescription ??
+                        'Apply for a new permit or renew an existing one.',
                     style: TextStyle(color: glass.textOnGlassMuted),
                   ),
                   const SizedBox(height: 16),
@@ -165,7 +181,7 @@ class BusinessPermitScreen extends ConsumerWidget {
         onTap: () {
           Navigator.push(
             context,
-            GlassPageRoute(page: RequestDetailsScreen(request: request)),
+            GlassPageRoute(page: const ApplicationsScreen()),
           );
         },
         child: Column(

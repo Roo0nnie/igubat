@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:mobile/core/theme/app_styles.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:toastification/toastification.dart';
+import 'package:mobile/core/error/failures.dart';
 import 'package:mobile/core/widgets/tour_item.dart';
-import 'package:mobile/features/todos/data/models/todo_model.dart';
+import 'package:mobile/features/todos/domain/entities/todo.dart';
 import 'package:mobile/features/todos/presentation/providers/todos_provider.dart';
 import 'package:mobile/shared/widgets/task_tile.dart';
 import 'package:mobile/shared/widgets/app_text_field.dart';
@@ -98,7 +99,7 @@ class TodosScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                error.toString(),
+                error is Failure ? error.message : error.toString(),
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
@@ -189,7 +190,7 @@ class TodosScreen extends ConsumerWidget {
 class _TodoItem extends ConsumerWidget {
   const _TodoItem({required this.todo});
 
-  final TodoModel todo;
+  final Todo todo;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

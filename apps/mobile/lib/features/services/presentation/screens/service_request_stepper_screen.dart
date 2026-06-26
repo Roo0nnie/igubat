@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/mock/seed_data.dart';
+import '../../../../core/mock/seed_data.dart' show Service;
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/glass_tokens.dart';
 import '../../../../shared/widgets/app_stepper.dart';
@@ -8,18 +9,34 @@ import '../../../../shared/widgets/glass/glass_button.dart';
 import '../../../../shared/widgets/glass/glass_card.dart';
 import '../../../../shared/widgets/glass/glass_scaffold.dart';
 import '../../../../shared/widgets/glass/glass_surface.dart';
+import '../../../service_requests/domain/entities/service_request.dart';
+import '../../../service_requests/domain/usecases/service_request_params.dart';
+import '../../../service_requests/presentation/providers/service_requests_provider.dart';
 
-class ServiceRequestStepperScreen extends StatefulWidget {
-  const ServiceRequestStepperScreen({super.key, required this.service});
+class ServiceRequestStepperScreen extends ConsumerStatefulWidget {
+  const ServiceRequestStepperScreen({
+    super.key,
+    required this.service,
+    this.serviceTypeId,
+  });
 
   final Service service;
 
+  /// The live `ServiceType.id` this request targets. When null (e.g. from a
+  /// seed-only entry point) submission is disabled and the receipt stays an
+  /// offline sample.
+  final int? serviceTypeId;
+
   @override
-  State<ServiceRequestStepperScreen> createState() => _ServiceRequestStepperScreenState();
+  ConsumerState<ServiceRequestStepperScreen> createState() =>
+      _ServiceRequestStepperScreenState();
 }
 
-class _ServiceRequestStepperScreenState extends State<ServiceRequestStepperScreen> {
+class _ServiceRequestStepperScreenState
+    extends ConsumerState<ServiceRequestStepperScreen> {
   int _step = 0;
+  bool _submitting = false;
+  ServiceRequest? _createdRequest;
   final _descriptionController = TextEditingController();
   final _dateController = TextEditingController();
 
@@ -44,7 +61,8 @@ class _ServiceRequestStepperScreenState extends State<ServiceRequestStepperScree
     return ['Valid ID', 'Request details', 'Supporting document if applicable'];
   }
 
-  String get _trackingNumber {
+  /// Fallback tracking number shown only when no live request was created.
+  String get _sampleTrackingNumber {
     final prefix = widget.service.title
         .split(RegExp(r'\s+'))
         .where((part) => part.isNotEmpty)
@@ -54,10 +72,77 @@ class _ServiceRequestStepperScreenState extends State<ServiceRequestStepperScree
     return '${prefix.isEmpty ? 'SR' : prefix}-2026-${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}';
   }
 
+  DateTime? _parsePreferredDate() {
+    final raw = _dateController.text.trim();
+    if (raw.isEmpty) return null;
+    return DateTime.tryParse(raw);
+  }
+
+  /// Submits the request to the backend and advances to the receipt step on
+  /// success. Returns true when the caller may advance the stepper.
+  Future<bool> _submitRequest() async {
+    final typeId = widget.serviceTypeId;
+    if (typeId == null) {
+      // No live service id available — keep the existing offline sample flow.
+      return true;
+    }
+
+    final description = _descriptionController.text.trim();
+    if (description.isEmpty) {
+      _showError('Please describe your request before continuing.');
+      return false;
+    }
+
+    setState(() => _submitting = true);
+    final created = await ref
+        .read(serviceRequestsControllerProvider.notifier)
+        .submit(
+          CreateServiceRequestParams(
+            serviceTypeId: typeId,
+            description: description,
+            preferredDate: _parsePreferredDate(),
+          ),
+        );
+    if (!mounted) return false;
+    setState(() => _submitting = false);
+
+    if (created == null) {
+      _showError('We could not submit your request. Please try again.');
+      return false;
+    }
+    setState(() => _createdRequest = created);
+    return true;
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: const Color(0xFFB91C1C)),
+    );
+  }
+
+  Future<void> _onPrimaryPressed(List<String> steps) async {
+    final lastIndex = steps.length - 1;
+
+    // Final ("Done") step just closes.
+    if (_step == lastIndex) {
+      Navigator.of(context).maybePop();
+      return;
+    }
+
+    // Transition from Upload -> Receipt is where we submit to the backend.
+    if (_step == lastIndex - 1) {
+      final ok = await _submitRequest();
+      if (!ok) return;
+    }
+
+    setState(() => _step++);
+  }
+
   @override
   Widget build(BuildContext context) {
     final glass = glassThemeOf(context);
     final steps = ['Review', 'Details', 'Upload', 'Receipt'];
+    final lastIndex = steps.length - 1;
 
     return GlassScaffold(
       title: widget.service.title,
@@ -74,26 +159,22 @@ class _ServiceRequestStepperScreenState extends State<ServiceRequestStepperScree
           const SizedBox(height: 16),
           Row(
             children: [
-              if (_step > 0)
+              if (_step > 0 && _step != lastIndex)
                 Expanded(
                   child: GlassButton(
                     label: 'Back',
                     variant: GlassButtonVariant.outline,
-                    onPressed: () => setState(() => _step--),
+                    onPressed: _submitting ? null : () => setState(() => _step--),
                   ),
                 ),
-              if (_step > 0) const SizedBox(width: 12),
+              if (_step > 0 && _step != lastIndex) const SizedBox(width: 12),
               Expanded(
                 child: GlassButton(
-                  label: _step == steps.length - 1 ? 'Done' : 'Continue',
-                  icon: _step == steps.length - 1 ? Icons.check : Icons.arrow_forward,
-                  onPressed: () {
-                    if (_step == steps.length - 1) {
-                      Navigator.of(context).maybePop();
-                      return;
-                    }
-                    setState(() => _step++);
-                  },
+                  label: _submitting
+                      ? 'Submitting...'
+                      : (_step == lastIndex ? 'Done' : 'Continue'),
+                  icon: _step == lastIndex ? Icons.check : Icons.arrow_forward,
+                  onPressed: _submitting ? null : () => _onPrimaryPressed(steps),
                 ),
               ),
             ],
@@ -145,7 +226,11 @@ class _ServiceRequestStepperScreenState extends State<ServiceRequestStepperScree
               const SizedBox(height: 12),
               TextField(
                 controller: _dateController,
-                decoration: const InputDecoration(labelText: 'Preferred date (optional)', border: OutlineInputBorder()),
+                decoration: const InputDecoration(
+                  labelText: 'Preferred date (optional)',
+                  hintText: 'YYYY-MM-DD',
+                  border: OutlineInputBorder(),
+                ),
               ),
             ],
           ),
@@ -166,19 +251,31 @@ class _ServiceRequestStepperScreenState extends State<ServiceRequestStepperScree
           ),
         );
       default:
+        final created = _createdRequest;
+        final trackingNumber = created?.trackingNumber ?? _sampleTrackingNumber;
+        final isLive = created != null;
         return GlassCard(
           intensity: GlassIntensity.prominent,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(Icons.receipt_long, color: AppTheme.secondaryColor, size: 44),
-              const SizedBox(height: 16),
-              Text('Request Prepared', style: TextStyle(color: glass.textOnGlass, fontSize: 22, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              Text(_trackingNumber, style: TextStyle(color: glass.textOnGlassMuted, fontWeight: FontWeight.w600)),
+              Icon(
+                isLive ? Icons.check_circle : Icons.receipt_long,
+                color: AppTheme.secondaryColor,
+                size: 44,
+              ),
               const SizedBox(height: 16),
               Text(
-                'This receipt is an offline sample. Once API submission is enabled on mobile, this screen will show the backend tracking number and timeline.',
+                isLive ? 'Request Submitted' : 'Request Prepared',
+                style: TextStyle(color: glass.textOnGlass, fontSize: 22, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Text(trackingNumber, style: TextStyle(color: glass.textOnGlassMuted, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 16),
+              Text(
+                isLive
+                    ? 'Your request has been received. Track its status anytime under My Requests using the tracking number above.'
+                    : 'This receipt is an offline sample. Once API submission is enabled for this service, this screen will show the backend tracking number and timeline.',
                 style: TextStyle(color: glass.textOnGlassMuted, height: 1.5),
               ),
             ],

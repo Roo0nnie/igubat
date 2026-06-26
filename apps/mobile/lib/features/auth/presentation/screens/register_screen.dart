@@ -3,6 +3,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mobile/core/error/failures.dart';
 import 'package:mobile/core/mock/seed_data.dart';
 import 'package:mobile/core/navigation/app_router.dart';
 import 'package:mobile/core/widgets/igubat_logo.dart';
@@ -79,6 +80,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     if (!registered) {
       if (!context.mounted) return;
       final error = ref.read(authStateProvider).error;
+      final message = error is Failure
+          ? error.message
+          : 'Registration failed. Please try again.';
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(
@@ -88,7 +92,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             backgroundColor: Colors.transparent,
             content: AwesomeSnackbarContent(
               title: 'Sign Up Failed',
-              message: error?.toString() ?? 'Registration failed. Please try again.',
+              message: message,
               contentType: ContentType.failure,
             ),
           ),

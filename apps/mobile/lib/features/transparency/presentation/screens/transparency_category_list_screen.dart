@@ -6,8 +6,10 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/glass_tokens.dart';
 import '../../../../shared/widgets/glass/glass_card.dart';
 import '../../../../shared/widgets/glass/glass_scaffold.dart';
-import '../../data/models/transparency_item.dart';
+import '../../../../shared/widgets/glass/glass_search_bar.dart';
+import '../../../../shared/widgets/glass/glass_surface.dart';
 import '../../data/models/transparency_type.dart';
+import '../../domain/entities/transparency_item.dart';
 import '../providers/transparency_list_provider.dart';
 import '../widgets/transparency_format.dart';
 
@@ -61,6 +63,7 @@ class _TransparencyCategoryListScreenState
 
   @override
   Widget build(BuildContext context) {
+    final glass = glassThemeOf(context);
     final listAsync = ref.watch(transparencyListProvider(widget.type));
     final lastUpdated = ref.watch(transparencyLastUpdatedProvider(widget.type));
     final servedFromCache = ref.watch(
@@ -70,6 +73,7 @@ class _TransparencyCategoryListScreenState
     return GlassScaffold(
       title: widget.type.label,
       bottomPadding: false,
+      useShellBackground: false,
       onRefresh: () async {
         ref.invalidate(transparencyListProvider(widget.type));
         await ref.read(transparencyListProvider(widget.type).future);
@@ -78,12 +82,15 @@ class _TransparencyCategoryListScreenState
         loading: () => const Center(
           child: Padding(
             padding: EdgeInsets.only(top: 80),
-            child: CircularProgressIndicator(),
+            child: CircularProgressIndicator(color: AppTheme.secondaryColor),
           ),
         ),
         error: (error, _) => Padding(
           padding: const EdgeInsets.all(24),
-          child: Text('Could not load items: $error'),
+          child: Text(
+            'Could not load items: $error',
+            style: TextStyle(color: glass.textOnGlassMuted),
+          ),
         ),
         data: (items) {
           final fiscalYears =
@@ -111,38 +118,36 @@ class _TransparencyCategoryListScreenState
                     vertical: 8,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFEF3C7),
+                    color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
                     'Last updated ${formatRelativeTime(lastUpdated)} - cached',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
-                      color: Color(0xFF92400E),
+                      color: glass.textOnGlass,
                     ),
                   ),
                 ),
-              _buildFilters(fiscalYears, statuses),
+              _buildFilters(context, fiscalYears, statuses),
               const SizedBox(height: 12),
-              TextField(
+              GlassSearchBar(
+                hintText: 'Search by title or reference number...',
                 onChanged: (value) => setState(() => _search = value),
-                decoration: InputDecoration(
-                  hintText: 'Search by title or reference number...',
-                  prefixIcon: const Icon(Icons.search, size: 20),
-                  isDense: true,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
               ),
               const SizedBox(height: 12),
               if (filtered.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 48),
-                  child: Center(child: Text('No items match your filters.')),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 48),
+                  child: Center(
+                    child: Text(
+                      'No items match your filters.',
+                      style: TextStyle(color: glass.textOnGlassMuted),
+                    ),
+                  ),
                 )
               else
-                ...filtered.map(_buildItemCard),
+                ...filtered.map((item) => _buildItemCard(context, item)),
             ],
           );
         },
@@ -150,22 +155,27 @@ class _TransparencyCategoryListScreenState
     );
   }
 
-  Widget _buildFilters(List<int> fiscalYears, List<String> statuses) {
+  Widget _buildFilters(
+    BuildContext context,
+    List<int> fiscalYears,
+    List<String> statuses,
+  ) {
     final chips = <Widget>[
-      _chip('All', _fiscalYearFilter == null && _statusFilter == null, () {
+      _chip(context, 'All', _fiscalYearFilter == null && _statusFilter == null, () {
         setState(() {
           _fiscalYearFilter = null;
           _statusFilter = null;
         });
       }),
       for (final year in fiscalYears)
-        _chip('FY $year', _fiscalYearFilter == year, () {
+        _chip(context, 'FY $year', _fiscalYearFilter == year, () {
           setState(
             () => _fiscalYearFilter = _fiscalYearFilter == year ? null : year,
           );
         }),
       for (final status in statuses)
         _chip(
+          context,
           status[0].toUpperCase() + status.substring(1),
           _statusFilter == status,
           () {
@@ -187,30 +197,40 @@ class _TransparencyCategoryListScreenState
     );
   }
 
-  Widget _chip(String label, bool active, VoidCallback onTap) {
+  Widget _chip(
+    BuildContext context,
+    String label,
+    bool active,
+    VoidCallback onTap,
+  ) {
+    final glass = glassThemeOf(context);
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: active ? AppTheme.primaryColor : Colors.white,
+          color: active
+              ? AppTheme.primaryColor
+              : glass.surfaceFor(GlassIntensity.prominent),
           borderRadius: BorderRadius.circular(999),
           border: Border.all(
-            color: active ? AppTheme.primaryColor : const Color(0xFFD1D5DB),
+            color: active ? AppTheme.primaryColor : glass.border,
           ),
         ),
         child: Text(
           label,
           style: TextStyle(
             fontSize: 12,
-            color: active ? Colors.white : const Color(0xFF374151),
+            color: active ? Colors.white : glass.textOnGlass,
           ),
         ),
       ),
     );
   }
 
-  Widget _buildItemCard(TransparencyItem item) {
+  Widget _buildItemCard(BuildContext context, TransparencyItem item) {
+    final glass = glassThemeOf(context);
     final status = _statusOf(item);
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -225,21 +245,21 @@ class _TransparencyCategoryListScreenState
             if (item.referenceNumber != null)
               Text(
                 item.referenceNumber!,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 0.5,
-                  color: Color(0xFF6B7280),
+                  color: glass.textOnGlassMuted,
                 ),
               ),
             const SizedBox(height: 4),
             Text(
               item.title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
                 height: 1.3,
-                color: Color(0xFF111827),
+                color: glass.textOnGlass,
               ),
             ),
             const SizedBox(height: 6),
@@ -252,14 +272,14 @@ class _TransparencyCategoryListScreenState
                       vertical: 2,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFECFDF5),
+                      color: AppTheme.secondaryColor.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
                       status[0].toUpperCase() + status.substring(1),
                       style: const TextStyle(
                         fontSize: 10,
-                        color: Color(0xFF047857),
+                        color: AppTheme.primaryColor,
                       ),
                     ),
                   ),
@@ -270,9 +290,9 @@ class _TransparencyCategoryListScreenState
                     item.summary ?? '',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
-                      color: Color(0xFF6B7280),
+                      color: glass.textOnGlassMuted,
                     ),
                   ),
                 ),

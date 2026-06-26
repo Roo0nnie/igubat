@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/mock/seed_data.dart';
 import '../../../../core/theme/app_styles.dart';
@@ -10,6 +11,36 @@ import '../../../../shared/widgets/glass/glass_scaffold.dart';
 import '../../../../shared/widgets/glass/glass_slide_to_call.dart';
 import '../../../../shared/widgets/glass/glass_surface.dart';
 import '../../data/emergency_service.dart';
+import '../../domain/entities/emergency_directory_entry.dart';
+import '../providers/emergency_directory_provider.dart';
+
+/// Maps a live [EmergencyType] to the category string the existing screen uses
+/// for its COMCEN section, filter chips, subtitle, and icon logic — so the live
+/// directory feeds the unchanged UI exactly like the former seed [Hotline]s.
+String _categoryOf(EmergencyType type) {
+  switch (type) {
+    case EmergencyType.police:
+      return 'Police';
+    case EmergencyType.bfp:
+      return 'BFP';
+    case EmergencyType.hospital:
+      return 'Hospital';
+    case EmergencyType.comcen:
+      return 'COMCEN';
+    case EmergencyType.unknown:
+      return 'Other';
+  }
+}
+
+/// Adapts a live [EmergencyDirectoryEntry] to the existing [Hotline] view-model
+/// the screen already renders, preserving the name/number/address/hours layout.
+Hotline _asHotline(EmergencyDirectoryEntry entry) => Hotline(
+  name: entry.name,
+  number: entry.contactNumber,
+  category: _categoryOf(entry.type),
+  address: entry.address,
+  hours: entry.hours,
+);
 
 /// Emergency Hotline and Directory (TOR Module 7).
 ///
@@ -20,14 +51,14 @@ import '../../data/emergency_service.dart';
 /// - one-tap call or copy any directory number,
 /// - open the Municipality of Igubat on a map for reference (this does not
 ///   read or share the citizen's own device location).
-class EmergencyScreen extends StatefulWidget {
+class EmergencyScreen extends ConsumerStatefulWidget {
   const EmergencyScreen({super.key});
 
   @override
-  State<EmergencyScreen> createState() => _EmergencyScreenState();
+  ConsumerState<EmergencyScreen> createState() => _EmergencyScreenState();
 }
 
-class _EmergencyScreenState extends State<EmergencyScreen> {
+class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
   static const Color _emergencyRed = Color(0xFFB91C1C);
 
   /// Category shortcuts required by the TOR, mapped to the seed categories.
@@ -74,17 +105,17 @@ class _EmergencyScreenState extends State<EmergencyScreen> {
   /// COMCEN (Community Emergency Communications Center) hotlines, surfaced in
   /// their own card so a citizen can reach the center regardless of carrier
   /// (User Story 7.2).
-  List<Hotline> get _comcen =>
-      SeedData.hotlines.where((h) => h.category == 'COMCEN').toList();
+  List<Hotline> _comcen(List<Hotline> hotlines) =>
+      hotlines.where((h) => h.category == 'COMCEN').toList();
 
-  List<Hotline> get _directory {
+  List<Hotline> _directory(List<Hotline> hotlines) {
     // The standalone 911 hotline lives in the call-to-action card above and the
     // COMCEN numbers have their own section, so both are excluded from the
     // browsable agency directory.
-    final hotlines = SeedData.hotlines
+    final entries = hotlines
         .where((h) => h.number != '911' && h.category != 'COMCEN');
-    if (_selectedCategory == 'All') return hotlines.toList();
-    return hotlines.where((h) => h.category == _selectedCategory).toList();
+    if (_selectedCategory == 'All') return entries.toList();
+    return entries.where((h) => h.category == _selectedCategory).toList();
   }
 
   /// Builds the directory subtitle showing the contact number plus the
@@ -119,11 +150,23 @@ class _EmergencyScreenState extends State<EmergencyScreen> {
   @override
   Widget build(BuildContext context) {
     final glass = glassThemeOf(context);
-    final directory = _directory;
+    final asyncDirectory = ref.watch(emergencyDirectoryProvider);
+    // Live entries adapted to the existing Hotline view-model; empty while the
+    // directory is loading or failed (the static 911 / map card stays usable).
+    final hotlines = asyncDirectory.maybeWhen(
+      data: (entries) => entries.map(_asHotline).toList(),
+      orElse: () => const <Hotline>[],
+    );
+    final comcen = _comcen(hotlines);
+    final directory = _directory(hotlines);
 
     return GlassScaffold(
       title: 'Emergency Hotlines',
       bottomPadding: true,
+      onRefresh: () async {
+        ref.invalidate(emergencyDirectoryProvider);
+        await ref.read(emergencyDirectoryProvider.future);
+      },
       body: ListView(
         padding: EdgeInsets.fromLTRB(
           24,
@@ -194,7 +237,7 @@ class _EmergencyScreenState extends State<EmergencyScreen> {
             style: TextStyle(color: glass.textOnGlassMuted, fontSize: 13),
           ),
           const SizedBox(height: 12),
-          ..._comcen.map(
+          ...comcen.map(
             (hotline) => Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: GlassListTile(
@@ -251,7 +294,23 @@ class _EmergencyScreenState extends State<EmergencyScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          if (directory.isEmpty)
+          if (asyncDirectory.isLoading)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 32),
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (asyncDirectory.hasError)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 32),
+              child: Center(
+                child: Text(
+                  'Could not load emergency contacts. Pull down to retry.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: glass.textOnGlassMuted),
+                ),
+              ),
+            )
+          else if (directory.isEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 32),
               child: Center(

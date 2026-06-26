@@ -1,12 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/theme/app_theme.dart';
+import '../../../../core/theme/app_styles.dart';
+import '../../../../core/theme/glass_tokens.dart';
+import '../../../../shared/widgets/glass/glass_card.dart';
+import '../../../../shared/widgets/glass/glass_markdown_body.dart';
 import '../../../../shared/widgets/glass/glass_scaffold.dart';
-import '../../data/models/transparency_item.dart';
+import '../../../../shared/widgets/glass/glass_skeleton.dart';
+import '../../../../shared/widgets/glass/glass_surface.dart';
 import '../../data/models/transparency_type.dart';
+import '../../domain/entities/transparency_item.dart';
 import '../providers/transparency_detail_provider.dart';
 import '../widgets/transparency_attachment_tile.dart';
+import '../widgets/transparency_detail_header.dart';
+import '../widgets/transparency_format.dart';
 import '../widgets/transparency_metadata_band.dart';
 
 /// Item detail screen. Shows the reference number, title, type-specific
@@ -20,106 +27,146 @@ class TransparencyItemDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final glass = glassThemeOf(context);
     final itemAsync = ref.watch(transparencyDetailProvider(slug));
 
     return GlassScaffold(
-      title: 'Transparency',
+      title: itemAsync.maybeWhen(
+        data: (item) => item?.type.singularLabel ?? 'Transparency',
+        orElse: () => 'Transparency',
+      ),
       bottomPadding: false,
+      useShellBackground: false,
       body: itemAsync.when(
-        loading: () => const Center(
-          child: Padding(
-            padding: EdgeInsets.only(top: 80),
-            child: CircularProgressIndicator(),
-          ),
+        loading: () => ListView(
+          padding: const EdgeInsets.all(AppLayout.screenHorizontal),
+          children: const [
+            GlassSkeletonCard(),
+            SizedBox(height: 16),
+            GlassSkeletonCard(),
+          ],
         ),
         error: (error, _) => Padding(
-          padding: const EdgeInsets.all(24),
-          child: Text('Could not load item: $error'),
+          padding: const EdgeInsets.all(AppLayout.screenHorizontal),
+          child: Text(
+            'Could not load item: $error',
+            style: TextStyle(color: glass.textOnGlassMuted),
+          ),
         ),
         data: (item) {
           if (item == null) {
-            return const Padding(
-              padding: EdgeInsets.all(24),
-              child: Center(child: Text('This item is no longer available.')),
+            return Padding(
+              padding: const EdgeInsets.all(AppLayout.screenHorizontal),
+              child: Center(
+                child: Text(
+                  'This item is no longer available.',
+                  style: TextStyle(color: glass.textOnGlassMuted),
+                ),
+              ),
             );
           }
-          return _buildContent(context, item);
+          return _buildContent(context, item, glass);
         },
       ),
     );
   }
 
-  Widget _buildContent(BuildContext context, TransparencyItem item) {
+  Widget _buildContent(
+    BuildContext context,
+    TransparencyItem item,
+    GlassTheme glass,
+  ) {
+    final meta = item.metadataAs<Map<String, dynamic>>() ?? const {};
+    final status = transparencyStatusOf(item.type, meta);
+    final hasSummary = (item.summary ?? '').trim().isNotEmpty;
+    final hasBody = item.body.trim().isNotEmpty;
+    final hasMetadata = TransparencyMetadataBand.computeEntries(
+      item,
+      excludeStatus: status != null && status.trim().isNotEmpty,
+    ).isNotEmpty;
+
     return ListView(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(AppLayout.screenHorizontal),
       children: [
-        Text(
-          item.type.singularLabel.toUpperCase(),
-          style: const TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.5,
-            color: Color(0xFF6B7280),
-          ),
+        GlassCard(
+          intensity: GlassIntensity.prominent,
+          child: TransparencyDetailHeader(item: item, status: status),
         ),
-        if (item.referenceNumber != null) ...[
-          const SizedBox(height: 4),
-          Text(
-            item.referenceNumber!,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: AppTheme.primaryColor,
+        if (hasMetadata) ...[
+          const SizedBox(height: 16),
+          GlassCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Key Details',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: glass.textOnGlass,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TransparencyMetadataBand(
+                  item: item,
+                  excludeStatus: status != null && status.trim().isNotEmpty,
+                ),
+              ],
             ),
           ),
         ],
-        const SizedBox(height: 6),
-        Text(
-          item.title,
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w800,
-            height: 1.25,
-            color: Color(0xFF111827),
-          ),
-        ),
-        const SizedBox(height: 12),
-        TransparencyMetadataBand(item: item),
-        if ((item.summary ?? '').isNotEmpty) ...[
-          const SizedBox(height: 14),
-          Text(
-            item.summary!,
-            style: const TextStyle(
-              fontSize: 13.5,
-              height: 1.55,
-              color: Color(0xFF1F2937),
-            ),
-          ),
-        ],
-        if (item.body.trim().isNotEmpty) ...[
-          const SizedBox(height: 14),
-          Text(
-            item.body,
-            style: const TextStyle(
-              fontSize: 13.5,
-              height: 1.6,
-              color: Color(0xFF1F2937),
+        if (hasSummary || hasBody) ...[
+          const SizedBox(height: 16),
+          GlassCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (hasSummary) ...[
+                  Text(
+                    'Description',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: glass.textOnGlass,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    item.summary!,
+                    style: TextStyle(
+                      fontSize: 15,
+                      height: 1.55,
+                      color: glass.textOnGlass,
+                    ),
+                  ),
+                ],
+                if (hasSummary && hasBody) const SizedBox(height: 16),
+                if (hasBody) GlassMarkdownBody(data: item.body),
+              ],
             ),
           ),
         ],
         if (item.attachments.isNotEmpty) ...[
-          const SizedBox(height: 18),
-          Text(
-            'Attachments (${item.attachments.length})',
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              color: AppTheme.primaryColor,
+          const SizedBox(height: 16),
+          GlassCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Attachments (${item.attachments.length})',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: glass.textOnGlass,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ...item.attachments.map(
+                  (attachment) =>
+                      TransparencyAttachmentTile(attachment: attachment),
+                ),
+              ],
             ),
-          ),
-          const SizedBox(height: 8),
-          ...item.attachments.map(
-            (attachment) => TransparencyAttachmentTile(attachment: attachment),
           ),
         ],
       ],
