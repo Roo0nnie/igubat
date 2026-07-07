@@ -3,9 +3,17 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 class ApiConstants {
   ApiConstants._();
 
+  static String? _env(String key) {
+    try {
+      return dotenv.env[key];
+    } catch (_) {
+      return null;
+    }
+  }
+
   static String get baseUrl =>
-      dotenv.env['API_BASE_URL'] ?? 'http://10.0.2.2:3000/api';
-  static String get apiVersion => dotenv.env['API_VERSION'] ?? 'v1';
+      _env('API_BASE_URL') ?? 'http://10.0.2.2:3000/api';
+  static String get apiVersion => _env('API_VERSION') ?? 'v1';
   static String get versionedUrl => '$baseUrl/$apiVersion';
 
   // Auth endpoints (Better Auth - no envelope)
@@ -27,6 +35,10 @@ class ApiConstants {
   static String todoById(int id) => '$versionedUrl/example/todos/$id';
 
   // iGubat public endpoints
+  static String get publicDiscoverGubat =>
+      '$versionedUrl/igubat/public/discover-gubat';
+  static String publicDiscoverGubatItem(String slug) =>
+      '$versionedUrl/igubat/public/discover-gubat/$slug';
   static String get publicTransparency =>
       '$versionedUrl/igubat/public/transparency';
   static String publicTransparencyItem(String slug) =>

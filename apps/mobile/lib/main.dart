@@ -85,6 +85,14 @@ Future<void> _handleNotificationAction(ReceivedAction receivedAction) async {
     GoRouter.of(
       context,
     ).go('/transparency/$typeSlug/${Uri.encodeComponent(slug)}');
+  } else if (notificationType == 'discover_gubat') {
+    final slug = payload['slug'] ?? payload['metadata.slug'];
+    if (slug == null || slug.isEmpty) return;
+
+    final context = rootNavigatorKey.currentContext;
+    if (context == null) return;
+
+    GoRouter.of(context).go('/discover/${Uri.encodeComponent(slug)}');
   }
 }
 

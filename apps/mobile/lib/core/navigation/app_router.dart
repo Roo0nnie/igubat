@@ -5,6 +5,7 @@ import 'package:mobile/features/auth/presentation/providers/auth_provider.dart';
 import 'package:mobile/features/auth/presentation/screens/login_screen.dart';
 import 'package:mobile/features/auth/presentation/screens/register_screen.dart';
 import 'package:mobile/features/auth/presentation/screens/otp_screen.dart';
+import 'package:mobile/features/discover/presentation/screens/discover_gubat_screen.dart';
 import 'package:mobile/features/onboarding/presentation/providers/onboarding_provider.dart';
 import 'package:mobile/features/onboarding/presentation/screens/onboarding_screen.dart';
 import 'package:mobile/features/transparency/data/models/transparency_type.dart';
@@ -23,6 +24,7 @@ class AppRoutes {
   static const register = '/register';
   static const otp = '/otp';
   static const home = '/';
+  static const discover = '/discover';
 
   /// Query parameter carrying the post-authentication continuation target
   /// through the login → OTP flow, so a guest who signs in from a guarded
@@ -139,6 +141,18 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: AppRoutes.home,
         builder: (context, state) => const MainScaffold(),
+      ),
+      GoRoute(
+        path: AppRoutes.discover,
+        builder: (context, state) => const DiscoverGubatScreen(),
+        routes: [
+          GoRoute(
+            path: ':slug',
+            builder: (context, state) => DiscoverGubatItemDetailScreen(
+              slug: state.pathParameters['slug'] ?? '',
+            ),
+          ),
+        ],
       ),
       // Transparency & Good Governance deep links. `:type` is a route slug
       // (e.g. "legislative-ordinances"); push notifications carrying

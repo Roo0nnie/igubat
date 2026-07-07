@@ -13,6 +13,7 @@ class NotificationPreferences {
     required this.serviceRequests,
     required this.issueReports,
     required this.emergencyBroadcasts,
+    required this.discoverGubat,
     required this.transparency,
     required this.pushEnabled,
     required this.emailEnabled,
@@ -23,6 +24,7 @@ class NotificationPreferences {
     serviceRequests: true,
     issueReports: true,
     emergencyBroadcasts: true,
+    discoverGubat: true,
     transparency: true,
     pushEnabled: true,
     emailEnabled: true,
@@ -34,6 +36,7 @@ class NotificationPreferences {
       serviceRequests: json['serviceRequests'] as bool? ?? true,
       issueReports: json['issueReports'] as bool? ?? true,
       emergencyBroadcasts: json['emergencyBroadcasts'] as bool? ?? true,
+      discoverGubat: json['discoverGubat'] as bool? ?? true,
       transparency: json['transparency'] as bool? ?? true,
       pushEnabled: json['pushEnabled'] as bool? ?? true,
       emailEnabled: json['emailEnabled'] as bool? ?? true,
@@ -44,6 +47,7 @@ class NotificationPreferences {
   final bool serviceRequests;
   final bool issueReports;
   final bool emergencyBroadcasts;
+  final bool discoverGubat;
   final bool transparency;
   final bool pushEnabled;
   final bool emailEnabled;
@@ -53,6 +57,7 @@ class NotificationPreferences {
     bool? serviceRequests,
     bool? issueReports,
     bool? emergencyBroadcasts,
+    bool? discoverGubat,
     bool? transparency,
     bool? pushEnabled,
     bool? emailEnabled,
@@ -62,6 +67,7 @@ class NotificationPreferences {
       serviceRequests: serviceRequests ?? this.serviceRequests,
       issueReports: issueReports ?? this.issueReports,
       emergencyBroadcasts: emergencyBroadcasts ?? this.emergencyBroadcasts,
+      discoverGubat: discoverGubat ?? this.discoverGubat,
       transparency: transparency ?? this.transparency,
       pushEnabled: pushEnabled ?? this.pushEnabled,
       emailEnabled: emailEnabled ?? this.emailEnabled,
@@ -73,6 +79,7 @@ class NotificationPreferences {
     'serviceRequests': serviceRequests,
     'issueReports': issueReports,
     'emergencyBroadcasts': emergencyBroadcasts,
+    'discoverGubat': discoverGubat,
     'transparency': transparency,
     'pushEnabled': pushEnabled,
     'emailEnabled': emailEnabled,

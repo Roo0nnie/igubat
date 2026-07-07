@@ -136,6 +136,16 @@ class _NotificationPreferencesScreenState
                 ),
                 _divider(glass),
                 _switchTile(
+                  'Discover Gubat updates',
+                  _preferences.discoverGubat,
+                  disabled,
+                  (value) => _savePreferences(
+                    _preferences.copyWith(discoverGubat: value),
+                  ),
+                  glass,
+                ),
+                _divider(glass),
+                _switchTile(
                   'Transparency disclosures',
                   _preferences.transparency,
                   disabled,
@@ -188,15 +198,18 @@ class _NotificationPreferencesScreenState
     ValueChanged<bool> onChanged,
     GlassTheme glass,
   ) {
-    return SwitchListTile(
-      contentPadding: EdgeInsets.zero,
-      title: Text(
-        title,
-        style: TextStyle(color: glass.textOnGlass, fontSize: 14),
+    return Material(
+      type: MaterialType.transparency,
+      child: SwitchListTile(
+        contentPadding: EdgeInsets.zero,
+        title: Text(
+          title,
+          style: TextStyle(color: glass.textOnGlass, fontSize: 14),
+        ),
+        value: value,
+        activeTrackColor: AppTheme.secondaryColor,
+        onChanged: disabled ? null : onChanged,
       ),
-      value: value,
-      activeTrackColor: AppTheme.secondaryColor,
-      onChanged: disabled ? null : onChanged,
     );
   }
 
