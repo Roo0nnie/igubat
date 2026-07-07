@@ -16,11 +16,11 @@ class NotificationPreferencesScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final glass = glassThemeOf(context);
     final prefsAsync = ref.watch(notificationPreferencesControllerProvider);
-    final controller =
-        ref.read(notificationPreferencesControllerProvider.notifier);
+    final controller = ref.read(
+      notificationPreferencesControllerProvider.notifier,
+    );
 
-    final preferences =
-        prefsAsync.value ?? NotificationPreferences.defaults();
+    final preferences = prefsAsync.value ?? NotificationPreferences.defaults();
     final loading = prefsAsync.isLoading;
 
     Future<void> save(NotificationPreferences next) async {
@@ -89,6 +89,14 @@ class NotificationPreferencesScreen extends ConsumerWidget {
                 ),
                 _divider(glass),
                 _switchTile(
+                  'Discover Gubat updates',
+                  preferences.discoverGubat,
+                  loading,
+                  (value) => save(preferences.copyWith(discoverGubat: value)),
+                  glass,
+                ),
+                _divider(glass),
+                _switchTile(
                   'Transparency disclosures',
                   preferences.transparency,
                   loading,
@@ -126,15 +134,18 @@ class NotificationPreferencesScreen extends ConsumerWidget {
     ValueChanged<bool> onChanged,
     GlassTheme glass,
   ) {
-    return SwitchListTile(
-      contentPadding: EdgeInsets.zero,
-      title: Text(
-        title,
-        style: TextStyle(color: glass.textOnGlass, fontSize: 14),
+    return Material(
+      type: MaterialType.transparency,
+      child: SwitchListTile(
+        contentPadding: EdgeInsets.zero,
+        title: Text(
+          title,
+          style: TextStyle(color: glass.textOnGlass, fontSize: 14),
+        ),
+        value: value,
+        activeTrackColor: AppTheme.secondaryColor,
+        onChanged: disabled ? null : onChanged,
       ),
-      value: value,
-      activeTrackColor: AppTheme.secondaryColor,
-      onChanged: disabled ? null : onChanged,
     );
   }
 

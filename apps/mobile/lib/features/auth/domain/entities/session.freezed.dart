@@ -212,7 +212,7 @@ return $default(_that.value,_that.id,_that.userId,_that.expiresAt,_that.createdA
 
 class _SessionToken implements SessionToken {
   const _SessionToken({required this.value, this.id, this.userId, this.expiresAt, this.createdAt, this.updatedAt});
-  
+
 
 @override final  String value;
 @override final  String? id;
@@ -346,7 +346,7 @@ as User,
 @override
 @pragma('vm:prefer-inline')
 $SessionTokenCopyWith<$Res> get token {
-  
+
   return $SessionTokenCopyWith<$Res>(_self.token, (value) {
     return _then(_self.copyWith(token: value));
   });
@@ -355,7 +355,7 @@ $SessionTokenCopyWith<$Res> get token {
 @override
 @pragma('vm:prefer-inline')
 $UserCopyWith<$Res> get user {
-  
+
   return $UserCopyWith<$Res>(_self.user, (value) {
     return _then(_self.copyWith(user: value));
   });
@@ -498,7 +498,7 @@ return $default(_that.token,_that.user);case _:
 
 class _Session implements Session {
   const _Session({required this.token, required this.user});
-  
+
 
 @override final  SessionToken token;
 @override final  User user;
@@ -563,7 +563,7 @@ as User,
 @override
 @pragma('vm:prefer-inline')
 $SessionTokenCopyWith<$Res> get token {
-  
+
   return $SessionTokenCopyWith<$Res>(_self.token, (value) {
     return _then(_self.copyWith(token: value));
   });
@@ -572,7 +572,7 @@ $SessionTokenCopyWith<$Res> get token {
 @override
 @pragma('vm:prefer-inline')
 $UserCopyWith<$Res> get user {
-  
+
   return $UserCopyWith<$Res>(_self.user, (value) {
     return _then(_self.copyWith(user: value));
   });

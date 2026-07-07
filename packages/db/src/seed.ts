@@ -13,6 +13,8 @@ import {
 	citizenReportStatusHistory,
 	contentPlacements,
 	departments,
+	discoverGubatEntries,
+	discoverGubatPhotos,
 	emergencyBroadcasts,
 	emergencyDirectory,
 	events,
@@ -339,6 +341,10 @@ async function clearSeedDomainData(tx: Tx) {
 	await tx.delete(newsArticles).where(inArray(newsArticles.authorId, [...SEED_USER_IDS]))
 	// transparency_attachments cascade-delete with their parent items.
 	await tx.delete(transparencyItems).where(inArray(transparencyItems.authorId, [...SEED_USER_IDS]))
+	// discover_gubat_photos cascade-delete with their parent entries.
+	await tx
+		.delete(discoverGubatEntries)
+		.where(inArray(discoverGubatEntries.authorId, [...SEED_USER_IDS]))
 	await tx.delete(contentPlacements)
 	await tx.delete(events)
 	await tx.delete(mediaAssets).where(inArray(mediaAssets.uploadedById, [...SEED_USER_IDS]))
@@ -1389,6 +1395,7 @@ async function seedDatabase() {
 				serviceRequests: true,
 				issueReports: true,
 				emergencyBroadcasts: true,
+				discoverGubat: true,
 				transparency: true,
 				pushEnabled: true,
 				emailEnabled: true,
@@ -1738,6 +1745,192 @@ async function seedDatabase() {
 				},
 			]
 			await tx.insert(tickets).values(seedTickets)
+
+			// Discover Gubat (Module 12)
+			type SeedDiscoverGubat = typeof discoverGubatEntries.$inferInsert & {
+				photos?: Array<Omit<typeof discoverGubatPhotos.$inferInsert, "discoverGubatEntryId">>
+			}
+			const seedDiscoverGubatEntries: SeedDiscoverGubat[] = [
+				{
+					type: "tourist_spot",
+					title: "Buenavista Beach",
+					slug: "buenavista-beach",
+					summary: "A public coastal destination known for surf breaks and sunrise views.",
+					body: "Buenavista Beach anchors Gubat's reputation as a surfing destination for residents and visitors.",
+					category: "Beaches & Surfing",
+					status: "published",
+					coverImageUrl: "https://picsum.photos/seed/discover-buenavista/900/600",
+					mapLocation: "Buenavista, Gubat, Sorsogon",
+					metadata: {
+						type: "tourist_spot",
+						mapLocation: "Buenavista, Gubat, Sorsogon",
+						bestFor: "Surfing, sunrise viewing, beach walks",
+					},
+					notifyOnPublish: true,
+					publishedAt: new Date("2026-03-05T08:00:00Z"),
+					photos: [
+						{
+							imageUrl: "https://picsum.photos/seed/discover-buenavista-photo/1200/800",
+							altText: "Buenavista Beach shoreline",
+							sortOrder: 0,
+						},
+					],
+				},
+				{
+					type: "tourist_spot",
+					title: "Castillo de Gubat",
+					slug: "castillo-de-gubat",
+					summary: "Spanish-era watchtower ruins tied to the municipality history.",
+					body: "The Castillo de Gubat is a heritage landmark connected to the town's coastal history.",
+					category: "Heritage & Landmarks",
+					status: "published",
+					coverImageUrl: "https://picsum.photos/seed/discover-castillo/900/600",
+					mapLocation: "Poblacion, Gubat, Sorsogon",
+					metadata: {
+						type: "tourist_spot",
+						mapLocation: "Poblacion, Gubat, Sorsogon",
+						travelNote: "Best paired with a town-center heritage walk.",
+					},
+					notifyOnPublish: false,
+					publishedAt: new Date("2026-03-06T08:00:00Z"),
+				},
+				{
+					type: "festival_culture",
+					title: "Ginubat Festival",
+					slug: "ginubat-festival",
+					summary: "Annual celebration honoring Gubat history, faith, and community identity.",
+					body: "The Ginubat Festival is connected to the town fiesta of San Antonio de Padua and celebrates local identity.",
+					category: "Festival",
+					status: "published",
+					coverImageUrl: "https://picsum.photos/seed/discover-ginubat/900/600",
+					eventDate: new Date("2026-06-13T00:00:00Z"),
+					metadata: {
+						type: "festival_culture",
+						cultureKind: "festival",
+						eventDate: "2026-06-13",
+						culturalNote:
+							"An annual town celebration connected to the feast of San Antonio de Padua.",
+					},
+					notifyOnPublish: true,
+					publishedAt: new Date("2026-03-07T08:00:00Z"),
+				},
+				{
+					type: "festival_culture",
+					title: "San Antonio de Padua Parish",
+					slug: "san-antonio-de-padua-parish",
+					summary: "A historic parish church and civic landmark in the town center.",
+					body: "The parish anchors religious and civic heritage routes in central Gubat.",
+					category: "Heritage",
+					status: "published",
+					coverImageUrl: "https://picsum.photos/seed/discover-parish/900/600",
+					metadata: {
+						type: "festival_culture",
+						cultureKind: "heritage",
+						culturalNote:
+							"A civic and religious landmark that anchors local heritage walking routes.",
+					},
+					notifyOnPublish: false,
+					publishedAt: new Date("2026-03-08T08:00:00Z"),
+				},
+				{
+					type: "local_product",
+					title: "Timitim",
+					slug: "timitim",
+					summary: "Cassava-and-pili local sweet commonly bought as pasalubong.",
+					body: "Timitim is a local kakanin-style sweet made with cassava and pili.",
+					category: "Delicacies/Kakanin",
+					status: "published",
+					coverImageUrl: "https://picsum.photos/seed/discover-timitim/900/600",
+					whereToBuy: "Public market and local pasalubong stalls",
+					metadata: {
+						type: "local_product",
+						productKind: "delicacy",
+						whereToBuy: "Public market and local pasalubong stalls",
+						pasalubongNote: "Best bought fresh in the morning.",
+					},
+					notifyOnPublish: true,
+					publishedAt: new Date("2026-03-09T08:00:00Z"),
+				},
+				{
+					type: "local_product",
+					title: "Salanigo",
+					slug: "salanigo",
+					summary: "Hand-woven abaca slippers produced by local makers.",
+					body: "Salanigo showcases local handicraft and OTOP-style livelihood products.",
+					category: "Handicrafts/OTOP",
+					status: "published",
+					coverImageUrl: "https://picsum.photos/seed/discover-salanigo/900/600",
+					whereToBuy: "Local OTOP stalls and community product fairs",
+					metadata: {
+						type: "local_product",
+						productKind: "handicraft",
+						whereToBuy: "Local OTOP stalls and community product fairs",
+					},
+					notifyOnPublish: false,
+					publishedAt: new Date("2026-03-10T08:00:00Z"),
+				},
+			]
+
+			const insertedDiscoverEntries: Array<{
+				id: number
+				type: SeedDiscoverGubat["type"]
+				title: string
+				slug: string | null
+				summary: string | null
+				status: SeedDiscoverGubat["status"]
+				publishedAt: Date | null
+			}> = []
+
+			for (const entry of seedDiscoverGubatEntries) {
+				const { photos, ...entryValues } = entry
+				const [insertedEntry] = await tx
+					.insert(discoverGubatEntries)
+					.values({ ...entryValues, authorId: "seed-user-editor", createdAt: now, updatedAt: now })
+					.returning({
+						id: discoverGubatEntries.id,
+						type: discoverGubatEntries.type,
+						title: discoverGubatEntries.title,
+						slug: discoverGubatEntries.slug,
+						summary: discoverGubatEntries.summary,
+						status: discoverGubatEntries.status,
+						publishedAt: discoverGubatEntries.publishedAt,
+					})
+				if (insertedEntry) {
+					insertedDiscoverEntries.push(insertedEntry)
+				}
+				if (insertedEntry && photos?.length) {
+					await tx.insert(discoverGubatPhotos).values(
+						photos.map(photo => ({
+							...photo,
+							discoverGubatEntryId: insertedEntry.id,
+						}))
+					)
+				}
+			}
+
+			const discoverNotifications: Array<typeof notifications.$inferInsert> =
+				insertedDiscoverEntries
+					.filter(entry => entry.status === "published" && entry.slug)
+					.map((entry, index) => ({
+						userId: "seed-user-juan",
+						title: `New Discover Gubat ${entry.type.replace(/_/g, " ")}`,
+						body: `${entry.title} has been published.`,
+						type: "in_app",
+						category: "discover_gubat",
+						isRead: false,
+						metadata: {
+							type: "discover_gubat",
+							slug: entry.slug,
+							entryId: entry.id,
+							routeType: entry.type,
+						},
+						createdAt: entry.publishedAt
+							? new Date(entry.publishedAt.getTime() + 5 * 60_000)
+							: new Date(now.getTime() + index * 60_000),
+					}))
+			if (discoverNotifications.length > 0) {
+				await tx.insert(notifications).values(discoverNotifications)
+			}
 
 			// Transparency & Good Governance (Module 13)
 			// Representative records across all six content types: two Published
@@ -2334,7 +2527,10 @@ async function seedDatabase() {
 				serviceRequests: seedServiceRequests.length,
 				serviceRequestAttachments: seedAttachments.length,
 				serviceRequestStatusHistory: seedRequestHistory.length,
-				notifications: seedNotifications.length + transparencyNotifications.length,
+				notifications:
+					seedNotifications.length +
+					discoverNotifications.length +
+					transparencyNotifications.length,
 				notificationPreferences: seedNotificationPreferences.length,
 				notificationDeliveryLogs: insertedNotifications.length,
 				auditLogs: seedAuditLogs.length,
@@ -2344,6 +2540,7 @@ async function seedDatabase() {
 				systemSettings: seedSystemSettings.length,
 				userLoginActivity: seedLoginActivity.length,
 				tickets: seedTickets.length,
+				discoverGubatEntries: seedDiscoverGubatEntries.length,
 				transparencyItems: seedTransparencyItems.length,
 			}
 		})

@@ -13,6 +13,7 @@ import '../../../../shared/widgets/glass/glass_section_header.dart';
 import '../../../../shared/widgets/glass/glass_skeleton.dart';
 import '../../../../shared/widgets/glass/glass_surface.dart';
 import '../widgets/home_collapsing_header.dart';
+import '../../../discover/presentation/screens/discover_gubat_screen.dart';
 import '../../../news/presentation/screens/news_detail_screen.dart';
 import '../../../news/presentation/providers/news_provider.dart';
 import '../../../reports/presentation/screens/report_issue_screen.dart';
@@ -126,7 +127,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     AppLayout.screenHorizontal,
                     0,
                   ),
-                  sliver: SliverToBoxAdapter(child: _buildQuickActions(context)),
+                  sliver: SliverToBoxAdapter(
+                    child: _buildQuickActions(context),
+                  ),
                 ),
                 _buildTransparencySliver(context),
                 _sectionSliver(
@@ -237,7 +240,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         Navigator.push(context, GlassPageRoute(page: const EmergencyScreen()));
         break;
       case 1:
-        Navigator.push(context, GlassPageRoute(page: const ReportIssueScreen()));
+        Navigator.push(
+          context,
+          GlassPageRoute(page: const ReportIssueScreen()),
+        );
         break;
       case 2:
         Navigator.push(
@@ -245,10 +251,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           GlassPageRoute(page: const ApplicationsScreen()),
         );
         break;
+      case 3:
+        Navigator.push(
+          context,
+          GlassPageRoute(page: const DiscoverGubatScreen()),
+        );
+        break;
       default:
         Navigator.push(
           context,
-          GlassPageRoute(page: TransactionDetailScreen(transaction: SeedData.recentTransactions.first)),
+          GlassPageRoute(
+            page: TransactionDetailScreen(
+              transaction: SeedData.recentTransactions.first,
+            ),
+          ),
         );
     }
   }
@@ -258,6 +274,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       (Icons.phone_in_talk, 'Call 911', const Color(0xFFB91C1C)),
       (Icons.report_problem_outlined, 'Report Issue', const Color(0xFFD97706)),
       (Icons.track_changes, 'Track Request', AppTheme.primaryColor),
+      (Icons.travel_explore, 'Discover Gubat', const Color(0xFF0EA5E9)),
       (Icons.payment, 'Pay Bills', AppTheme.secondaryColor),
     ];
 
@@ -326,13 +343,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           onTap: () {
             Navigator.push(
               context,
-              GlassPageRoute(page: ServiceRequestStepperScreen(service: service)),
+              GlassPageRoute(
+                page: ServiceRequestStepperScreen(service: service),
+              ),
             );
           },
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(_serviceIcon(service.icon), size: 32, color: AppTheme.secondaryColor),
+              Icon(
+                _serviceIcon(service.icon),
+                size: 32,
+                color: AppTheme.secondaryColor,
+              ),
               const SizedBox(height: 12),
               Text(
                 service.title,
@@ -357,9 +380,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     // while loading or if the endpoint is unavailable.
     final dashboard = ref.watch(dashboardProvider).value;
     final stats = dashboard == null
-        ? [
-            for (final s in SeedData.communityStats) (s.icon, s.value, s.label),
-          ]
+        ? [for (final s in SeedData.communityStats) (s.icon, s.value, s.label)]
         : <(String, String, String)>[
             ('people', '${dashboard.totalUsers}', 'Citizens Registered'),
             ('requests', '${dashboard.pendingRequests}', 'Pending Requests'),
@@ -389,7 +410,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(_statIcon(stat.$1), color: AppTheme.secondaryColor, size: 20),
+                  Icon(
+                    _statIcon(stat.$1),
+                    color: AppTheme.secondaryColor,
+                    size: 20,
+                  ),
                   const SizedBox(height: 8),
                   Text(
                     stat.$2,
@@ -516,8 +541,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   static const List<String> _monthAbbr = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
   ];
 
   String _formatEventDate(DateTime? date) {
@@ -530,9 +565,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     // Prefer live events; fall back to the seed strip while loading/unavailable.
     final liveEvents = ref.watch(eventsListProvider).value;
     final useLive = liveEvents != null && liveEvents.isNotEmpty;
-    final count = useLive
-        ? liveEvents.length
-        : SeedData.upcomingEvents.length;
+    final count = useLive ? liveEvents.length : SeedData.upcomingEvents.length;
 
     return SizedBox(
       height: 140,
@@ -588,12 +621,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   const Spacer(),
                   Row(
                     children: [
-                      Icon(Icons.calendar_today, size: 12, color: glassThemeOf(context).textOnGlassMuted),
+                      Icon(
+                        Icons.calendar_today,
+                        size: 12,
+                        color: glassThemeOf(context).textOnGlassMuted,
+                      ),
                       const SizedBox(width: 4),
                       Flexible(
                         child: Text(
                           dateStr,
-                          style: TextStyle(fontSize: 11, color: glassThemeOf(context).textOnGlassMuted),
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: glassThemeOf(context).textOnGlassMuted,
+                          ),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -602,14 +642,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      Icon(Icons.location_on_outlined, size: 12, color: glassThemeOf(context).textOnGlassMuted),
+                      Icon(
+                        Icons.location_on_outlined,
+                        size: 12,
+                        color: glassThemeOf(context).textOnGlassMuted,
+                      ),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
                           location,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(fontSize: 11, color: glassThemeOf(context).textOnGlassMuted),
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: glassThemeOf(context).textOnGlassMuted,
+                          ),
                         ),
                       ),
                     ],
@@ -645,7 +692,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     color: AppTheme.secondaryColor.withValues(alpha: 0.12),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.receipt_long, color: AppTheme.secondaryColor, size: 20),
+                  child: const Icon(
+                    Icons.receipt_long,
+                    color: AppTheme.secondaryColor,
+                    size: 20,
+                  ),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -661,7 +712,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                       Text(
                         tx.date,
-                        style: TextStyle(fontSize: 12, color: glassThemeOf(context).textOnGlassMuted),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: glassThemeOf(context).textOnGlassMuted,
+                        ),
                       ),
                     ],
                   ),
@@ -676,7 +730,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         color: glassThemeOf(context).textOnGlass,
                       ),
                     ),
-                    GlassBadge(label: tx.status, color: AppTheme.secondaryColor, compact: true),
+                    GlassBadge(
+                      label: tx.status,
+                      color: AppTheme.secondaryColor,
+                      compact: true,
+                    ),
                   ],
                 ),
               ],

@@ -211,7 +211,7 @@ return $default(_that.id,_that.title,_that.completed,_that.createdAt,_that.updat
 
 class _Todo implements Todo {
   const _Todo({required this.id, required this.title, this.completed = false, this.createdAt, this.updatedAt});
-  
+
 
 @override final  int id;
 @override final  String title;

@@ -12,6 +12,7 @@ abstract class NotificationPreferences with _$NotificationPreferences {
     @Default(true) bool serviceRequests,
     @Default(true) bool issueReports,
     @Default(true) bool emergencyBroadcasts,
+    @Default(true) bool discoverGubat,
     @Default(true) bool transparency,
     @Default(true) bool pushEnabled,
     @Default(true) bool emailEnabled,

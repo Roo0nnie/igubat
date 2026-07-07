@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$NotificationPreferences {
 
- bool get news; bool get serviceRequests; bool get issueReports; bool get emergencyBroadcasts; bool get transparency; bool get pushEnabled; bool get emailEnabled;
+ bool get news; bool get serviceRequests; bool get issueReports; bool get emergencyBroadcasts; bool get discoverGubat; bool get transparency; bool get pushEnabled; bool get emailEnabled;
 /// Create a copy of NotificationPreferences
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -25,16 +25,16 @@ $NotificationPreferencesCopyWith<NotificationPreferences> get copyWith => _$Noti
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NotificationPreferences&&(identical(other.news, news) || other.news == news)&&(identical(other.serviceRequests, serviceRequests) || other.serviceRequests == serviceRequests)&&(identical(other.issueReports, issueReports) || other.issueReports == issueReports)&&(identical(other.emergencyBroadcasts, emergencyBroadcasts) || other.emergencyBroadcasts == emergencyBroadcasts)&&(identical(other.transparency, transparency) || other.transparency == transparency)&&(identical(other.pushEnabled, pushEnabled) || other.pushEnabled == pushEnabled)&&(identical(other.emailEnabled, emailEnabled) || other.emailEnabled == emailEnabled));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is NotificationPreferences&&(identical(other.news, news) || other.news == news)&&(identical(other.serviceRequests, serviceRequests) || other.serviceRequests == serviceRequests)&&(identical(other.issueReports, issueReports) || other.issueReports == issueReports)&&(identical(other.emergencyBroadcasts, emergencyBroadcasts) || other.emergencyBroadcasts == emergencyBroadcasts)&&(identical(other.discoverGubat, discoverGubat) || other.discoverGubat == discoverGubat)&&(identical(other.transparency, transparency) || other.transparency == transparency)&&(identical(other.pushEnabled, pushEnabled) || other.pushEnabled == pushEnabled)&&(identical(other.emailEnabled, emailEnabled) || other.emailEnabled == emailEnabled));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,news,serviceRequests,issueReports,emergencyBroadcasts,transparency,pushEnabled,emailEnabled);
+int get hashCode => Object.hash(runtimeType,news,serviceRequests,issueReports,emergencyBroadcasts,discoverGubat,transparency,pushEnabled,emailEnabled);
 
 @override
 String toString() {
-  return 'NotificationPreferences(news: $news, serviceRequests: $serviceRequests, issueReports: $issueReports, emergencyBroadcasts: $emergencyBroadcasts, transparency: $transparency, pushEnabled: $pushEnabled, emailEnabled: $emailEnabled)';
+  return 'NotificationPreferences(news: $news, serviceRequests: $serviceRequests, issueReports: $issueReports, emergencyBroadcasts: $emergencyBroadcasts, discoverGubat: $discoverGubat, transparency: $transparency, pushEnabled: $pushEnabled, emailEnabled: $emailEnabled)';
 }
 
 
@@ -45,7 +45,7 @@ abstract mixin class $NotificationPreferencesCopyWith<$Res>  {
   factory $NotificationPreferencesCopyWith(NotificationPreferences value, $Res Function(NotificationPreferences) _then) = _$NotificationPreferencesCopyWithImpl;
 @useResult
 $Res call({
- bool news, bool serviceRequests, bool issueReports, bool emergencyBroadcasts, bool transparency, bool pushEnabled, bool emailEnabled
+ bool news, bool serviceRequests, bool issueReports, bool emergencyBroadcasts, bool discoverGubat, bool transparency, bool pushEnabled, bool emailEnabled
 });
 
 
@@ -62,12 +62,13 @@ class _$NotificationPreferencesCopyWithImpl<$Res>
 
 /// Create a copy of NotificationPreferences
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? news = null,Object? serviceRequests = null,Object? issueReports = null,Object? emergencyBroadcasts = null,Object? transparency = null,Object? pushEnabled = null,Object? emailEnabled = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? news = null,Object? serviceRequests = null,Object? issueReports = null,Object? emergencyBroadcasts = null,Object? discoverGubat = null,Object? transparency = null,Object? pushEnabled = null,Object? emailEnabled = null,}) {
   return _then(_self.copyWith(
 news: null == news ? _self.news : news // ignore: cast_nullable_to_non_nullable
 as bool,serviceRequests: null == serviceRequests ? _self.serviceRequests : serviceRequests // ignore: cast_nullable_to_non_nullable
 as bool,issueReports: null == issueReports ? _self.issueReports : issueReports // ignore: cast_nullable_to_non_nullable
 as bool,emergencyBroadcasts: null == emergencyBroadcasts ? _self.emergencyBroadcasts : emergencyBroadcasts // ignore: cast_nullable_to_non_nullable
+as bool,discoverGubat: null == discoverGubat ? _self.discoverGubat : discoverGubat // ignore: cast_nullable_to_non_nullable
 as bool,transparency: null == transparency ? _self.transparency : transparency // ignore: cast_nullable_to_non_nullable
 as bool,pushEnabled: null == pushEnabled ? _self.pushEnabled : pushEnabled // ignore: cast_nullable_to_non_nullable
 as bool,emailEnabled: null == emailEnabled ? _self.emailEnabled : emailEnabled // ignore: cast_nullable_to_non_nullable
@@ -156,10 +157,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( bool news,  bool serviceRequests,  bool issueReports,  bool emergencyBroadcasts,  bool transparency,  bool pushEnabled,  bool emailEnabled)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( bool news,  bool serviceRequests,  bool issueReports,  bool emergencyBroadcasts,  bool discoverGubat,  bool transparency,  bool pushEnabled,  bool emailEnabled)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _NotificationPreferences() when $default != null:
-return $default(_that.news,_that.serviceRequests,_that.issueReports,_that.emergencyBroadcasts,_that.transparency,_that.pushEnabled,_that.emailEnabled);case _:
+return $default(_that.news,_that.serviceRequests,_that.issueReports,_that.emergencyBroadcasts,_that.discoverGubat,_that.transparency,_that.pushEnabled,_that.emailEnabled);case _:
   return orElse();
 
 }
@@ -177,10 +178,10 @@ return $default(_that.news,_that.serviceRequests,_that.issueReports,_that.emerge
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( bool news,  bool serviceRequests,  bool issueReports,  bool emergencyBroadcasts,  bool transparency,  bool pushEnabled,  bool emailEnabled)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( bool news,  bool serviceRequests,  bool issueReports,  bool emergencyBroadcasts,  bool discoverGubat,  bool transparency,  bool pushEnabled,  bool emailEnabled)  $default,) {final _that = this;
 switch (_that) {
 case _NotificationPreferences():
-return $default(_that.news,_that.serviceRequests,_that.issueReports,_that.emergencyBroadcasts,_that.transparency,_that.pushEnabled,_that.emailEnabled);case _:
+return $default(_that.news,_that.serviceRequests,_that.issueReports,_that.emergencyBroadcasts,_that.discoverGubat,_that.transparency,_that.pushEnabled,_that.emailEnabled);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -197,10 +198,10 @@ return $default(_that.news,_that.serviceRequests,_that.issueReports,_that.emerge
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( bool news,  bool serviceRequests,  bool issueReports,  bool emergencyBroadcasts,  bool transparency,  bool pushEnabled,  bool emailEnabled)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( bool news,  bool serviceRequests,  bool issueReports,  bool emergencyBroadcasts,  bool discoverGubat,  bool transparency,  bool pushEnabled,  bool emailEnabled)?  $default,) {final _that = this;
 switch (_that) {
 case _NotificationPreferences() when $default != null:
-return $default(_that.news,_that.serviceRequests,_that.issueReports,_that.emergencyBroadcasts,_that.transparency,_that.pushEnabled,_that.emailEnabled);case _:
+return $default(_that.news,_that.serviceRequests,_that.issueReports,_that.emergencyBroadcasts,_that.discoverGubat,_that.transparency,_that.pushEnabled,_that.emailEnabled);case _:
   return null;
 
 }
@@ -212,13 +213,14 @@ return $default(_that.news,_that.serviceRequests,_that.issueReports,_that.emerge
 
 
 class _NotificationPreferences extends NotificationPreferences {
-  const _NotificationPreferences({this.news = true, this.serviceRequests = true, this.issueReports = true, this.emergencyBroadcasts = true, this.transparency = true, this.pushEnabled = true, this.emailEnabled = true}): super._();
-  
+  const _NotificationPreferences({this.news = true, this.serviceRequests = true, this.issueReports = true, this.emergencyBroadcasts = true, this.discoverGubat = true, this.transparency = true, this.pushEnabled = true, this.emailEnabled = true}): super._();
+
 
 @override@JsonKey() final  bool news;
 @override@JsonKey() final  bool serviceRequests;
 @override@JsonKey() final  bool issueReports;
 @override@JsonKey() final  bool emergencyBroadcasts;
+@override@JsonKey() final  bool discoverGubat;
 @override@JsonKey() final  bool transparency;
 @override@JsonKey() final  bool pushEnabled;
 @override@JsonKey() final  bool emailEnabled;
@@ -233,16 +235,16 @@ _$NotificationPreferencesCopyWith<_NotificationPreferences> get copyWith => __$N
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NotificationPreferences&&(identical(other.news, news) || other.news == news)&&(identical(other.serviceRequests, serviceRequests) || other.serviceRequests == serviceRequests)&&(identical(other.issueReports, issueReports) || other.issueReports == issueReports)&&(identical(other.emergencyBroadcasts, emergencyBroadcasts) || other.emergencyBroadcasts == emergencyBroadcasts)&&(identical(other.transparency, transparency) || other.transparency == transparency)&&(identical(other.pushEnabled, pushEnabled) || other.pushEnabled == pushEnabled)&&(identical(other.emailEnabled, emailEnabled) || other.emailEnabled == emailEnabled));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NotificationPreferences&&(identical(other.news, news) || other.news == news)&&(identical(other.serviceRequests, serviceRequests) || other.serviceRequests == serviceRequests)&&(identical(other.issueReports, issueReports) || other.issueReports == issueReports)&&(identical(other.emergencyBroadcasts, emergencyBroadcasts) || other.emergencyBroadcasts == emergencyBroadcasts)&&(identical(other.discoverGubat, discoverGubat) || other.discoverGubat == discoverGubat)&&(identical(other.transparency, transparency) || other.transparency == transparency)&&(identical(other.pushEnabled, pushEnabled) || other.pushEnabled == pushEnabled)&&(identical(other.emailEnabled, emailEnabled) || other.emailEnabled == emailEnabled));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,news,serviceRequests,issueReports,emergencyBroadcasts,transparency,pushEnabled,emailEnabled);
+int get hashCode => Object.hash(runtimeType,news,serviceRequests,issueReports,emergencyBroadcasts,discoverGubat,transparency,pushEnabled,emailEnabled);
 
 @override
 String toString() {
-  return 'NotificationPreferences(news: $news, serviceRequests: $serviceRequests, issueReports: $issueReports, emergencyBroadcasts: $emergencyBroadcasts, transparency: $transparency, pushEnabled: $pushEnabled, emailEnabled: $emailEnabled)';
+  return 'NotificationPreferences(news: $news, serviceRequests: $serviceRequests, issueReports: $issueReports, emergencyBroadcasts: $emergencyBroadcasts, discoverGubat: $discoverGubat, transparency: $transparency, pushEnabled: $pushEnabled, emailEnabled: $emailEnabled)';
 }
 
 
@@ -253,7 +255,7 @@ abstract mixin class _$NotificationPreferencesCopyWith<$Res> implements $Notific
   factory _$NotificationPreferencesCopyWith(_NotificationPreferences value, $Res Function(_NotificationPreferences) _then) = __$NotificationPreferencesCopyWithImpl;
 @override @useResult
 $Res call({
- bool news, bool serviceRequests, bool issueReports, bool emergencyBroadcasts, bool transparency, bool pushEnabled, bool emailEnabled
+ bool news, bool serviceRequests, bool issueReports, bool emergencyBroadcasts, bool discoverGubat, bool transparency, bool pushEnabled, bool emailEnabled
 });
 
 
@@ -270,12 +272,13 @@ class __$NotificationPreferencesCopyWithImpl<$Res>
 
 /// Create a copy of NotificationPreferences
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? news = null,Object? serviceRequests = null,Object? issueReports = null,Object? emergencyBroadcasts = null,Object? transparency = null,Object? pushEnabled = null,Object? emailEnabled = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? news = null,Object? serviceRequests = null,Object? issueReports = null,Object? emergencyBroadcasts = null,Object? discoverGubat = null,Object? transparency = null,Object? pushEnabled = null,Object? emailEnabled = null,}) {
   return _then(_NotificationPreferences(
 news: null == news ? _self.news : news // ignore: cast_nullable_to_non_nullable
 as bool,serviceRequests: null == serviceRequests ? _self.serviceRequests : serviceRequests // ignore: cast_nullable_to_non_nullable
 as bool,issueReports: null == issueReports ? _self.issueReports : issueReports // ignore: cast_nullable_to_non_nullable
 as bool,emergencyBroadcasts: null == emergencyBroadcasts ? _self.emergencyBroadcasts : emergencyBroadcasts // ignore: cast_nullable_to_non_nullable
+as bool,discoverGubat: null == discoverGubat ? _self.discoverGubat : discoverGubat // ignore: cast_nullable_to_non_nullable
 as bool,transparency: null == transparency ? _self.transparency : transparency // ignore: cast_nullable_to_non_nullable
 as bool,pushEnabled: null == pushEnabled ? _self.pushEnabled : pushEnabled // ignore: cast_nullable_to_non_nullable
 as bool,emailEnabled: null == emailEnabled ? _self.emailEnabled : emailEnabled // ignore: cast_nullable_to_non_nullable

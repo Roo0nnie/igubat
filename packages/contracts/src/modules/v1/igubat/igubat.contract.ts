@@ -9,11 +9,16 @@ import {
 	ContentPlacementSchema,
 	CreateBroadcastSchema,
 	CreateCitizenReportSchema,
+	CreateDiscoverGubatEntrySchema,
 	CreateServiceRequestSchema,
 	CreateStaffSchema,
 	CreateTransparencyItemSchema,
 	DashboardSchema,
+	DeleteDiscoverGubatEntrySchema,
 	DeleteTransparencyItemSchema,
+	DiscoverGubatEntryDetailSchema,
+	DiscoverGubatEntrySummarySchema,
+	DiscoverGubatListQuerySchema,
 	EmergencyBroadcastSchema,
 	EmergencyDirectorySchema,
 	EventSchema,
@@ -24,6 +29,7 @@ import {
 	NotificationPreferenceSchema,
 	NotificationSchema,
 	PolicyDocumentSchema,
+	PublishDiscoverGubatEntrySchema,
 	PublishTransparencyItemSchema,
 	ServiceCategorySchema,
 	ServiceRequestDetailSchema,
@@ -34,6 +40,7 @@ import {
 	TransparencyItemDetailSchema,
 	TransparencyItemSummarySchema,
 	TransparencyListQuerySchema,
+	UpdateDiscoverGubatEntrySchema,
 	UpdateProfileSchema,
 	UpdateReportStatusSchema,
 	UpdateRequestStatusSchema,
@@ -169,6 +176,26 @@ export const igubatContract = oc.prefix("/igubat").router(
 						})
 						.input(SlugParamSchema)
 						.output(TransparencyItemDetailSchema),
+				}),
+				discoverGubat: oc.router({
+					list: oc
+						.route({
+							method: "GET",
+							path: "/discover-gubat",
+							tags: ["iGubat Discover Gubat"],
+							spec: spec => ({ ...spec, security: [] }),
+						})
+						.input(DiscoverGubatListQuerySchema)
+						.output(z.array(DiscoverGubatEntrySummarySchema)),
+					detail: oc
+						.route({
+							method: "GET",
+							path: "/discover-gubat/{slug}",
+							tags: ["iGubat Discover Gubat"],
+							spec: spec => ({ ...spec, security: [] }),
+						})
+						.input(SlugParamSchema)
+						.output(DiscoverGubatEntryDetailSchema),
 				}),
 			})
 		),
@@ -363,6 +390,56 @@ export const igubatContract = oc.prefix("/igubat").router(
 							tags: ["iGubat Transparency"],
 						})
 						.input(DeleteTransparencyItemSchema)
+						.output(z.object({ success: z.boolean(), permanent: z.boolean() })),
+				}),
+				discoverGubat: oc.router({
+					list: oc
+						.route({ method: "GET", path: "/discover-gubat", tags: ["iGubat Discover Gubat"] })
+						.input(DiscoverGubatListQuerySchema)
+						.output(z.array(DiscoverGubatEntrySummarySchema)),
+					detail: oc
+						.route({
+							method: "GET",
+							path: "/discover-gubat/{id}",
+							tags: ["iGubat Discover Gubat"],
+						})
+						.input(IdParamSchema)
+						.output(DiscoverGubatEntryDetailSchema),
+					create: oc
+						.route({ method: "POST", path: "/discover-gubat", tags: ["iGubat Discover Gubat"] })
+						.input(CreateDiscoverGubatEntrySchema)
+						.output(DiscoverGubatEntryDetailSchema),
+					update: oc
+						.route({
+							method: "PATCH",
+							path: "/discover-gubat/{id}",
+							tags: ["iGubat Discover Gubat"],
+						})
+						.input(UpdateDiscoverGubatEntrySchema)
+						.output(DiscoverGubatEntryDetailSchema),
+					publish: oc
+						.route({
+							method: "POST",
+							path: "/discover-gubat/{id}/publish",
+							tags: ["iGubat Discover Gubat"],
+						})
+						.input(PublishDiscoverGubatEntrySchema)
+						.output(DiscoverGubatEntryDetailSchema),
+					archive: oc
+						.route({
+							method: "POST",
+							path: "/discover-gubat/{id}/archive",
+							tags: ["iGubat Discover Gubat"],
+						})
+						.input(IdParamSchema)
+						.output(DiscoverGubatEntryDetailSchema),
+					delete: oc
+						.route({
+							method: "DELETE",
+							path: "/discover-gubat/{id}",
+							tags: ["iGubat Discover Gubat"],
+						})
+						.input(DeleteDiscoverGubatEntrySchema)
 						.output(z.object({ success: z.boolean(), permanent: z.boolean() })),
 				}),
 			})

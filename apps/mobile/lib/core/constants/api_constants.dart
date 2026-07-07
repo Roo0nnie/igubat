@@ -4,36 +4,48 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 ///
 /// Base/version come from `.env`. Better Auth routes (`/auth/*`) return raw,
 /// un-enveloped bodies; iGubat routes (`/igubat/*`) return bare arrays/objects
-/// (no success envelope) — see `core/network/api_response.dart`.
+/// without the success envelope.
 class ApiConstants {
   ApiConstants._();
 
+  static String? _env(String key) {
+    try {
+      return dotenv.env[key];
+    } catch (_) {
+      return null;
+    }
+  }
+
   static String get baseUrl =>
-      dotenv.env['API_BASE_URL'] ?? 'http://10.0.2.2:3000/api';
-  static String get apiVersion => dotenv.env['API_VERSION'] ?? 'v1';
+      _env('API_BASE_URL') ?? 'http://10.0.2.2:3000/api';
+  static String get apiVersion => _env('API_VERSION') ?? 'v1';
   static String get versionedUrl => '$baseUrl/$apiVersion';
 
   static String get _igubat => '$versionedUrl/igubat';
 
-  // ── Auth (Better Auth — no envelope) ──────────────────────────────────────
+  // Auth endpoints (Better Auth, no envelope).
   static String get signIn => '$versionedUrl/auth/sign-in/email';
   static String get signUp => '$versionedUrl/auth/sign-up/email';
   static String get signOut => '$versionedUrl/auth/sign-out';
   static String get getSession => '$versionedUrl/auth/get-session';
 
-  /// `sendVerificationOtp` (re)dispatches a code; `verifyEmailOtp` validates it
+  /// `sendVerificationOtp` dispatches a code; `verifyEmailOtp` validates it
   /// server-side and establishes the authenticated session.
   static String get sendVerificationOtp =>
       '$versionedUrl/auth/email-otp/send-verification-otp';
   static String get verifyEmailOtp =>
       '$versionedUrl/auth/email-otp/verify-email';
 
-  // ── Example (todos) ───────────────────────────────────────────────────────
+  // Example endpoints.
   static String get todos => '$versionedUrl/example/todos';
   static String todoById(int id) => '$versionedUrl/example/todos/$id';
 
-  // ── iGubat public (no auth) ───────────────────────────────────────────────
+  // iGubat public endpoints.
   static String get publicDashboard => '$_igubat/public/dashboard';
+
+  static String get publicDiscoverGubat => '$_igubat/public/discover-gubat';
+  static String publicDiscoverGubatItem(String slug) =>
+      '$_igubat/public/discover-gubat/$slug';
 
   static String get publicNews => '$_igubat/public/news';
   static String publicArticle(String slug) => '$_igubat/public/news/$slug';
@@ -53,7 +65,7 @@ class ApiConstants {
   static String publicTransparencyItem(String slug) =>
       '$_igubat/public/transparency/$slug';
 
-  // ── iGubat citizen (`/me/*`, auth required) ───────────────────────────────
+  // iGubat citizen endpoints.
   static String get myRequests => '$_igubat/me/requests';
   static String myRequest(int id) => '$_igubat/me/requests/$id';
   static String cancelRequest(int id) => '$_igubat/me/requests/$id/cancel';

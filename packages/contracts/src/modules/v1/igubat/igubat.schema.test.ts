@@ -1,8 +1,13 @@
 import { describe, expect, it } from "vitest"
 
 import {
+	CreateDiscoverGubatEntrySchema,
 	CreateTransparencyItemSchema,
+	DeleteDiscoverGubatEntrySchema,
 	DeleteTransparencyItemSchema,
+	DiscoverGubatEntryDetailSchema,
+	DiscoverGubatEntrySummarySchema,
+	DiscoverGubatMetadataSchema,
 	NotificationPreferenceSchema,
 	TransparencyItemDetailSchema,
 	TransparencyItemSummarySchema,
@@ -118,11 +123,108 @@ describe("Transparency contracts", () => {
 			serviceRequests: true,
 			issueReports: true,
 			emergencyBroadcasts: true,
+			discoverGubat: true,
 			transparency: false,
 			pushEnabled: true,
 			emailEnabled: false,
 		})
 
 		expect(result.transparency).toBe(false)
+	})
+})
+
+describe("Discover Gubat contracts", () => {
+	it("parses permanent delete query flags without treating 'false' as true", () => {
+		expect(DeleteDiscoverGubatEntrySchema.parse({ id: "7", permanent: "true" })).toEqual({
+			id: 7,
+			permanent: true,
+		})
+		expect(DeleteDiscoverGubatEntrySchema.parse({ id: "7", permanent: "false" })).toEqual({
+			id: 7,
+			permanent: false,
+		})
+	})
+
+	it("requires type-specific Discover Gubat metadata", () => {
+		const missingMapLocation = CreateDiscoverGubatEntrySchema.safeParse({
+			type: "tourist_spot",
+			title: "Buenavista Beach",
+			category: "Beach",
+			body: "Surfing beach in Gubat.",
+			metadata: {
+				type: "tourist_spot",
+			},
+		})
+		const product = DiscoverGubatMetadataSchema.parse({
+			type: "local_product",
+			productKind: "delicacy",
+			whereToBuy: "Public Market pasalubong stalls",
+			pasalubongNote: "Best bought fresh in the morning.",
+		})
+
+		expect(missingMapLocation.success).toBe(false)
+		if (product.type === "local_product") {
+			expect(product.whereToBuy).toBe("Public Market pasalubong stalls")
+		}
+	})
+
+	it("keeps Discover Gubat summaries lighter than detail payloads", () => {
+		const base = {
+			id: 1,
+			type: "tourist_spot",
+			title: "Buenavista Beach",
+			slug: "buenavista-beach",
+			summary: "Surfing beach in Gubat.",
+			category: "Beach",
+			status: "published",
+			coverImageUrl: null,
+			mapLocation: "Buenavista, Gubat, Sorsogon",
+			whereToBuy: null,
+			eventDate: null,
+			authorId: "staff-user",
+			scheduledAt: null,
+			publishedAt: new Date("2026-06-01T00:00:00.000Z"),
+			archivedAt: null,
+			createdAt: new Date("2026-06-01T00:00:00.000Z"),
+			updatedAt: new Date("2026-06-01T00:00:00.000Z"),
+		} as const
+		const metadata = {
+			type: "tourist_spot",
+			mapLocation: "Buenavista, Gubat, Sorsogon",
+			latitude: 12.9201,
+			longitude: 124.1234,
+		} as const
+
+		const summary = DiscoverGubatEntrySummarySchema.parse({
+			...base,
+			body: "Should not be exposed in summary rows.",
+			metadata,
+		})
+		const detail = DiscoverGubatEntryDetailSchema.parse({
+			...base,
+			body: "Full destination write-up.",
+			metadata,
+			notifyOnPublish: false,
+			photos: [],
+		})
+
+		expect("body" in summary).toBe(false)
+		expect("metadata" in summary).toBe(false)
+		expect(detail.metadata?.type).toBe("tourist_spot")
+	})
+
+	it("includes Discover Gubat in notification preferences", () => {
+		const result = NotificationPreferenceSchema.parse({
+			news: true,
+			serviceRequests: true,
+			issueReports: true,
+			emergencyBroadcasts: true,
+			discoverGubat: false,
+			transparency: true,
+			pushEnabled: true,
+			emailEnabled: false,
+		})
+
+		expect(result.discoverGubat).toBe(false)
 	})
 })
