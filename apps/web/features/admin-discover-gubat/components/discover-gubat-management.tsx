@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useRef, useState } from "react"
 import { useQueryClient } from "@tanstack/react-query"
-import { Archive, Plus, Save, Send, Trash2 } from "lucide-react"
+import { Archive, Eye, Plus, Save, Send, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 
 import { Badge } from "@/core/components/ui/badge"
@@ -38,6 +38,11 @@ import {
 } from "@/features/admin-discover-gubat/api/discover-gubat.hooks"
 import { DiscoverGubatListTable } from "@/features/admin-discover-gubat/components/discover-gubat-list-table"
 import {
+	DiscoverGubatPhotoFields,
+	type DiscoverGubatPhotoDraft,
+} from "@/features/admin-discover-gubat/components/discover-gubat-photo-fields"
+import { DiscoverGubatPreview } from "@/features/admin-discover-gubat/components/discover-gubat-preview"
+import {
 	DISCOVER_GUBAT_STATUSES,
 	DISCOVER_GUBAT_TYPES,
 	discoverGubatStatusBadgeVariant,
@@ -72,8 +77,7 @@ type EditorState = {
 	mapLocation: string
 	whereToBuy: string
 	eventDate: string
-	photoUrl: string
-	photoAltText: string
+	photos: DiscoverGubatPhotoDraft[]
 	notifySubscribers: boolean
 	scheduledAt: string
 	status?: DiscoverGubatStatus
@@ -90,8 +94,7 @@ const emptyEditor: EditorState = {
 	mapLocation: "",
 	whereToBuy: "",
 	eventDate: "",
-	photoUrl: "",
-	photoAltText: "",
+	photos: [],
 	notifySubscribers: true,
 	scheduledAt: "",
 }
@@ -135,13 +138,15 @@ function editorFromRow(row: DiscoverGubatListRow): EditorState {
 }
 
 function editorFromDetail(item: DiscoverGubatDetail): EditorState {
-	const firstPhoto = item.photos.at(0)
 	return {
 		...editorFromRow(item as DiscoverGubatListRow),
 		body: item.body,
 		notifySubscribers: item.notifyOnPublish,
-		photoUrl: firstPhoto?.imageUrl ?? "",
-		photoAltText: firstPhoto?.altText ?? "",
+		photos: item.photos.map((photo, index) => ({
+			id: `photo-${photo.id ?? index}`,
+			imageUrl: photo.imageUrl ?? "",
+			altText: photo.altText ?? "",
+		})),
 	}
 }
 
@@ -170,14 +175,17 @@ function buildMetadata(editor: EditorState) {
 }
 
 function buildPhotos(editor: EditorState) {
-	if (!editor.photoUrl.trim()) return []
-	return [
-		{
-			imageUrl: editor.photoUrl.trim(),
-			altText: editor.photoAltText.trim() || undefined,
-			sortOrder: 0,
-		},
-	]
+	return editor.photos.flatMap((photo, index) => {
+		const imageUrl = photo.imageUrl.trim()
+		if (!imageUrl) return []
+		return [
+			{
+				imageUrl,
+				altText: photo.altText.trim() || undefined,
+				sortOrder: index,
+			},
+		]
+	})
 }
 
 function canSubmit(editor: EditorState) {
@@ -195,6 +203,7 @@ export function DiscoverGubatManagement() {
 	const [statusFilter, setStatusFilter] = useState<string>("all")
 	const [search, setSearch] = useState("")
 	const [editor, setEditor] = useState<EditorState>(emptyEditor)
+	const [showPreview, setShowPreview] = useState(false)
 	const [loadingItemId, setLoadingItemId] = useState<number | undefined>()
 	const selectedItemIdRef = useRef<number | undefined>(undefined)
 
@@ -243,6 +252,7 @@ export function DiscoverGubatManagement() {
 		selectedItemIdRef.current = undefined
 		setLoadingItemId(undefined)
 		setEditor(emptyEditor)
+		setShowPreview(false)
 	}
 
 	function commonPayload() {
@@ -548,30 +558,23 @@ export function DiscoverGubatManagement() {
 							/>
 						</div>
 
-						<div className="grid gap-4 md:grid-cols-2">
-							<div className="flex flex-col gap-2">
-								<Label htmlFor="discover-cover">Cover Image URL</Label>
-								<Input
-									id="discover-cover"
-									value={editor.coverImageUrl}
-									disabled={Boolean(loadingItemId)}
-									onChange={event =>
-										setEditor(current => ({ ...current, coverImageUrl: event.target.value }))
-									}
-								/>
-							</div>
-							<div className="flex flex-col gap-2">
-								<Label htmlFor="discover-photo">Photo URL</Label>
-								<Input
-									id="discover-photo"
-									value={editor.photoUrl}
-									disabled={Boolean(loadingItemId)}
-									onChange={event =>
-										setEditor(current => ({ ...current, photoUrl: event.target.value }))
-									}
-								/>
-							</div>
+						<div className="flex flex-col gap-2">
+							<Label htmlFor="discover-cover">Cover Image URL</Label>
+							<Input
+								id="discover-cover"
+								value={editor.coverImageUrl}
+								disabled={Boolean(loadingItemId)}
+								onChange={event =>
+									setEditor(current => ({ ...current, coverImageUrl: event.target.value }))
+								}
+							/>
 						</div>
+
+						<DiscoverGubatPhotoFields
+							photos={editor.photos}
+							disabled={Boolean(loadingItemId)}
+							onChange={photos => setEditor(current => ({ ...current, photos }))}
+						/>
 
 						<div className="flex flex-col gap-3 rounded-md border p-3">
 							<Label className="text-xs font-semibold uppercase">Publish Controls</Label>
@@ -600,6 +603,24 @@ export function DiscoverGubatManagement() {
 								/>
 							</div>
 						</div>
+
+						{showPreview && (
+							<DiscoverGubatPreview
+								entry={{
+									type: editor.type,
+									title: editor.title,
+									category: editor.category,
+									summary: editor.summary,
+									body: editor.body,
+									coverImageUrl: editor.coverImageUrl,
+									mapLocation: editor.mapLocation,
+									whereToBuy: editor.whereToBuy,
+									eventDate: editor.eventDate,
+									status: editor.status,
+									photos: editor.photos,
+								}}
+							/>
+						)}
 
 						<div className="flex flex-wrap justify-end gap-2">
 							{isAdmin && editor.id && (
@@ -631,6 +652,9 @@ export function DiscoverGubatManagement() {
 								}
 							>
 								<Archive className="size-4" /> Archive
+							</Button>
+							<Button variant="outline" onClick={() => setShowPreview(current => !current)}>
+								<Eye className="size-4" /> {showPreview ? "Hide Preview" : "Preview"}
 							</Button>
 							<Button variant="outline" disabled={submitDisabled} onClick={saveDraft}>
 								<Save className="size-4" /> Save Draft
