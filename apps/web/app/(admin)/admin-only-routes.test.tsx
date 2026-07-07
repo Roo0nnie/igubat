@@ -5,6 +5,7 @@ import type { PortalUser } from "@/core/lib/admin-guard"
 import AnalyticsPage from "./analytics/page"
 import AuditLogsPage from "./audit-logs/page"
 import CitizensPage from "./citizens/page"
+import DiscoverGubatPage from "./discover-gubat/page"
 import SettingsPage from "./settings/page"
 import StaffPage from "./staff/page"
 import TransparencyPage from "./transparency/page"
@@ -105,6 +106,20 @@ describe("staff route reachability", () => {
 		mocks.requireStaff.mockResolvedValue(admin)
 
 		expect(TransparencyPage()).toBeTruthy()
+		expect(mocks.forbidden).not.toHaveBeenCalled()
+	})
+
+	it("Discover Gubat: moderator is allowed through the staff-level page", async () => {
+		mocks.requireStaff.mockResolvedValue(moderator)
+
+		await expect(DiscoverGubatPage()).resolves.toBeTruthy()
+		expect(mocks.forbidden).not.toHaveBeenCalled()
+	})
+
+	it("Discover Gubat: admin is allowed through the staff-level page", async () => {
+		mocks.requireStaff.mockResolvedValue(admin)
+
+		await expect(DiscoverGubatPage()).resolves.toBeTruthy()
 		expect(mocks.forbidden).not.toHaveBeenCalled()
 	})
 })

@@ -2,6 +2,7 @@ import {
 	AlertTriangle,
 	BarChart3,
 	Bell,
+	Compass,
 	FileText,
 	HelpCircle,
 	Home,
@@ -49,6 +50,7 @@ export const NAV_GROUPS: NavGroup[] = [
 		label: "Content & Emergency",
 		items: [
 			{ title: "Content", url: "/content", icon: Newspaper, access: "staff" },
+			{ title: "Discover Gubat", url: "/discover-gubat", icon: Compass, access: "staff" },
 			{ title: "Emergency", url: "/emergency", icon: Siren, access: "staff" },
 			{ title: "Transparency", url: "/transparency", icon: ShieldCheck, access: "staff" },
 			{ title: "Notifications", url: "/notifications", icon: Bell, access: "staff" },
