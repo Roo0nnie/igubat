@@ -15,12 +15,15 @@ import '../../../../shared/widgets/glass/glass_surface.dart';
 import '../widgets/home_collapsing_header.dart';
 import '../../../discover/presentation/screens/discover_gubat_screen.dart';
 import '../../../news/presentation/screens/news_detail_screen.dart';
+import '../../../news/presentation/providers/news_provider.dart';
 import '../../../reports/presentation/screens/report_issue_screen.dart';
-import '../../../services/presentation/screens/request_details_screen.dart';
 import '../../../services/presentation/screens/service_request_stepper_screen.dart';
+import '../../../applications/presentation/screens/applications_screen.dart';
 import '../../../emergency/presentation/screens/emergency_screen.dart';
+import '../../../events/presentation/screens/event_detail_screen.dart';
+import '../../../events/presentation/providers/events_provider.dart';
 import '../../../transparency/presentation/widgets/transparency_section.dart';
-import 'event_detail_screen.dart';
+import '../providers/dashboard_provider.dart';
 import 'transaction_detail_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -245,9 +248,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       case 2:
         Navigator.push(
           context,
-          GlassPageRoute(
-            page: RequestDetailsScreen(request: SeedData.activeRequests.first),
-          ),
+          GlassPageRoute(page: const ApplicationsScreen()),
         );
         break;
       case 3:
@@ -375,15 +376,32 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildCommunityStats(BuildContext context) {
+    // Live counters from the public dashboard; fall back to the seed strip
+    // while loading or if the endpoint is unavailable.
+    final dashboard = ref.watch(dashboardProvider).value;
+    final stats = dashboard == null
+        ? [for (final s in SeedData.communityStats) (s.icon, s.value, s.label)]
+        : <(String, String, String)>[
+            ('people', '${dashboard.totalUsers}', 'Citizens Registered'),
+            ('requests', '${dashboard.pendingRequests}', 'Pending Requests'),
+            ('analytics', '${dashboard.activeServices}', 'Active Services'),
+            ('requests', '${dashboard.newReports}', 'New Reports'),
+            (
+              'analytics',
+              '${dashboard.publishedAnnouncements}',
+              'Published News',
+            ),
+          ];
+
     return SizedBox(
       height: 110,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         clipBehavior: Clip.none,
-        itemCount: SeedData.communityStats.length,
+        itemCount: stats.length,
         separatorBuilder: (_, _) => const SizedBox(width: 12),
         itemBuilder: (context, index) {
-          final stat = SeedData.communityStats[index];
+          final stat = stats[index];
           return SizedBox(
             width: 150,
             child: GlassCard(
@@ -393,13 +411,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Icon(
-                    _statIcon(stat.icon),
+                    _statIcon(stat.$1),
                     color: AppTheme.secondaryColor,
                     size: 20,
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    stat.value,
+                    stat.$2,
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
@@ -407,7 +425,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                   ),
                   Text(
-                    stat.label,
+                    stat.$3,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -425,16 +443,34 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildFeaturedNews(BuildContext context) {
-    final featured = SeedData.announcements.firstWhere((a) => a.isFeatured);
+    // Prefer a live featured article; fall back to the seed announcement while
+    // the public news endpoint is loading or unavailable.
+    final liveArticles = ref.watch(newsListProvider).value;
+    final live = (liveArticles != null && liveArticles.isNotEmpty)
+        ? liveArticles.firstWhere(
+            (a) => a.isFeatured,
+            orElse: () => liveArticles.first,
+          )
+        : null;
+    final seed = SeedData.announcements.firstWhere((a) => a.isFeatured);
+
+    final category = live?.category ?? seed.category;
+    final title = live?.title ?? seed.title;
+    final summary = live != null
+        ? ((live.excerpt?.isNotEmpty ?? false) ? live.excerpt! : live.body)
+        : seed.content;
+    final slug = live?.slug;
 
     return GlassCard(
       intensity: GlassIntensity.prominent,
       padding: EdgeInsets.zero,
       onTap: () {
-        Navigator.push(
-          context,
-          GlassPageRoute(page: NewsDetailScreen(announcement: featured)),
-        );
+        if (slug != null && slug.isNotEmpty) {
+          Navigator.push(
+            context,
+            GlassPageRoute(page: NewsDetailScreen(slug: slug)),
+          );
+        }
       },
       child: ClipRRect(
         borderRadius: BorderRadius.circular(GlassTokens.radiusGlassSm),
@@ -472,13 +508,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    GlassBadge(
-                      label: featured.category,
-                      color: AppTheme.secondaryColor,
-                    ),
+                    GlassBadge(label: category, color: AppTheme.secondaryColor),
                     const Spacer(),
                     Text(
-                      featured.title,
+                      title,
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 18,
@@ -488,7 +521,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      featured.content,
+                      summary,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -507,32 +540,76 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
+  static const List<String> _monthAbbr = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+
+  String _formatEventDate(DateTime? date) {
+    if (date == null) return 'To be announced';
+    final local = date.toLocal();
+    return '${_monthAbbr[local.month - 1]} ${local.day}, ${local.year}';
+  }
+
   Widget _buildUpcomingEvents(BuildContext context) {
+    // Prefer live events; fall back to the seed strip while loading/unavailable.
+    final liveEvents = ref.watch(eventsListProvider).value;
+    final useLive = liveEvents != null && liveEvents.isNotEmpty;
+    final count = useLive ? liveEvents.length : SeedData.upcomingEvents.length;
+
     return SizedBox(
       height: 140,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         clipBehavior: Clip.none,
-        itemCount: SeedData.upcomingEvents.length,
+        itemCount: count,
         separatorBuilder: (_, _) => const SizedBox(width: 12),
         itemBuilder: (context, index) {
-          final event = SeedData.upcomingEvents[index];
+          final String category, title, dateStr, location;
+          final String? slug;
+          if (useLive) {
+            final e = liveEvents[index];
+            category = e.category ?? 'Event';
+            title = e.title;
+            dateStr = _formatEventDate(e.startsAt);
+            location = e.location ?? 'To be announced';
+            slug = e.slug;
+          } else {
+            final e = SeedData.upcomingEvents[index];
+            category = e.category;
+            title = e.title;
+            dateStr = e.date;
+            location = e.location;
+            slug = null;
+          }
           return SizedBox(
             width: 200,
             child: GlassCard(
               onTap: () {
-                Navigator.push(
-                  context,
-                  GlassPageRoute(page: EventDetailScreen(event: event)),
-                );
+                if (slug != null && slug.isNotEmpty) {
+                  Navigator.push(
+                    context,
+                    GlassPageRoute(page: EventDetailScreen(slug: slug)),
+                  );
+                }
               },
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  GlassBadge(label: event.category, compact: true),
+                  GlassBadge(label: category, compact: true),
                   const SizedBox(height: 8),
                   Text(
-                    event.title,
+                    title,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -552,7 +629,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       const SizedBox(width: 4),
                       Flexible(
                         child: Text(
-                          event.date,
+                          dateStr,
                           style: TextStyle(
                             fontSize: 11,
                             color: glassThemeOf(context).textOnGlassMuted,
@@ -573,7 +650,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
-                          event.location,
+                          location,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(

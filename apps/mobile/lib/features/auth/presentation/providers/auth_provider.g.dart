@@ -8,12 +8,21 @@ part of 'auth_provider.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
+/// Authentication state machine. Drives the auth use cases and folds their
+/// `Either<Failure, Session?>` results into [AsyncValue] so a failed call lands
+/// in [AsyncError] carrying the typed `Failure`.
 
 @ProviderFor(AuthState)
 const authStateProvider = AuthStateProvider._();
 
+/// Authentication state machine. Drives the auth use cases and folds their
+/// `Either<Failure, Session?>` results into [AsyncValue] so a failed call lands
+/// in [AsyncError] carrying the typed `Failure`.
 final class AuthStateProvider
-    extends $AsyncNotifierProvider<AuthState, SessionModel?> {
+    extends $AsyncNotifierProvider<AuthState, Session?> {
+  /// Authentication state machine. Drives the auth use cases and folds their
+  /// `Either<Failure, Session?>` results into [AsyncValue] so a failed call lands
+  /// in [AsyncError] carrying the typed `Failure`.
   const AuthStateProvider._()
     : super(
         from: null,
@@ -33,20 +42,24 @@ final class AuthStateProvider
   AuthState create() => AuthState();
 }
 
-String _$authStateHash() => r'db4b94ac4ec4338d8b7e2b56957859ecbb279762';
+String _$authStateHash() => r'148e4a65dbe9146ad6468a867c795dffa89efab1';
 
-abstract class _$AuthState extends $AsyncNotifier<SessionModel?> {
-  FutureOr<SessionModel?> build();
+/// Authentication state machine. Drives the auth use cases and folds their
+/// `Either<Failure, Session?>` results into [AsyncValue] so a failed call lands
+/// in [AsyncError] carrying the typed `Failure`.
+
+abstract class _$AuthState extends $AsyncNotifier<Session?> {
+  FutureOr<Session?> build();
   @$mustCallSuper
   @override
   void runBuild() {
     final created = build();
-    final ref = this.ref as $Ref<AsyncValue<SessionModel?>, SessionModel?>;
+    final ref = this.ref as $Ref<AsyncValue<Session?>, Session?>;
     final element =
         ref.element
             as $ClassProviderElement<
-              AnyNotifier<AsyncValue<SessionModel?>, SessionModel?>,
-              AsyncValue<SessionModel?>,
+              AnyNotifier<AsyncValue<Session?>, Session?>,
+              AsyncValue<Session?>,
               Object?,
               Object?
             >;
@@ -98,9 +111,8 @@ String _$isAuthenticatedHash() => r'8525d6f86afda12fa9e11929ac9b547dc4a445d2';
 @ProviderFor(currentUser)
 const currentUserProvider = CurrentUserProvider._();
 
-final class CurrentUserProvider
-    extends $FunctionalProvider<UserModel?, UserModel?, UserModel?>
-    with $Provider<UserModel?> {
+final class CurrentUserProvider extends $FunctionalProvider<User?, User?, User?>
+    with $Provider<User?> {
   const CurrentUserProvider._()
     : super(
         from: null,
@@ -117,21 +129,21 @@ final class CurrentUserProvider
 
   @$internal
   @override
-  $ProviderElement<UserModel?> $createElement($ProviderPointer pointer) =>
+  $ProviderElement<User?> $createElement($ProviderPointer pointer) =>
       $ProviderElement(pointer);
 
   @override
-  UserModel? create(Ref ref) {
+  User? create(Ref ref) {
     return currentUser(ref);
   }
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(UserModel? value) {
+  Override overrideWithValue(User? value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride: $SyncValueProvider<UserModel?>(value),
+      providerOverride: $SyncValueProvider<User?>(value),
     );
   }
 }
 
-String _$currentUserHash() => r'0fbb2be69135daa7af6d5b1bc38096de546fa484';
+String _$currentUserHash() => r'81a1bcb2646f96a192f16591f392d3fb68007068';

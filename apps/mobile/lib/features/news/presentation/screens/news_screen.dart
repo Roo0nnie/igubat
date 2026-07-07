@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/mock/seed_data.dart';
 import '../../../../core/theme/app_styles.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/glass_tokens.dart';
@@ -10,25 +10,12 @@ import '../../../../shared/widgets/glass/glass_card.dart';
 import '../../../../shared/widgets/glass/glass_scaffold.dart';
 import '../../../../shared/widgets/glass/glass_surface.dart';
 import '../../../../core/navigation/glass_page_route.dart';
+import '../../domain/entities/news_article.dart';
+import '../providers/news_provider.dart';
 import 'news_detail_screen.dart';
 
-class NewsScreen extends StatefulWidget {
+class NewsScreen extends ConsumerWidget {
   const NewsScreen({super.key});
-
-  @override
-  State<NewsScreen> createState() => _NewsScreenState();
-}
-
-class _NewsScreenState extends State<NewsScreen> {
-  bool _loading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    Future.delayed(const Duration(milliseconds: 400), () {
-      if (mounted) setState(() => _loading = false);
-    });
-  }
 
   Color _categoryColor(String category) {
     switch (category) {
@@ -43,62 +30,172 @@ class _NewsScreenState extends State<NewsScreen> {
     }
   }
 
-  String _formatDate(String iso) => iso.substring(0, 10);
+  String _formatDate(DateTime? date) =>
+      date == null ? '' : date.toIso8601String().substring(0, 10);
+
+  String _summaryOf(NewsArticle news) =>
+      (news.excerpt != null && news.excerpt!.isNotEmpty)
+          ? news.excerpt!
+          : news.body;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final glass = glassThemeOf(context);
-    Announcement? featured;
-    for (final a in SeedData.announcements) {
-      if (a.isFeatured) {
-        featured = a;
-        break;
-      }
-    }
+    final newsAsync = ref.watch(newsListProvider);
 
     return GlassScaffold(
       title: 'Community News',
-      onRefresh: () async => Future.delayed(const Duration(milliseconds: 600)),
-      body: ListView.separated(
-        padding: EdgeInsets.fromLTRB(
-          24,
-          16,
-          24,
-          AppLayout.scrollBottomPadding(context),
-        ),
-        itemCount: _loading ? 3 : SeedData.announcements.length + (featured != null ? 1 : 0),
-        separatorBuilder: (_, __) => const SizedBox(height: 16),
-        itemBuilder: (context, index) {
-          if (_loading) {
-            return GlassCard(
+      onRefresh: () async => ref.refresh(newsListProvider.future),
+      body: newsAsync.when(
+        loading: () => ListView(
+          padding: EdgeInsets.fromLTRB(
+            24,
+            16,
+            24,
+            AppLayout.scrollBottomPadding(context),
+          ),
+          children: [
+            GlassCard(
               padding: EdgeInsets.zero,
               child: SizedBox(
                 height: 280,
-                child: Center(child: CircularProgressIndicator(color: AppTheme.secondaryColor)),
+                child: Center(
+                  child: CircularProgressIndicator(
+                    color: AppTheme.secondaryColor,
+                  ),
+                ),
               ),
+            ),
+          ],
+        ),
+        error: (error, _) => ListView(
+          padding: EdgeInsets.fromLTRB(
+            24,
+            16,
+            24,
+            AppLayout.scrollBottomPadding(context),
+          ),
+          children: [
+            GlassCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    Icons.cloud_off_outlined,
+                    size: 40,
+                    color: glass.textOnGlassMuted,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'We could not load the latest news.',
+                    style: TextStyle(
+                      color: glass.textOnGlass,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Please check your connection and pull to refresh.',
+                    style: TextStyle(
+                      color: glass.textOnGlassMuted,
+                      fontSize: 13,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        data: (articles) {
+          if (articles.isEmpty) {
+            return ListView(
+              padding: EdgeInsets.fromLTRB(
+                24,
+                16,
+                24,
+                AppLayout.scrollBottomPadding(context),
+              ),
+              children: [
+                GlassCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.article_outlined,
+                        size: 40,
+                        color: glass.textOnGlassMuted,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'No news yet.',
+                        style: TextStyle(
+                          color: glass.textOnGlass,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Check back soon for community updates.',
+                        style: TextStyle(
+                          color: glass.textOnGlassMuted,
+                          fontSize: 13,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             );
           }
 
-          if (featured != null && index == 0) {
-            return _buildFeaturedHero(featured, glass);
+          NewsArticle? featured;
+          for (final a in articles) {
+            if (a.isFeatured) {
+              featured = a;
+              break;
+            }
           }
 
-          final newsIndex = featured != null ? index - 1 : index;
-          final news = SeedData.announcements[newsIndex];
-          return _buildNewsCard(news, glass, newsIndex);
+          return ListView.separated(
+            padding: EdgeInsets.fromLTRB(
+              24,
+              16,
+              24,
+              AppLayout.scrollBottomPadding(context),
+            ),
+            itemCount: articles.length + (featured != null ? 1 : 0),
+            separatorBuilder: (_, __) => const SizedBox(height: 16),
+            itemBuilder: (context, index) {
+              if (featured != null && index == 0) {
+                return _buildFeaturedHero(context, featured, glass);
+              }
+
+              final newsIndex = featured != null ? index - 1 : index;
+              final news = articles[newsIndex];
+              return _buildNewsCard(context, news, glass, newsIndex);
+            },
+          );
         },
       ),
     );
   }
 
-  Widget _buildFeaturedHero(Announcement news, GlassTheme glass) {
+  Widget _buildFeaturedHero(
+    BuildContext context,
+    NewsArticle news,
+    GlassTheme glass,
+  ) {
     return GlassCard(
       padding: EdgeInsets.zero,
       intensity: GlassIntensity.prominent,
       onTap: () {
         Navigator.push(
           context,
-          GlassPageRoute(page: NewsDetailScreen(announcement: news)),
+          GlassPageRoute(page: NewsDetailScreen(slug: news.slug ?? '')),
         );
       },
       child: ClipRRect(
@@ -146,7 +243,7 @@ class _NewsScreenState extends State<NewsScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        news.content,
+                        _summaryOf(news),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 13),
@@ -162,13 +259,18 @@ class _NewsScreenState extends State<NewsScreen> {
     ).animate().fadeIn();
   }
 
-  Widget _buildNewsCard(Announcement news, GlassTheme glass, int index) {
+  Widget _buildNewsCard(
+    BuildContext context,
+    NewsArticle news,
+    GlassTheme glass,
+    int index,
+  ) {
     return GlassCard(
       padding: EdgeInsets.zero,
       onTap: () {
         Navigator.push(
           context,
-          GlassPageRoute(page: NewsDetailScreen(announcement: news)),
+          GlassPageRoute(page: NewsDetailScreen(slug: news.slug ?? '')),
         );
       },
       child: Column(
@@ -199,7 +301,7 @@ class _NewsScreenState extends State<NewsScreen> {
                   children: [
                     GlassBadge(label: news.category, color: _categoryColor(news.category), compact: true),
                     Text(
-                      _formatDate(news.datePublished),
+                      _formatDate(news.publishedAt),
                       style: TextStyle(fontSize: 12, color: glass.textOnGlassMuted),
                     ),
                   ],
@@ -215,22 +317,10 @@ class _NewsScreenState extends State<NewsScreen> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  news.content,
+                  _summaryOf(news),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(fontSize: 13, color: glass.textOnGlassMuted, height: 1.4),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Icon(Icons.visibility_outlined, size: 14, color: glass.textOnGlassMuted),
-                    const SizedBox(width: 4),
-                    Text('${news.views}', style: TextStyle(fontSize: 12, color: glass.textOnGlassMuted)),
-                    const SizedBox(width: 16),
-                    Icon(Icons.favorite_border, size: 14, color: glass.textOnGlassMuted),
-                    const SizedBox(width: 4),
-                    Text('${news.likes}', style: TextStyle(fontSize: 12, color: glass.textOnGlassMuted)),
-                  ],
                 ),
               ],
             ),

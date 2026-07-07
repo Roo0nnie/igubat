@@ -4,35 +4,38 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile/core/mock/seed_data.dart';
 import 'package:mobile/core/navigation/app_router.dart';
-import 'package:mobile/features/auth/data/auth_repository.dart';
-import 'package:mobile/features/auth/data/models/session_model.dart';
-import 'package:mobile/features/auth/data/models/user_model.dart';
+import 'package:mobile/core/usecases/result.dart';
+import 'package:mobile/features/auth/data/repositories/auth_repository_impl.dart';
+import 'package:mobile/features/auth/domain/entities/session.dart';
+import 'package:mobile/features/auth/domain/entities/user.dart';
+import 'package:mobile/features/auth/domain/repositories/auth_repository.dart';
 import 'package:mobile/features/auth/presentation/providers/auth_redirect_provider.dart';
 import 'package:mobile/features/auth/presentation/screens/login_screen.dart';
 import 'package:mobile/features/auth/presentation/screens/otp_screen.dart';
 import 'package:mobile/features/auth/presentation/screens/register_screen.dart';
 
 /// Fake repository so the auth funnel runs without hitting the network.
-/// `getSession` returns null (guest), `signUp` registers without a session
-/// (unverified), and the session is only minted once `verifyEmailOtp` runs.
+/// `getCurrentSession` returns null (guest), `signUp` registers without a
+/// session (unverified), and the session is only minted once `verifyEmailOtp`
+/// runs.
 class _FakeAuthRepository implements AuthRepository {
-  SessionModel _session() => const SessionModel(
-        session: SessionData(token: 'test-token'),
-        user: UserModel(id: 'u1', name: 'Juan', email: 'juan@example.com'),
+  Session _session() => const Session(
+        token: SessionToken(value: 'test-token'),
+        user: User(id: 'u1', name: 'Juan', email: 'juan@example.com'),
       );
 
   @override
-  Future<SessionModel?> getSession() async => null;
+  FutureResult<Session?> getCurrentSession() async => const Right(null);
 
   @override
-  Future<SessionModel?> signIn({
+  FutureResult<Session?> signIn({
     required String email,
     required String password,
   }) async =>
-      _session();
+      Right(_session());
 
   @override
-  Future<void> signUp({
+  FutureResult<Unit> signUp({
     required String email,
     required String password,
     required String name,
@@ -40,22 +43,22 @@ class _FakeAuthRepository implements AuthRepository {
     required String barangay,
     required String address,
     required bool dpaConsent,
-  }) async {
-    // Registers the account in an unverified state — no session yet.
-  }
+  }) async =>
+      const Right(unit);
 
   @override
-  Future<void> sendVerificationOtp({required String email}) async {}
+  FutureResult<Unit> sendVerificationOtp({required String email}) async =>
+      const Right(unit);
 
   @override
-  Future<SessionModel?> verifyEmailOtp({
+  FutureResult<Session?> verifyEmailOtp({
     required String email,
     required String otp,
   }) async =>
-      _session();
+      Right(_session());
 
   @override
-  Future<void> signOut() async {}
+  FutureResult<Unit> signOut() async => const Right(unit);
 }
 
 /// Minimal authenticated destination that surfaces the resumed continuation,

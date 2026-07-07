@@ -212,8 +212,8 @@ return $default(_that.id,_that.title,_that.completed,_that.createdAt,_that.updat
 /// @nodoc
 @JsonSerializable()
 
-class _TodoModel implements TodoModel {
-  const _TodoModel({required this.id, required this.title, this.completed = false, this.createdAt, this.updatedAt});
+class _TodoModel extends TodoModel {
+  const _TodoModel({required this.id, required this.title, this.completed = false, this.createdAt, this.updatedAt}): super._();
   factory _TodoModel.fromJson(Map<String, dynamic> json) => _$TodoModelFromJson(json);
 
 @override final  int id;

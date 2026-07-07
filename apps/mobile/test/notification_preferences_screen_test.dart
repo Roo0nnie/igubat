@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mobile/core/usecases/result.dart';
 import 'package:mobile/core/theme/app_theme.dart';
-import 'package:mobile/features/profile/data/repositories/notification_preferences_repository.dart';
+import 'package:mobile/features/profile/data/repositories/notification_preferences_repository_impl.dart';
+import 'package:mobile/features/profile/domain/entities/notification_preferences.dart';
+import 'package:mobile/features/profile/domain/repositories/notification_preferences_repository.dart';
 import 'package:mobile/features/profile/presentation/screens/notification_preferences_screen.dart';
 
 class _FakeNotificationPreferencesRepository
@@ -12,14 +15,15 @@ class _FakeNotificationPreferencesRepository
   NotificationPreferences preferences;
 
   @override
-  Future<NotificationPreferences> fetch() async => preferences;
+  FutureResult<NotificationPreferences> getPreferences() async =>
+      Right(preferences);
 
   @override
-  Future<NotificationPreferences> update(
+  FutureResult<NotificationPreferences> updatePreferences(
     NotificationPreferences preferences,
   ) async {
     this.preferences = preferences;
-    return preferences;
+    return Right(preferences);
   }
 }
 

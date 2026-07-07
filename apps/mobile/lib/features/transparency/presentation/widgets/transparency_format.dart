@@ -1,6 +1,11 @@
 // Lightweight formatting helpers for the Transparency surface. The mobile app
 // does not depend on `intl`, so dates and peso amounts are formatted manually.
 
+import 'package:flutter/material.dart';
+
+import '../../../../core/theme/app_theme.dart';
+import '../../data/models/transparency_type.dart';
+
 const List<String> _months = [
   'Jan',
   'Feb',
@@ -47,4 +52,55 @@ String formatRelativeTime(DateTime time) {
   if (diff.inMinutes < 60) return '${diff.inMinutes} minutes ago';
   if (diff.inHours < 24) return '${diff.inHours} hours ago';
   return '${diff.inDays} days ago';
+}
+
+/// Capitalizes a raw status string for display (e.g. `planned` → `Planned`).
+String formatStatusLabel(String raw) {
+  final trimmed = raw.trim();
+  if (trimmed.isEmpty) return '';
+  if (trimmed.length == 1) return trimmed.toUpperCase();
+  return trimmed[0].toUpperCase() + trimmed.substring(1).toLowerCase();
+}
+
+/// Returns a semantic color for transparency status values.
+Color statusColor(String raw) {
+  switch (raw.trim().toLowerCase()) {
+    case 'planned':
+    case 'draft':
+    case 'pending':
+      return const Color(0xFFF59E0B);
+    case 'ongoing':
+    case 'open':
+    case 'active':
+    case 'in_progress':
+      return const Color(0xFF3B82F6);
+    case 'completed':
+    case 'awarded':
+    case 'closed':
+    case 'published':
+      return const Color(0xFF10B981);
+    case 'cancelled':
+    case 'archived':
+      return const Color(0xFF6B7280);
+    default:
+      return AppTheme.secondaryColor;
+  }
+}
+
+/// Extracts the primary status string from a transparency item's metadata.
+String? transparencyStatusOf(
+  TransparencyType type,
+  Map<String, dynamic> meta,
+) {
+  switch (type) {
+    case TransparencyType.programProject:
+      return meta['projectStatus']?.toString();
+    case TransparencyType.bidProcurement:
+      return meta['bidStatus']?.toString();
+    case TransparencyType.financialReport:
+    case TransparencyType.annualBudget:
+    case TransparencyType.legislativeOrdinance:
+    case TransparencyType.executiveOrder:
+      return null;
+  }
 }

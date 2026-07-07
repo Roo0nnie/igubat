@@ -13,7 +13,7 @@ part of 'todos_provider.dart';
 const todosListProvider = TodosListProvider._();
 
 final class TodosListProvider
-    extends $AsyncNotifierProvider<TodosList, List<TodoModel>> {
+    extends $AsyncNotifierProvider<TodosList, List<Todo>> {
   const TodosListProvider._()
     : super(
         from: null,
@@ -33,20 +33,20 @@ final class TodosListProvider
   TodosList create() => TodosList();
 }
 
-String _$todosListHash() => r'1063d4222ea559eae604dcdff51f003fb1a9e381';
+String _$todosListHash() => r'ccc13c5430f44764f37d3843d19df337fbf446cc';
 
-abstract class _$TodosList extends $AsyncNotifier<List<TodoModel>> {
-  FutureOr<List<TodoModel>> build();
+abstract class _$TodosList extends $AsyncNotifier<List<Todo>> {
+  FutureOr<List<Todo>> build();
   @$mustCallSuper
   @override
   void runBuild() {
     final created = build();
-    final ref = this.ref as $Ref<AsyncValue<List<TodoModel>>, List<TodoModel>>;
+    final ref = this.ref as $Ref<AsyncValue<List<Todo>>, List<Todo>>;
     final element =
         ref.element
             as $ClassProviderElement<
-              AnyNotifier<AsyncValue<List<TodoModel>>, List<TodoModel>>,
-              AsyncValue<List<TodoModel>>,
+              AnyNotifier<AsyncValue<List<Todo>>, List<Todo>>,
+              AsyncValue<List<Todo>>,
               Object?,
               Object?
             >;

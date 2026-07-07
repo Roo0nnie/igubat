@@ -505,8 +505,8 @@ return $default(_that.session,_that.user);case _:
 /// @nodoc
 @JsonSerializable()
 
-class _SessionModel implements SessionModel {
-  const _SessionModel({required this.session, required this.user});
+class _SessionModel extends SessionModel {
+  const _SessionModel({required this.session, required this.user}): super._();
   factory _SessionModel.fromJson(Map<String, dynamic> json) => _$SessionModelFromJson(json);
 
 @override final  SessionData session;

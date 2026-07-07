@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/mock/seed_data.dart';
 import '../../../../core/navigation/glass_page_route.dart';
@@ -11,16 +12,33 @@ import '../../../../shared/widgets/glass/glass_card.dart';
 import '../../../../shared/widgets/glass/glass_scaffold.dart';
 import '../../../../shared/widgets/glass/glass_search_bar.dart';
 import '../../../../shared/widgets/glass/glass_surface.dart';
+import '../../domain/entities/service_category.dart';
+import '../../domain/entities/service_type.dart';
+import '../providers/services_provider.dart';
 import 'service_request_stepper_screen.dart';
 
-class ServicesScreen extends StatefulWidget {
+/// Adapts a live [ServiceType] to the existing [Service] view-model the grid
+/// cards (and the request stepper) already consume, so the catalog UI is
+/// unchanged while the data is now live. The category name is resolved from the
+/// live categories so the filter chips keep matching.
+Service _asService(ServiceType type, Map<int, String> categoryNames) => Service(
+  title: type.name,
+  description: type.description ?? '',
+  icon: type.icon ?? '',
+  category: categoryNames[type.categoryId] ?? 'All',
+  processingDays: type.processingDays ?? 0,
+  isPopular: type.isPopular,
+  isAvailable: type.isActive,
+);
+
+class ServicesScreen extends ConsumerStatefulWidget {
   const ServicesScreen({super.key});
 
   @override
-  State<ServicesScreen> createState() => _ServicesScreenState();
+  ConsumerState<ServicesScreen> createState() => _ServicesScreenState();
 }
 
-class _ServicesScreenState extends State<ServicesScreen> {
+class _ServicesScreenState extends ConsumerState<ServicesScreen> {
   String _selectedCategory = 'All';
   String _searchQuery = '';
 
@@ -41,8 +59,8 @@ class _ServicesScreenState extends State<ServicesScreen> {
     }
   }
 
-  List<Service> get _filteredServices {
-    return SeedData.services.where((s) {
+  List<Service> _filterServices(List<Service> services) {
+    return services.where((s) {
       final matchesCategory = _selectedCategory == 'All' || s.category == _selectedCategory;
       final matchesSearch = _searchQuery.isEmpty ||
           s.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
@@ -54,10 +72,28 @@ class _ServicesScreenState extends State<ServicesScreen> {
   @override
   Widget build(BuildContext context) {
     final glass = glassThemeOf(context);
+    final servicesAsync = ref.watch(serviceTypesProvider);
+    final categoriesAsync = ref.watch(serviceCategoriesProvider);
+
+    // Live category id -> name lookup for adapting service types, and the chip
+    // labels ('All' + active category names). Falls back to empty while loading.
+    final categories = categoriesAsync.maybeWhen(
+      data: (list) => list,
+      orElse: () => const <ServiceCategory>[],
+    );
+    final categoryNames = {for (final c in categories) c.id: c.name};
+    final categoryLabels = <String>[
+      'All',
+      for (final c in categories) c.name,
+    ];
 
     return GlassScaffold(
       title: 'Service Categories',
-      onRefresh: () async => Future.delayed(const Duration(milliseconds: 600)),
+      onRefresh: () async {
+        ref.invalidate(serviceTypesProvider);
+        ref.invalidate(serviceCategoriesProvider);
+        await ref.read(serviceTypesProvider.future);
+      },
       body: ListView(
         padding: EdgeInsets.fromLTRB(
           AppLayout.screenHorizontal,
@@ -85,10 +121,10 @@ class _ServicesScreenState extends State<ServicesScreen> {
             height: 40,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
-              itemCount: SeedData.serviceCategories.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              itemCount: categoryLabels.length,
+              separatorBuilder: (_, _) => const SizedBox(width: 8),
               itemBuilder: (context, index) {
-                final cat = SeedData.serviceCategories[index];
+                final cat = categoryLabels[index];
                 final selected = cat == _selectedCategory;
                 return FilterChip(
                   label: Text(cat),
@@ -107,98 +143,132 @@ class _ServicesScreenState extends State<ServicesScreen> {
             ),
           ),
           const SizedBox(height: AppSpacing.s16),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: AppLayout.gridGap,
-              mainAxisSpacing: AppLayout.gridGap,
-              childAspectRatio: 0.92,
+          servicesAsync.when(
+            loading: () => const Padding(
+              padding: EdgeInsets.symmetric(vertical: 48),
+              child: Center(child: CircularProgressIndicator()),
             ),
-            itemCount: _filteredServices.length,
-            itemBuilder: (context, index) {
-              final service = _filteredServices[index];
-              return GlassCard(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    GlassPageRoute(page: ServiceRequestStepperScreen(service: service)),
-                  );
-                },
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        GlassSurface(
-                          intensity: GlassIntensity.subtle,
-                          borderRadius: BorderRadius.circular(999),
-                          tint: AppTheme.secondaryColor.withValues(alpha: 0.12),
-                          boxShadow: const [],
-                          padding: const EdgeInsets.all(12),
-                          child: Icon(_serviceIcon(service.icon), color: AppTheme.secondaryColor, size: 24),
-                        ),
-                        if (service.isPopular)
-                          const GlassBadge(label: 'Popular', compact: true),
-                      ],
-                    ),
-                    const SizedBox(height: AppSpacing.s8),
-                    Text(
-                      service.title,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                        color: glass.textOnGlass,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Expanded(
-                      child: Text(
-                        service.description,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(fontSize: 12, color: glass.textOnGlassMuted),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            color: service.isAvailable ? AppTheme.secondaryColor : Colors.grey,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          service.isAvailable ? 'Available' : 'Unavailable',
-                          style: TextStyle(fontSize: 11, color: glass.textOnGlassMuted),
-                        ),
-                        const Spacer(),
-                        Icon(Icons.schedule, size: 12, color: glass.textOnGlassMuted),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${service.processingDays}d',
-                          style: TextStyle(fontSize: 11, color: glass.textOnGlassMuted),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: Icon(Icons.arrow_forward_ios, size: 14, color: AppTheme.secondaryColor),
-                    ),
-                  ],
+            error: (error, _) => Padding(
+              padding: const EdgeInsets.symmetric(vertical: 48),
+              child: Center(
+                child: Text(
+                  'Could not load services. Pull down to retry.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: glass.textOnGlassMuted),
                 ),
-              ).animate(delay: (index * 40).ms);
+              ),
+            ),
+            data: (types) {
+              final services = _filterServices(
+                types.map((t) => _asService(t, categoryNames)).toList(),
+              );
+              if (services.isEmpty) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 48),
+                  child: Center(
+                    child: Text(
+                      'No services match your filters.',
+                      style: TextStyle(color: glass.textOnGlassMuted),
+                    ),
+                  ),
+                );
+              }
+              return GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: AppLayout.gridGap,
+                  mainAxisSpacing: AppLayout.gridGap,
+                  childAspectRatio: 0.92,
+                ),
+                itemCount: services.length,
+                itemBuilder: (context, index) =>
+                    _buildServiceCard(services[index], index, glass),
+              );
             },
           ),
         ],
       ),
     );
+  }
+
+  Widget _buildServiceCard(Service service, int index, GlassTheme glass) {
+    return GlassCard(
+      onTap: () {
+        Navigator.push(
+          context,
+          GlassPageRoute(page: ServiceRequestStepperScreen(service: service)),
+        );
+      },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              GlassSurface(
+                intensity: GlassIntensity.subtle,
+                borderRadius: BorderRadius.circular(999),
+                tint: AppTheme.secondaryColor.withValues(alpha: 0.12),
+                boxShadow: const [],
+                padding: const EdgeInsets.all(12),
+                child: Icon(_serviceIcon(service.icon), color: AppTheme.secondaryColor, size: 24),
+              ),
+              if (service.isPopular)
+                const GlassBadge(label: 'Popular', compact: true),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.s8),
+          Text(
+            service.title,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+              color: glass.textOnGlass,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Expanded(
+            child: Text(
+              service.description,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 12, color: glass.textOnGlassMuted),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: service.isAvailable ? AppTheme.secondaryColor : Colors.grey,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                service.isAvailable ? 'Available' : 'Unavailable',
+                style: TextStyle(fontSize: 11, color: glass.textOnGlassMuted),
+              ),
+              const Spacer(),
+              Icon(Icons.schedule, size: 12, color: glass.textOnGlassMuted),
+              const SizedBox(width: 4),
+              Text(
+                '${service.processingDays}d',
+                style: TextStyle(fontSize: 11, color: glass.textOnGlassMuted),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerRight,
+            child: Icon(Icons.arrow_forward_ios, size: 14, color: AppTheme.secondaryColor),
+          ),
+        ],
+      ),
+    ).animate(delay: (index * 40).ms);
   }
 }

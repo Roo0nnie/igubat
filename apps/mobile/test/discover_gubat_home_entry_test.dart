@@ -4,8 +4,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile/core/navigation/app_router.dart';
 import 'package:mobile/core/theme/app_theme.dart';
-import 'package:mobile/features/auth/data/auth_repository.dart';
-import 'package:mobile/features/auth/data/models/session_model.dart';
+import 'package:mobile/core/usecases/result.dart';
+import 'package:mobile/features/auth/data/repositories/auth_repository_impl.dart';
+import 'package:mobile/features/auth/domain/entities/session.dart';
+import 'package:mobile/features/auth/domain/repositories/auth_repository.dart';
 import 'package:mobile/features/discover/data/models/discover_gubat_entry.dart';
 import 'package:mobile/features/discover/data/repositories/discover_gubat_repository.dart';
 import 'package:mobile/features/discover/presentation/screens/discover_gubat_screen.dart';
@@ -14,16 +16,16 @@ import 'package:mobile/features/onboarding/presentation/providers/onboarding_pro
 
 class _GuestAuthRepository implements AuthRepository {
   @override
-  Future<SessionModel?> getSession() async => null;
+  FutureResult<Session?> getCurrentSession() async => const Right(null);
 
   @override
-  Future<SessionModel?> signIn({
+  FutureResult<Session?> signIn({
     required String email,
     required String password,
-  }) async => null;
+  }) async => const Right(null);
 
   @override
-  Future<void> signUp({
+  FutureResult<Unit> signUp({
     required String email,
     required String password,
     required String name,
@@ -31,19 +33,20 @@ class _GuestAuthRepository implements AuthRepository {
     required String barangay,
     required String address,
     required bool dpaConsent,
-  }) async {}
+  }) async => const Right(unit);
 
   @override
-  Future<void> sendVerificationOtp({required String email}) async {}
+  FutureResult<Unit> sendVerificationOtp({required String email}) async =>
+      const Right(unit);
 
   @override
-  Future<SessionModel?> verifyEmailOtp({
+  FutureResult<Session?> verifyEmailOtp({
     required String email,
     required String otp,
-  }) async => null;
+  }) async => const Right(null);
 
   @override
-  Future<void> signOut() async {}
+  FutureResult<Unit> signOut() async => const Right(unit);
 }
 
 class _RouterShell extends ConsumerWidget {

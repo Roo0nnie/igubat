@@ -1,29 +1,68 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/mock/seed_data.dart';
 import '../../../../shared/widgets/glass/glass_button.dart';
 import '../../../../shared/widgets/glass/glass_card.dart';
 import '../../../../shared/widgets/glass/glass_scaffold.dart';
 import '../../../../shared/widgets/glass/glass_surface.dart';
+import '../../domain/usecases/citizen_report_params.dart';
+import '../providers/citizen_report_controller.dart';
 
-class ReportIssueScreen extends StatefulWidget {
+class ReportIssueScreen extends ConsumerStatefulWidget {
   const ReportIssueScreen({super.key});
 
   @override
-  State<ReportIssueScreen> createState() => _ReportIssueScreenState();
+  ConsumerState<ReportIssueScreen> createState() => _ReportIssueScreenState();
 }
 
-class _ReportIssueScreenState extends State<ReportIssueScreen> {
+class _ReportIssueScreenState extends ConsumerState<ReportIssueScreen> {
   final _descriptionController = TextEditingController();
   final _locationController = TextEditingController();
   String _category = 'Road Concern';
   String _barangay = SeedData.currentUser.barangay;
+  bool _submitting = false;
 
   @override
   void dispose() {
     _descriptionController.dispose();
     _locationController.dispose();
     super.dispose();
+  }
+
+  Future<void> _submit() async {
+    final description = _descriptionController.text.trim();
+    if (description.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please describe the issue.')),
+      );
+      return;
+    }
+
+    final location = _locationController.text.trim();
+    setState(() => _submitting = true);
+
+    final ok = await ref
+        .read(citizenReportControllerProvider.notifier)
+        .submit(
+          CreateCitizenReportParams(
+            category: _category,
+            description: description,
+            barangay: _barangay,
+            locationAddress: location.isEmpty ? null : location,
+          ),
+        );
+
+    if (!mounted) return;
+    setState(() => _submitting = false);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          ok ? 'Report submitted.' : 'Could not submit report. Please try again.',
+        ),
+      ),
+    );
+    if (ok) Navigator.of(context).maybePop();
   }
 
   @override
@@ -73,15 +112,10 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
           ),
           const SizedBox(height: 16),
           GlassButton(
-            label: 'Submit Report',
+            label: _submitting ? 'Submitting...' : 'Submit Report',
             icon: Icons.send_outlined,
             expanded: true,
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Issue report prepared locally. API sync will replace this fallback.')),
-              );
-              Navigator.of(context).maybePop();
-            },
+            onPressed: _submitting ? null : _submit,
           ),
         ],
       ),

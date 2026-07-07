@@ -1,128 +1,219 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/theme/app_theme.dart';
-import '../../data/models/transparency_item.dart';
+import '../../../../shared/widgets/glass/glass_info_row.dart';
 import '../../data/models/transparency_type.dart';
+import '../../domain/entities/transparency_item.dart';
 import 'transparency_format.dart';
 
-/// The type-specific metadata band shown at the top of the item detail screen
-/// (e.g. "Approved 12 Mar 2026 · Effective 27 Mar 2026 · Principal Author …").
+/// Metadata entry with icon for the transparency detail key-details card.
+class TransparencyMetadataRow {
+  const TransparencyMetadataRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+}
+
+/// Type-specific metadata rows shown in the key-details card on item detail.
 class TransparencyMetadataBand extends StatelessWidget {
-  const TransparencyMetadataBand({super.key, required this.item});
+  const TransparencyMetadataBand({
+    super.key,
+    required this.item,
+    this.excludeStatus = true,
+  });
 
   final TransparencyItem item;
 
-  String _formatDate(dynamic value) => formatTransparencyDate(value);
+  /// When true, status is omitted (shown in header badge instead).
+  final bool excludeStatus;
 
-  String _formatPeso(dynamic value) => formatPeso(value);
+  List<TransparencyMetadataRow> _entries() =>
+      computeEntries(item, excludeStatus: excludeStatus);
 
-  List<MapEntry<String, String>> _rows() {
+  static List<TransparencyMetadataRow> computeEntries(
+    TransparencyItem item, {
+    bool excludeStatus = true,
+  }) {
     final meta = item.metadataAs<Map<String, dynamic>>() ?? const {};
-    final rows = <MapEntry<String, String>>[];
-    void add(String label, String value) {
-      if (value.trim().isNotEmpty) rows.add(MapEntry(label, value));
+    final rows = <TransparencyMetadataRow>[];
+    void add(IconData icon, String label, String value) {
+      if (value.trim().isNotEmpty) {
+        rows.add(TransparencyMetadataRow(icon: icon, label: label, value: value));
+      }
     }
 
     switch (item.type) {
       case TransparencyType.programProject:
-        add('Status', (meta['projectStatus'] ?? '').toString());
+        if (!excludeStatus) {
+          add(
+            Icons.flag_outlined,
+            'Status',
+            formatStatusLabel((meta['projectStatus'] ?? '').toString()),
+          );
+        }
         add(
+          Icons.payments_outlined,
           'Cost',
-          meta['costPhp'] == null ? '' : _formatPeso(meta['costPhp']),
+          meta['costPhp'] == null ? '' : formatPeso(meta['costPhp']),
         );
-        add('Office', (meta['implementingOffice'] ?? '').toString());
-        add('Start', _formatDate(meta['startDate']));
+        add(
+          Icons.business_outlined,
+          'Office',
+          (meta['implementingOffice'] ?? '').toString(),
+        );
+        add(
+          Icons.calendar_today_outlined,
+          'Start',
+          formatTransparencyDate(meta['startDate']),
+        );
         break;
       case TransparencyType.bidProcurement:
-        add('Status', (meta['bidStatus'] ?? '').toString());
+        if (!excludeStatus) {
+          add(
+            Icons.flag_outlined,
+            'Status',
+            formatStatusLabel((meta['bidStatus'] ?? '').toString()),
+          );
+        }
         add(
+          Icons.payments_outlined,
           'ABC',
           meta['approvedBudgetForContractPhp'] == null
               ? ''
-              : _formatPeso(meta['approvedBudgetForContractPhp']),
+              : formatPeso(meta['approvedBudgetForContractPhp']),
         );
-        add('Closes', _formatDate(meta['closingDate']));
-        add('Awarded To', (meta['awardedTo'] ?? '').toString());
         add(
+          Icons.calendar_today_outlined,
+          'Closes',
+          formatTransparencyDate(meta['closingDate']),
+        );
+        add(
+          Icons.emoji_events_outlined,
+          'Awarded To',
+          (meta['awardedTo'] ?? '').toString(),
+        );
+        add(
+          Icons.payments_outlined,
           'Awarded Amount',
           meta['awardedAmountPhp'] == null
               ? ''
-              : _formatPeso(meta['awardedAmountPhp']),
+              : formatPeso(meta['awardedAmountPhp']),
         );
         break;
       case TransparencyType.financialReport:
-        add('Report', (meta['reportType'] ?? '').toString().toUpperCase());
-        add('Period', (meta['fiscalPeriod'] ?? '').toString());
-        add('Prepared By', (meta['preparedBy'] ?? '').toString());
+        add(
+          Icons.description_outlined,
+          'Report',
+          (meta['reportType'] ?? '').toString().toUpperCase(),
+        );
+        add(
+          Icons.date_range_outlined,
+          'Period',
+          (meta['fiscalPeriod'] ?? '').toString(),
+        );
+        add(
+          Icons.person_outline,
+          'Prepared By',
+          (meta['preparedBy'] ?? '').toString(),
+        );
         break;
       case TransparencyType.annualBudget:
-        add('Type', (meta['budgetType'] ?? '').toString());
         add(
+          Icons.account_balance_outlined,
+          'Type',
+          (meta['budgetType'] ?? '').toString(),
+        );
+        add(
+          Icons.payments_outlined,
           'Total',
           meta['totalAmountPhp'] == null
               ? ''
-              : _formatPeso(meta['totalAmountPhp']),
+              : formatPeso(meta['totalAmountPhp']),
         );
-        add('Endorsed By', (meta['endorsedBy'] ?? '').toString());
+        add(
+          Icons.verified_outlined,
+          'Endorsed By',
+          (meta['endorsedBy'] ?? '').toString(),
+        );
         break;
       case TransparencyType.legislativeOrdinance:
-        add('Approved', _formatDate(meta['dateApproved']));
-        add('Effective', _formatDate(item.effectiveDate));
-        add('Principal Author', (meta['principalAuthor'] ?? '').toString());
-        add('Sponsors', (meta['sponsors'] ?? '').toString());
+        add(
+          Icons.calendar_today_outlined,
+          'Approved',
+          formatTransparencyDate(meta['dateApproved']),
+        );
+        add(
+          Icons.event_available_outlined,
+          'Effective',
+          formatTransparencyDate(item.effectiveDate),
+        );
+        add(
+          Icons.person_outline,
+          'Principal Author',
+          (meta['principalAuthor'] ?? '').toString(),
+        );
+        add(
+          Icons.groups_outlined,
+          'Sponsors',
+          (meta['sponsors'] ?? '').toString(),
+        );
         break;
       case TransparencyType.executiveOrder:
-        add('Issued', _formatDate(meta['dateIssued']));
-        add('Effective', _formatDate(item.effectiveDate));
-        add('Issued By', (meta['issuedBy'] ?? '').toString());
-        add('Revokes', (meta['revokes'] ?? '').toString());
+        add(
+          Icons.calendar_today_outlined,
+          'Issued',
+          formatTransparencyDate(meta['dateIssued']),
+        );
+        add(
+          Icons.event_available_outlined,
+          'Effective',
+          formatTransparencyDate(item.effectiveDate),
+        );
+        add(
+          Icons.person_outline,
+          'Issued By',
+          (meta['issuedBy'] ?? '').toString(),
+        );
+        add(
+          Icons.gavel_outlined,
+          'Revokes',
+          (meta['revokes'] ?? '').toString(),
+        );
         break;
     }
-    if (item.fiscalYear != null) add('Fiscal Year', item.fiscalYear.toString());
-    if ((item.barangay ?? '').isNotEmpty) add('Barangay', item.barangay!);
+
+    if (item.fiscalYear != null) {
+      add(Icons.date_range_outlined, 'Fiscal Year', item.fiscalYear.toString());
+    }
+    if ((item.barangay ?? '').isNotEmpty) {
+      add(Icons.location_on_outlined, 'Barangay', item.barangay!);
+    }
+
     return rows;
   }
 
   @override
   Widget build(BuildContext context) {
-    final rows = _rows();
-    if (rows.isEmpty) return const SizedBox.shrink();
+    final entries = _entries();
+    if (entries.isEmpty) return const SizedBox.shrink();
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF3F4F6),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: rows
-            .map(
-              (row) => Padding(
-                padding: const EdgeInsets.symmetric(vertical: 2),
-                child: RichText(
-                  text: TextSpan(
-                    style: const TextStyle(
-                      fontSize: 12.5,
-                      height: 1.4,
-                      color: Color(0xFF374151),
-                    ),
-                    children: [
-                      TextSpan(
-                        text: '${row.key}: ',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w700,
-                          color: AppTheme.primaryColor,
-                        ),
-                      ),
-                      TextSpan(text: row.value),
-                    ],
-                  ),
-                ),
-              ),
-            )
-            .toList(),
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (var i = 0; i < entries.length; i++) ...[
+          if (i > 0) const SizedBox(height: 12),
+          GlassInfoRow(
+            icon: entries[i].icon,
+            label: entries[i].label,
+            value: entries[i].value,
+            labelWidth: 100,
+          ),
+        ],
+      ],
     );
   }
 }
