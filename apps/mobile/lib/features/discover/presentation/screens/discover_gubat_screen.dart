@@ -208,11 +208,13 @@ class _DiscoverItemCard extends StatelessWidget {
         Navigator.push(
           context,
           GlassPageRoute(
-            page: _DiscoverItemDetailScreen(
-              item: item,
-              icon: icon,
-              color: color,
-            ),
+            page: item.slug.isEmpty
+                ? _DiscoverItemDetailScreen(
+                    item: item,
+                    icon: icon,
+                    color: color,
+                  )
+                : DiscoverGubatItemDetailScreen(slug: item.slug),
           ),
         );
       },
@@ -274,6 +276,7 @@ class _DiscoverItemDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final glass = glassThemeOf(context);
+    final imageUrl = item.primaryImageUrl;
 
     return GlassScaffold(
       title: item.title,
@@ -295,15 +298,29 @@ class _DiscoverItemDetailScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.14),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Icon(icon, color: color, size: 28),
-                ),
+                if (imageUrl == null)
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.14),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Icon(icon, color: color, size: 28),
+                  )
+                else
+                  _DiscoverItemImage(imageUrl: imageUrl, title: item.title),
                 const SizedBox(height: 14),
+                if (imageUrl != null) ...[
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.14),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(icon, color: color, size: 22),
+                  ),
+                  const SizedBox(height: 14),
+                ],
                 GlassBadge(label: item.category, color: color, compact: true),
                 const SizedBox(height: 10),
                 Text(
@@ -317,7 +334,7 @@ class _DiscoverItemDetailScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  item.description,
+                  item.detailDescription,
                   style: TextStyle(
                     color: glass.textOnGlassMuted,
                     fontSize: 14,
@@ -354,6 +371,45 @@ class _DiscoverItemDetailScreen extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _DiscoverItemImage extends StatelessWidget {
+  const _DiscoverItemImage({required this.imageUrl, required this.title});
+
+  final String imageUrl;
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: Image.network(
+        imageUrl,
+        width: double.infinity,
+        height: 190,
+        fit: BoxFit.cover,
+        semanticLabel: title,
+        errorBuilder: (context, error, stackTrace) {
+          return GlassSurface(
+            intensity: GlassIntensity.subtle,
+            padding: const EdgeInsets.all(18),
+            child: Row(
+              children: [
+                const Icon(Icons.image_not_supported_outlined),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Photo unavailable',
+                    style: TextStyle(color: glassThemeOf(context).textOnGlass),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }

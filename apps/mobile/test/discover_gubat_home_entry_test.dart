@@ -6,6 +6,9 @@ import 'package:mobile/core/navigation/app_router.dart';
 import 'package:mobile/core/theme/app_theme.dart';
 import 'package:mobile/features/auth/data/auth_repository.dart';
 import 'package:mobile/features/auth/data/models/session_model.dart';
+import 'package:mobile/features/discover/data/models/discover_gubat_entry.dart';
+import 'package:mobile/features/discover/data/repositories/discover_gubat_repository.dart';
+import 'package:mobile/features/discover/presentation/screens/discover_gubat_screen.dart';
 import 'package:mobile/features/home/presentation/screens/home_screen.dart';
 import 'package:mobile/features/onboarding/presentation/providers/onboarding_provider.dart';
 
@@ -53,6 +56,49 @@ class _RouterShell extends ConsumerWidget {
     final router = ref.watch(appRouterProvider);
     onRouter(router);
     return MaterialApp.router(theme: AppTheme.lightTheme, routerConfig: router);
+  }
+}
+
+class _DetailFetchingDiscoverGubatRepository extends DiscoverGubatRepository {
+  int detailRequests = 0;
+
+  @override
+  Future<List<DiscoverGubatEntry>> listByType(DiscoverGubatType type) async {
+    if (type != DiscoverGubatType.touristSpot) return const [];
+    return const [
+      DiscoverGubatEntry(
+        id: 21,
+        type: DiscoverGubatType.touristSpot,
+        title: 'Buenavista Beach',
+        slug: 'buenavista-beach',
+        category: 'Beach',
+        summary: 'Short card summary only.',
+        mapLocation: 'Buenavista, Gubat, Sorsogon',
+      ),
+    ];
+  }
+
+  @override
+  Future<DiscoverGubatEntry?> getBySlug(String slug) async {
+    detailRequests += 1;
+    return const DiscoverGubatEntry(
+      id: 21,
+      type: DiscoverGubatType.touristSpot,
+      title: 'Buenavista Beach',
+      slug: 'buenavista-beach',
+      category: 'Beach',
+      summary: 'Short card summary only.',
+      body: 'Full Buenavista guide body from the detail endpoint.',
+      coverImageUrl: 'https://files.gubat.gov.ph/buenavista-cover.jpg',
+      mapLocation: 'Buenavista, Gubat, Sorsogon',
+      photos: [
+        DiscoverGubatPhoto(
+          id: 11,
+          imageUrl: 'https://files.gubat.gov.ph/buenavista-surf.jpg',
+          altText: 'Buenavista Beach surf break',
+        ),
+      ],
+    );
   }
 }
 
@@ -178,6 +224,51 @@ void main() {
     expect(find.text('Where to buy'), findsOneWidget);
     expect(
       find.text('Public market and local pasalubong stalls'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('Discover Gubat cards fetch full detail and show photos', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final repository = _DetailFetchingDiscoverGubatRepository();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          discoverGubatRepositoryProvider.overrideWithValue(repository),
+        ],
+        child: MaterialApp(
+          theme: AppTheme.lightTheme,
+          home: const DiscoverGubatScreen(),
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    expect(find.text('Short card summary only.'), findsOneWidget);
+    expect(
+      find.text('Full Buenavista guide body from the detail endpoint.'),
+      findsNothing,
+    );
+
+    await tester.tap(find.text('Buenavista Beach'));
+    await tester.pumpAndSettle();
+
+    expect(repository.detailRequests, 1);
+    expect(
+      find.text('Full Buenavista guide body from the detail endpoint.'),
+      findsOneWidget,
+    );
+    expect(
+      find.byWidgetPredicate(
+        (widget) => widget is Image && widget.image is NetworkImage,
+      ),
       findsOneWidget,
     );
   });

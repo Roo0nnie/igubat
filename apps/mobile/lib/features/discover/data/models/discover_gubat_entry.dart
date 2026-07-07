@@ -84,6 +84,23 @@ class DiscoverGubatEntry {
 
   String get description => summary ?? body;
 
+  String get detailDescription {
+    final trimmedBody = body.trim();
+    if (trimmedBody.isNotEmpty) return body;
+    return description;
+  }
+
+  String? get primaryImageUrl {
+    final cover = coverImageUrl?.trim();
+    if (cover != null && cover.isNotEmpty) return cover;
+
+    for (final photo in photos) {
+      final imageUrl = photo.imageUrl.trim();
+      if (imageUrl.isNotEmpty) return imageUrl;
+    }
+    return null;
+  }
+
   String get detailLabel {
     switch (type) {
       case DiscoverGubatType.touristSpot:
