@@ -5,11 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/mock/seed_data.dart';
 import '../../../../core/theme/app_styles.dart';
 import '../../../../core/theme/glass_tokens.dart';
-import '../../../../shared/widgets/glass/glass_button.dart';
 import '../../../../shared/widgets/glass/glass_list_tile.dart';
 import '../../../../shared/widgets/glass/glass_scaffold.dart';
+import '../../../../shared/widgets/glass/glass_skeleton.dart';
 import '../../../../shared/widgets/glass/glass_slide_to_call.dart';
 import '../../../../shared/widgets/glass/glass_surface.dart';
+import '../../../../shared/widgets/states/app_state_views.dart';
 import '../../data/emergency_service.dart';
 import '../../domain/entities/emergency_directory_entry.dart';
 import '../providers/emergency_directory_provider.dart';
@@ -27,6 +28,8 @@ String _categoryOf(EmergencyType type) {
       return 'Hospital';
     case EmergencyType.comcen:
       return 'COMCEN';
+    case EmergencyType.disasterResponse:
+      return 'Disaster';
     case EmergencyType.unknown:
       return 'Other';
   }
@@ -147,6 +150,104 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
       );
   }
 
+  static const _months = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  ];
+
+  String _savedLabel(DateTime? savedAt) {
+    if (savedAt == null) return 'Showing numbers saved on this phone.';
+    final t = savedAt.toLocal();
+    final hour = t.hour % 12 == 0 ? 12 : t.hour % 12;
+    final minute = t.minute.toString().padLeft(2, '0');
+    final period = t.hour < 12 ? 'AM' : 'PM';
+    return 'Showing numbers saved on ${_months[t.month - 1]} ${t.day}, ${t.year} at $hour:$minute $period.';
+  }
+
+  Widget _offlineBanner(DateTime? savedAt, GlassTheme glass) {
+    const amber = Color(0xFFD97706);
+    final accent = glass.readable(amber);
+    return Semantics(
+      liveRegion: true,
+      child: GlassSurface(
+        intensity: GlassIntensity.subtle,
+        borderRadius: BorderRadius.circular(16),
+        tint: amber.withValues(alpha: 0.12),
+        border: Border.all(color: amber.withValues(alpha: 0.45)),
+        boxShadow: const [],
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(Icons.cloud_off_rounded, color: accent, size: 22),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "You're offline",
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: glass.textOnGlass,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${_savedLabel(savedAt)} Calling still works without internet.',
+                    style: TextStyle(fontSize: 13, height: 1.4, color: glass.textOnGlassMuted),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _leadingIcon(IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.14),
+        shape: BoxShape.circle,
+      ),
+      child: Icon(icon, color: color, size: 22),
+    );
+  }
+
+  Widget _hotlineTile({
+    required Hotline hotline,
+    required String subtitle,
+    required IconData icon,
+    required GlassTheme glass,
+  }) {
+    return GlassListTile(
+      title: hotline.name,
+      subtitle: subtitle,
+      onTap: () => EmergencyService.call(context, hotline.number),
+      leading: _leadingIcon(icon, glass.dangerOnGlass),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            tooltip: 'Copy ${hotline.number}',
+            onPressed: () => _copyNumber(hotline.number),
+            icon: Icon(Icons.copy_rounded, color: glass.textOnGlassMuted, size: 20),
+          ),
+          IconButton.filled(
+            tooltip: 'Call ${hotline.name}',
+            onPressed: () => EmergencyService.call(context, hotline.number),
+            style: IconButton.styleFrom(backgroundColor: _emergencyRed),
+            icon: const Icon(Icons.call_rounded, color: Colors.white, size: 20),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final glass = glassThemeOf(context);
@@ -159,6 +260,7 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
     );
     final comcen = _comcen(hotlines);
     final directory = _directory(hotlines);
+    final offline = ref.watch(emergencyDirectoryOfflineProvider);
 
     return GlassScaffold(
       title: 'Emergency Hotlines',
@@ -175,93 +277,116 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
           AppLayout.scrollBottomPadding(context),
         ),
         children: [
-          GlassSurface(
-            intensity: GlassIntensity.prominent,
-            borderRadius: BorderRadius.circular(GlassTokens.radiusGlassLg),
-            tint: glass.emergencyTint,
-            border: Border.all(color: _emergencyRed.withValues(alpha: 0.3)),
-            padding: const EdgeInsets.all(28),
+          Container(
+            padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
+            decoration: BoxDecoration(
+              gradient: GlassTokens.emergencyGradient,
+              borderRadius: BorderRadius.circular(GlassTokens.radiusGlassLg),
+              boxShadow: GlassTokens.ambientShadow(color: _emergencyRed, opacity: 0.3),
+            ),
             child: Column(
               children: [
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: _emergencyRed.withValues(alpha: 0.15),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.warning_rounded, size: 48, color: _emergencyRed),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.18),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.warning_rounded, size: 32, color: Colors.white),
+                    ),
+                    const SizedBox(width: 16),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'In case of emergency',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            'If a life is in danger, call 911 right away.',
+                            style: TextStyle(color: Colors.white, fontSize: 14, height: 1.35),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 16),
-                const Text(
-                  'IN CASE OF EMERGENCY',
-                  style: TextStyle(
-                    color: _emergencyRed,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Call the numbers below immediately if you are in a life-threatening situation.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: _emergencyRed.withValues(alpha: 0.85), fontSize: 13),
-                ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 20),
                 GlassSlideToCall(
                   // The deliberate slide gesture is itself the safety
                   // affordance (User Story 7.1): completing it initiates the
                   // tel: action immediately, with no second confirmation.
                   label: 'Slide to call 911',
+                  onColoredBackground: true,
                   onSlideComplete: () => EmergencyService.call(context, '911'),
                 ),
-                const SizedBox(height: 12),
-                GlassButton(
-                  label: 'View Municipality Map',
-                  variant: GlassButtonVariant.outline,
-                  icon: Icons.map_outlined,
-                  expanded: true,
-                  onPressed: () => EmergencyService.openMunicipalityMap(context),
+                const SizedBox(height: 8),
+                Text(
+                  'Drag the phone button to the right to start the call.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 12),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 12),
+          GlassListTile(
+            title: 'Municipality Map',
+            subtitle: 'Open Igubat in your maps app',
+            onTap: () => EmergencyService.openMunicipalityMap(context),
+            leading: _leadingIcon(Icons.map_outlined, glass.brandOnGlass),
+            trailing: Icon(Icons.open_in_new_rounded, color: glass.textOnGlassMuted, size: 20),
+            onTrailingTap: () => EmergencyService.openMunicipalityMap(context),
+          ),
+          if (offline != null) ...[
+            const SizedBox(height: 12),
+            _offlineBanner(offline.savedAt, glass),
+          ],
+          const SizedBox(height: 28),
           Text(
             'COMCEN Hotlines',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(color: glass.textOnGlass),
           ),
           const SizedBox(height: 4),
           Text(
-            'Community Emergency Communications Center — reachable on any carrier.',
-            style: TextStyle(color: glass.textOnGlassMuted, fontSize: 13),
+            'Community Emergency Communications Center — reachable on any carrier. Tap a number to call.',
+            style: TextStyle(color: glass.textOnGlassMuted, fontSize: 13, height: 1.4),
           ),
           const SizedBox(height: 12),
+          if (asyncDirectory.isLoading && comcen.isEmpty)
+            const Padding(
+              padding: EdgeInsets.only(bottom: 12),
+              child: ExcludeSemantics(child: GlassSkeletonList(count: 2)),
+            ),
           ...comcen.map(
             (hotline) => Padding(
               padding: const EdgeInsets.only(bottom: 12),
-              child: GlassListTile(
-                title: hotline.name,
+              // One-tap dial for COMCEN hotlines (User Story 7.2).
+              child: _hotlineTile(
+                hotline: hotline,
                 subtitle: hotline.number,
-                // One-tap dial for COMCEN hotlines (User Story 7.2).
-                onTap: () => EmergencyService.call(context, hotline.number),
-                onTrailingTap: () => _copyNumber(hotline.number),
-                leading: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: _emergencyRed.withValues(alpha: 0.12),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.headset_mic, color: _emergencyRed, size: 22),
-                ),
-                trailing: Icon(Icons.copy, color: glass.textOnGlassMuted, size: 20),
+                icon: Icons.headset_mic,
+                glass: glass,
               ),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           Text(
             'Emergency Contacts',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(color: glass.textOnGlass),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Police, fire, hospitals, and disaster response in Gubat.',
+            style: TextStyle(color: glass.textOnGlassMuted, fontSize: 13, height: 1.4),
           ),
           const SizedBox(height: 12),
           SizedBox(
@@ -284,8 +409,10 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
                     color: selected ? Colors.white : glass.textOnGlass,
                   ),
                   selectedColor: _emergencyRed,
-                  backgroundColor: glass.border.withValues(alpha: 0.4),
-                  side: BorderSide(color: glass.border),
+                  backgroundColor: glass.surfaceMedium,
+                  side: BorderSide(
+                    color: selected ? _emergencyRed : glass.textOnGlassMuted.withValues(alpha: 0.35),
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(GlassTokens.radiusGlassSm),
                   ),
@@ -294,51 +421,36 @@ class _EmergencyScreenState extends ConsumerState<EmergencyScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          if (asyncDirectory.isLoading)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 32),
-              child: Center(child: CircularProgressIndicator()),
+          if (asyncDirectory.isLoading && hotlines.isEmpty)
+            LoadingStateView(
+              message: 'Loading emergency contacts...',
+              skeleton: const GlassSkeletonList(count: 4),
+              onRetry: () => ref.invalidate(emergencyDirectoryProvider),
             )
-          else if (asyncDirectory.hasError)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 32),
-              child: Center(
-                child: Text(
-                  'Could not load emergency contacts. Pull down to retry.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: glass.textOnGlassMuted),
-                ),
-              ),
+          else if (asyncDirectory.hasError && hotlines.isEmpty)
+            ErrorStateView(
+              title: 'Unable to load contacts',
+              message:
+                  '${friendlyErrorMessage(asyncDirectory.error)} You can still slide to call 911 above. '
+                  'Once you connect, these numbers are saved on your phone for offline use.',
+              onRetry: () => ref.invalidate(emergencyDirectoryProvider),
             )
           else if (directory.isEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 32),
-              child: Center(
-                child: Text(
-                  'No contacts in this category.',
-                  style: TextStyle(color: glass.textOnGlassMuted),
-                ),
-              ),
+            EmptyStateView(
+              icon: Icons.contact_phone_outlined,
+              title: 'No contacts in this category',
+              message: 'Choose "All" or another category to see more numbers.',
             )
           else
             ...directory.map(
               (hotline) => Padding(
                 padding: const EdgeInsets.only(bottom: 12),
-                child: GlassListTile(
-                  title: hotline.name,
+                // Tap-to-call directory entries (User Story 7.3).
+                child: _hotlineTile(
+                  hotline: hotline,
                   subtitle: _directorySubtitle(hotline),
-                  // Tap-to-call directory entries (User Story 7.3).
-                  onTap: () => EmergencyService.call(context, hotline.number),
-                  onTrailingTap: () => _copyNumber(hotline.number),
-                  leading: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: _emergencyRed.withValues(alpha: 0.12),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(_hotlineIcon(hotline.category), color: _emergencyRed, size: 22),
-                  ),
-                  trailing: Icon(Icons.copy, color: glass.textOnGlassMuted, size: 20),
+                  icon: _hotlineIcon(hotline.category),
+                  glass: glass,
                 ),
               ),
             ),

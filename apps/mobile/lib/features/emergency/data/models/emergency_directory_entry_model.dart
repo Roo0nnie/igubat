@@ -35,6 +35,27 @@ class EmergencyDirectoryEntryModel {
     );
   }
 
+  factory EmergencyDirectoryEntryModel.fromEntity(EmergencyDirectoryEntry e) =>
+      EmergencyDirectoryEntryModel(
+        id: e.id,
+        name: e.name,
+        type: e.type,
+        contactNumber: e.contactNumber,
+        address: e.address,
+        hours: e.hours,
+        isActive: e.isActive,
+      );
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'type': type.apiValue,
+    'contactNumber': contactNumber,
+    'address': address,
+    'hours': hours,
+    'isActive': isActive,
+  };
+
   EmergencyDirectoryEntry toEntity() => EmergencyDirectoryEntry(
     id: id,
     name: name,

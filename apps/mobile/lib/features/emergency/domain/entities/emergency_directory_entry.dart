@@ -30,6 +30,7 @@ enum EmergencyType {
   bfp,
   police,
   comcen,
+  disasterResponse,
   unknown;
 
   /// Maps the backend `type` enum value to an [EmergencyType], never throwing.
@@ -38,6 +39,17 @@ enum EmergencyType {
     'bfp' => EmergencyType.bfp,
     'police' => EmergencyType.police,
     'comcen' => EmergencyType.comcen,
+    'disaster_response' => EmergencyType.disasterResponse,
     _ => EmergencyType.unknown,
+  };
+
+  /// The backend `type` enum value; inverse of [fromApi].
+  String get apiValue => switch (this) {
+    EmergencyType.hospital => 'hospital',
+    EmergencyType.bfp => 'bfp',
+    EmergencyType.police => 'police',
+    EmergencyType.comcen => 'comcen',
+    EmergencyType.disasterResponse => 'disaster_response',
+    EmergencyType.unknown => 'unknown',
   };
 }
