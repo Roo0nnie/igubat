@@ -27,6 +27,10 @@ export function NavigationLinks() {
 					Todos
 				</Link>
 				<Separator orientation="vertical" />
+				<Link href="/discover-gubat" className={buttonVariants({ variant: "ghost", size: "lg" })}>
+					Discover Gubat
+				</Link>
+				<Separator orientation="vertical" />
 				<Link href="/session" className={buttonVariants({ variant: "ghost", size: "lg" })}>
 					Session
 				</Link>
