@@ -108,7 +108,9 @@ export function ProfileContent() {
 						</CardContent>
 						<CardFooter className="border-t px-6 py-4">
 							<Button
-								disabled={updateProfile.isPending || !name}
+								disabled={!name}
+								loading={updateProfile.isPending}
+								loadingText="Saving..."
 								onClick={() =>
 									updateProfile.mutate({
 										name,
@@ -118,7 +120,7 @@ export function ProfileContent() {
 									})
 								}
 							>
-								{updateProfile.isPending ? "Saving..." : "Save changes"}
+								Save changes
 							</Button>
 						</CardFooter>
 					</Card>

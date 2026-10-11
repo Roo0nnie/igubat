@@ -15,6 +15,7 @@ import {
 	CardTitle,
 } from "@/core/components/ui/card"
 import { Label } from "@/core/components/ui/label"
+import { DetailPageSkeleton, ErrorState, LoadingStatus } from "@/core/components/ui/loading-state"
 import {
 	Select,
 	SelectContent,
@@ -63,8 +64,13 @@ export function ReportDetailContent({ id }: { id: number }) {
 
 	if (report.isLoading) {
 		return (
-			<div className="text-muted-foreground mx-auto max-w-5xl p-6 text-sm md:p-8">
-				Loading report...
+			<div className="mx-auto max-w-6xl space-y-6 p-6 md:p-8">
+				<LoadingStatus
+					message="Loading report details..."
+					onRetry={() => void report.refetch()}
+					className="[&>div]:justify-start"
+				/>
+				<DetailPageSkeleton />
 			</div>
 		)
 	}
@@ -76,8 +82,12 @@ export function ReportDetailContent({ id }: { id: number }) {
 					<ArrowLeft className="size-4" /> Back
 				</Button>
 				<Card className="border-destructive/40">
-					<CardContent className="text-destructive py-6 text-sm">
-						Report could not be loaded.
+					<CardContent>
+						<ErrorState
+							title="Report could not be loaded."
+							description="It may have been removed, or your connection dropped."
+							onRetry={() => void report.refetch()}
+						/>
 					</CardContent>
 				</Card>
 			</div>
@@ -184,7 +194,8 @@ export function ReportDetailContent({ id }: { id: number }) {
 							/>
 						</div>
 						<Button
-							disabled={updateStatus.isPending}
+							loading={updateStatus.isPending}
+							loadingText="Saving..."
 							onClick={() =>
 								updateStatus.mutate({
 									id,
@@ -194,7 +205,7 @@ export function ReportDetailContent({ id }: { id: number }) {
 								})
 							}
 						>
-							<Save className="size-4" /> {updateStatus.isPending ? "Saving..." : "Save status"}
+							<Save className="size-4" /> Save status
 						</Button>
 					</CardContent>
 				</Card>

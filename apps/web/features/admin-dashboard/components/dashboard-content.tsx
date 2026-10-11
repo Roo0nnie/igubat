@@ -13,6 +13,13 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/core/components/ui/card"
+import {
+	EmptyState,
+	ErrorState,
+	ListSkeleton,
+	LoadingStatus,
+} from "@/core/components/ui/loading-state"
+import { Skeleton } from "@/core/components/ui/skeleton"
 import { useAdminDashboardQuery } from "@/features/admin-dashboard/api/dashboard.hooks"
 
 function formatStatus(status: string) {
@@ -47,10 +54,21 @@ export function DashboardContent() {
 				</p>
 			</div>
 
+			{dashboard.isLoading && (
+				<LoadingStatus
+					message="Loading dashboard overview..."
+					onRetry={() => void dashboard.refetch()}
+					className="[&>div]:justify-start"
+				/>
+			)}
 			{dashboard.isError && (
 				<Card className="border-destructive/40">
-					<CardContent className="text-destructive py-4 text-sm">
-						Dashboard data could not be loaded.
+					<CardContent>
+						<ErrorState
+							compact
+							title="Dashboard data could not be loaded."
+							onRetry={() => void dashboard.refetch()}
+						/>
 					</CardContent>
 				</Card>
 			)}
@@ -89,7 +107,11 @@ export function DashboardContent() {
 							<stat.icon className="text-primary size-4" />
 						</CardHeader>
 						<CardContent>
-							<div className="text-2xl font-bold">{dashboard.isLoading ? "..." : stat.value}</div>
+							{dashboard.isLoading ? (
+								<Skeleton className="my-1 h-7 w-14" />
+							) : (
+								<div className="text-2xl font-bold">{stat.value}</div>
+							)}
 							<Button
 								variant="link"
 								className="h-auto p-0 text-xs"
@@ -110,8 +132,14 @@ export function DashboardContent() {
 					</CardHeader>
 					<CardContent>
 						<div className="space-y-4">
-							{(data?.recentRequests ?? []).length === 0 && (
-								<p className="text-muted-foreground text-sm">No recent service requests yet.</p>
+							{dashboard.isLoading && <ListSkeleton count={4} />}
+							{dashboard.isSuccess && (data?.recentRequests ?? []).length === 0 && (
+								<EmptyState
+									compact
+									icon={FileText}
+									title="No recent service requests yet"
+									description="New citizen requests will show up here."
+								/>
 							)}
 							{data?.recentRequests.map(request => (
 								<Link
@@ -143,8 +171,14 @@ export function DashboardContent() {
 					</CardHeader>
 					<CardContent>
 						<div className="space-y-4">
-							{(data?.upcomingEvents ?? []).length === 0 && (
-								<p className="text-muted-foreground text-sm">No upcoming events yet.</p>
+							{dashboard.isLoading && <ListSkeleton count={3} />}
+							{dashboard.isSuccess && (data?.upcomingEvents ?? []).length === 0 && (
+								<EmptyState
+									compact
+									icon={CalendarDays}
+									title="No upcoming events yet"
+									description="Published events will appear here."
+								/>
 							)}
 							{data?.upcomingEvents.map(event => (
 								<Link

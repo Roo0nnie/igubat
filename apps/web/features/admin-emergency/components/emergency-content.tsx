@@ -14,6 +14,7 @@ import {
 } from "@/core/components/ui/card"
 import { Input } from "@/core/components/ui/input"
 import { Label } from "@/core/components/ui/label"
+import { TableStateRows } from "@/core/components/ui/loading-state"
 import {
 	Select,
 	SelectContent,
@@ -119,29 +120,16 @@ export function EmergencyContent() {
 										</TableRow>
 									</TableHeader>
 									<TableBody>
-										{directory.isLoading && (
-											<TableRow>
-												<TableCell colSpan={6} className="text-muted-foreground h-24 text-center">
-													Loading emergency directory...
-												</TableCell>
-											</TableRow>
-										)}
-										{directory.isError && (
-											<TableRow>
-												<TableCell colSpan={6} className="text-destructive h-24 text-center">
-													Directory could not be loaded.
-												</TableCell>
-											</TableRow>
-										)}
-										{!directory.isLoading &&
-											!directory.isError &&
-											(directory.data ?? []).length === 0 && (
-												<TableRow>
-													<TableCell colSpan={6} className="text-muted-foreground h-24 text-center">
-														No directory entries yet.
-													</TableCell>
-												</TableRow>
-											)}
+										<TableStateRows
+											colSpan={6}
+											isLoading={directory.isLoading}
+											isError={directory.isError}
+											isEmpty={(directory.data ?? []).length === 0}
+											onRetry={() => void directory.refetch()}
+											loadingText="Loading emergency directory..."
+											errorText="Directory could not be loaded."
+											emptyText="No directory entries yet."
+										/>
 										{directory.data?.map(entry => (
 											<TableRow key={entry.id}>
 												<TableCell className="font-medium">{entry.name}</TableCell>
@@ -230,6 +218,8 @@ export function EmergencyContent() {
 										title.trim().length === 0 ||
 										message.trim().length === 0
 									}
+									loading={createBroadcast.isPending && createBroadcast.variables?.sendNow === true}
+									loadingText="Sending..."
 									onClick={() => submitBroadcast(true)}
 								>
 									<Send className="size-4" /> Send now
@@ -242,6 +232,10 @@ export function EmergencyContent() {
 										message.trim().length === 0 ||
 										!scheduledAt
 									}
+									loading={
+										createBroadcast.isPending && createBroadcast.variables?.sendNow === false
+									}
+									loadingText="Scheduling..."
 									onClick={() => submitBroadcast(false)}
 								>
 									<AlertCircle className="size-4" /> Schedule
@@ -272,29 +266,16 @@ export function EmergencyContent() {
 										</TableRow>
 									</TableHeader>
 									<TableBody>
-										{broadcasts.isLoading && (
-											<TableRow>
-												<TableCell colSpan={5} className="text-muted-foreground h-24 text-center">
-													Loading broadcasts...
-												</TableCell>
-											</TableRow>
-										)}
-										{broadcasts.isError && (
-											<TableRow>
-												<TableCell colSpan={5} className="text-destructive h-24 text-center">
-													Broadcasts could not be loaded.
-												</TableCell>
-											</TableRow>
-										)}
-										{!broadcasts.isLoading &&
-											!broadcasts.isError &&
-											(broadcasts.data ?? []).length === 0 && (
-												<TableRow>
-													<TableCell colSpan={5} className="text-muted-foreground h-24 text-center">
-														No broadcasts sent yet.
-													</TableCell>
-												</TableRow>
-											)}
+										<TableStateRows
+											colSpan={5}
+											isLoading={broadcasts.isLoading}
+											isError={broadcasts.isError}
+											isEmpty={(broadcasts.data ?? []).length === 0}
+											onRetry={() => void broadcasts.refetch()}
+											loadingText="Loading broadcasts..."
+											errorText="Broadcasts could not be loaded."
+											emptyText="No broadcasts sent yet."
+										/>
 										{broadcasts.data?.map(broadcast => (
 											<TableRow key={broadcast.id}>
 												<TableCell>

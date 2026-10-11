@@ -16,6 +16,12 @@ import {
 import { Input } from "@/core/components/ui/input"
 import { Label } from "@/core/components/ui/label"
 import {
+	EmptyState,
+	ErrorState,
+	ListSkeleton,
+	LoadingStatus,
+} from "@/core/components/ui/loading-state"
+import {
 	Select,
 	SelectContent,
 	SelectItem,
@@ -112,11 +118,12 @@ export function NotificationsContent() {
 						<Button
 							className="w-full"
 							variant="destructive"
-							disabled={createBroadcast.isPending || !title || !message}
+							disabled={!title || !message}
+							loading={createBroadcast.isPending}
+							loadingText="Sending broadcast..."
 							onClick={() => createBroadcast.mutate({ title, message, severity, sendNow: true })}
 						>
-							<Send className="size-4" />{" "}
-							{createBroadcast.isPending ? "Sending..." : "Send broadcast now"}
+							<Send className="size-4" /> Send broadcast now
 						</Button>
 					</CardFooter>
 				</Card>
@@ -132,10 +139,20 @@ export function NotificationsContent() {
 					<CardContent>
 						<div className="space-y-4">
 							{broadcasts.isLoading && (
-								<p className="text-muted-foreground text-sm">Loading broadcasts...</p>
+								<>
+									<LoadingStatus
+										message="Loading broadcasts..."
+										onRetry={() => void broadcasts.refetch()}
+									/>
+									<ListSkeleton count={3} />
+								</>
 							)}
 							{broadcasts.isError && (
-								<p className="text-destructive text-sm">Broadcast history could not be loaded.</p>
+								<ErrorState
+									compact
+									title="Broadcast history could not be loaded."
+									onRetry={() => void broadcasts.refetch()}
+								/>
 							)}
 							{broadcasts.data?.map(broadcast => (
 								<div key={broadcast.id} className="space-y-2 rounded-lg border p-4">
@@ -162,7 +179,12 @@ export function NotificationsContent() {
 							{!broadcasts.isLoading &&
 								!broadcasts.isError &&
 								(broadcasts.data ?? []).length === 0 && (
-									<p className="text-muted-foreground text-sm">No broadcasts sent yet.</p>
+									<EmptyState
+										compact
+										icon={Bell}
+										title="No broadcasts sent yet"
+										description="Alerts you send will be listed here."
+									/>
 								)}
 						</div>
 					</CardContent>

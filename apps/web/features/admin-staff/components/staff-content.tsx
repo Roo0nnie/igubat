@@ -14,6 +14,7 @@ import {
 } from "@/core/components/ui/card"
 import { Input } from "@/core/components/ui/input"
 import { Label } from "@/core/components/ui/label"
+import { TableStateRows } from "@/core/components/ui/loading-state"
 import {
 	Select,
 	SelectContent,
@@ -99,27 +100,17 @@ export function StaffContent() {
 									</TableRow>
 								</TableHeader>
 								<TableBody>
-									{staff.isLoading && (
-										<TableRow>
-											<TableCell colSpan={5} className="text-muted-foreground h-24 text-center">
-												Loading staff...
-											</TableCell>
-										</TableRow>
-									)}
-									{staff.isError && (
-										<TableRow>
-											<TableCell colSpan={5} className="text-destructive h-24 text-center">
-												Staff accounts could not be loaded.
-											</TableCell>
-										</TableRow>
-									)}
-									{!staff.isLoading && !staff.isError && rows.length === 0 && (
-										<TableRow>
-											<TableCell colSpan={5} className="text-muted-foreground h-24 text-center">
-												No staff found.
-											</TableCell>
-										</TableRow>
-									)}
+									<TableStateRows
+										colSpan={5}
+										isLoading={staff.isLoading}
+										isError={staff.isError}
+										isEmpty={rows.length === 0}
+										onRetry={() => void staff.refetch()}
+										loadingText="Loading staff accounts..."
+										errorText="Staff accounts could not be loaded."
+										emptyText="No staff found."
+										emptyHint="Create a staff account using the form."
+									/>
 									{rows.map(user => (
 										<TableRow key={user.id}>
 											<TableCell className="font-medium">{user.name}</TableCell>
@@ -179,10 +170,12 @@ export function StaffContent() {
 							</Select>
 						</div>
 						<Button
-							disabled={createStaff.isPending || !name || !email}
+							disabled={!name || !email}
+							loading={createStaff.isPending}
+							loadingText="Creating account..."
 							onClick={() => createStaff.mutate({ name, email, role })}
 						>
-							<Save className="size-4" /> {createStaff.isPending ? "Creating..." : "Create account"}
+							<Save className="size-4" /> Create account
 						</Button>
 					</CardContent>
 				</Card>

@@ -9,6 +9,7 @@ import { Button, buttonVariants } from "@/core/components/ui/button"
 import { Card, CardContent } from "@/core/components/ui/card"
 import { Field, FieldError, FieldGroup } from "@/core/components/ui/field"
 import { Input } from "@/core/components/ui/input"
+import { useHydrated } from "@/core/hooks/use-hydrated"
 import { cn } from "@/core/lib/utils"
 import { PasswordInput } from "@/features/auth/components/password-input"
 import { TermsPrivacyNote } from "@/features/auth/components/terms-privacy-note"
@@ -18,6 +19,7 @@ import { LoginSchema } from "../api/login.schema"
 
 export function LoginForm({ className, ...props }: React.ComponentProps<"div">) {
 	const { mutateAsync: login, isPending, isError, error } = useLoginMutation()
+	const isHydrated = useHydrated()
 
 	const form = useForm({
 		defaultValues: {
@@ -37,6 +39,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
 			<Card className="w-full max-w-md overflow-hidden rounded-2xl p-6 shadow-xl sm:p-10">
 				<CardContent className="p-0">
 					<form
+						method="post"
 						onSubmit={e => {
 							e.preventDefault()
 							form.handleSubmit()
@@ -140,10 +143,12 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
 							<Field className="pt-4">
 								<Button
 									type="submit"
-									disabled={isPending}
+									disabled={!isHydrated}
+									loading={isPending}
+									loadingText="Signing in..."
 									className="bg-primary text-primary-foreground hover:bg-primary/90 h-12 w-full rounded-xl text-base font-medium hover:cursor-pointer"
 								>
-									{isPending ? "Signing in..." : "Sign In"}
+									Sign In
 								</Button>
 							</Field>
 

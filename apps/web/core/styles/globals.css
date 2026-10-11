@@ -123,3 +123,24 @@
 		@apply bg-background text-foreground;
 	}
 }
+
+@keyframes igubat-breathe {
+	0%,
+	100% {
+		transform: scale(0.97);
+		opacity: 0.8;
+	}
+	50% {
+		transform: scale(1.03);
+		opacity: 1;
+	}
+}
+
+@keyframes igubat-progress {
+	0% {
+		transform: translateX(-100%);
+	}
+	100% {
+		transform: translateX(300%);
+	}
+}

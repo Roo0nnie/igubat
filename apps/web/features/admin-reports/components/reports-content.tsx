@@ -15,6 +15,7 @@ import {
 	CardTitle,
 } from "@/core/components/ui/card"
 import { Input } from "@/core/components/ui/input"
+import { TableStateRows } from "@/core/components/ui/loading-state"
 import {
 	Select,
 	SelectContent,
@@ -126,27 +127,17 @@ export function ReportsContent() {
 									</TableRow>
 								</TableHeader>
 								<TableBody>
-									{reports.isLoading && (
-										<TableRow>
-											<TableCell colSpan={6} className="text-muted-foreground h-24 text-center">
-												Loading citizen reports...
-											</TableCell>
-										</TableRow>
-									)}
-									{reports.isError && (
-										<TableRow>
-											<TableCell colSpan={6} className="text-destructive h-24 text-center">
-												Citizen reports could not be loaded.
-											</TableCell>
-										</TableRow>
-									)}
-									{!reports.isLoading && !reports.isError && rows.length === 0 && (
-										<TableRow>
-											<TableCell colSpan={6} className="text-muted-foreground h-24 text-center">
-												No reports found.
-											</TableCell>
-										</TableRow>
-									)}
+									<TableStateRows
+										colSpan={6}
+										isLoading={reports.isLoading}
+										isError={reports.isError}
+										isEmpty={rows.length === 0}
+										onRetry={() => void reports.refetch()}
+										loadingText="Loading citizen reports..."
+										errorText="Citizen reports could not be loaded."
+										emptyText="No reports found."
+										emptyHint="Try adjusting your search or filters."
+									/>
 									{rows.map(report => (
 										<TableRow key={report.id}>
 											<TableCell className="font-medium">

@@ -207,6 +207,7 @@ export function TransparencyListPage() {
 						isError={listQuery.isError}
 						isArchiving={archiveItem.isPending}
 						isDeleting={deleteItem.isPending}
+						onRetry={() => void listQuery.refetch()}
 						onEdit={editRow}
 						onPreview={previewRow}
 						onArchive={archiveRow}

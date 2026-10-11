@@ -10,6 +10,8 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/core/components/ui/card"
+import { ErrorState, LoadingStatus, TableStateRows } from "@/core/components/ui/loading-state"
+import { Skeleton } from "@/core/components/ui/skeleton"
 import {
 	Table,
 	TableBody,
@@ -69,10 +71,21 @@ export function AnalyticsContent() {
 				</Button>
 			</div>
 
+			{analytics.isLoading && (
+				<LoadingStatus
+					message="Crunching the latest numbers..."
+					onRetry={() => void analytics.refetch()}
+					className="[&>div]:justify-start"
+				/>
+			)}
 			{analytics.isError && (
 				<Card className="border-destructive/40">
-					<CardContent className="text-destructive py-4 text-sm">
-						Analytics could not be loaded.
+					<CardContent>
+						<ErrorState
+							compact
+							title="Analytics could not be loaded."
+							onRetry={() => void analytics.refetch()}
+						/>
 					</CardContent>
 				</Card>
 			)}
@@ -90,7 +103,11 @@ export function AnalyticsContent() {
 							<BarChart3 className="text-primary size-4" />
 						</CardHeader>
 						<CardContent>
-							<div className="text-2xl font-bold">{analytics.isLoading ? "..." : item.value}</div>
+							{analytics.isLoading ? (
+								<Skeleton className="my-1 h-7 w-14" />
+							) : (
+								<div className="text-2xl font-bold">{item.value}</div>
+							)}
 						</CardContent>
 					</Card>
 				))}
@@ -101,11 +118,13 @@ export function AnalyticsContent() {
 					title="Request Status"
 					description="Service request lifecycle distribution."
 					rows={requestRows}
+					isLoading={analytics.isLoading}
 				/>
 				<MetricTable
 					title="Report Status"
 					description="Citizen report lifecycle distribution."
 					rows={reportRows}
+					isLoading={analytics.isLoading}
 				/>
 				<Card>
 					<CardHeader>
@@ -127,13 +146,15 @@ export function AnalyticsContent() {
 										<TableCell className="text-right">{row.requests}</TableCell>
 									</TableRow>
 								))}
-								{barangayRows.length === 0 && (
-									<TableRow>
-										<TableCell colSpan={2} className="text-muted-foreground h-24 text-center">
-											No barangay data yet.
-										</TableCell>
-									</TableRow>
-								)}
+								<TableStateRows
+									colSpan={2}
+									rows={4}
+									showStatus={false}
+									isLoading={analytics.isLoading}
+									isError={false}
+									isEmpty={barangayRows.length === 0}
+									emptyText="No barangay data yet."
+								/>
 							</TableBody>
 						</Table>
 					</CardContent>
@@ -147,10 +168,12 @@ function MetricTable({
 	title,
 	description,
 	rows,
+	isLoading,
 }: {
 	title: string
 	description: string
 	rows: Array<{ metric: string; value: number }>
+	isLoading: boolean
 }) {
 	return (
 		<Card>
@@ -173,13 +196,15 @@ function MetricTable({
 								<TableCell className="text-right">{row.value}</TableCell>
 							</TableRow>
 						))}
-						{rows.length === 0 && (
-							<TableRow>
-								<TableCell colSpan={2} className="text-muted-foreground h-24 text-center">
-									No data yet.
-								</TableCell>
-							</TableRow>
-						)}
+						<TableStateRows
+							colSpan={2}
+							rows={4}
+							showStatus={false}
+							isLoading={isLoading}
+							isError={false}
+							isEmpty={rows.length === 0}
+							emptyText="No data yet."
+						/>
 					</TableBody>
 				</Table>
 			</CardContent>

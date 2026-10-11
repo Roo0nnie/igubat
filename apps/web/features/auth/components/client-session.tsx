@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query"
 
+import { LoadingStatus } from "@/core/components/ui/loading-state"
 import { Skeleton } from "@/core/components/ui/skeleton"
 import { sessionOptions } from "@/features/auth/api/session.hooks"
 
@@ -12,6 +13,7 @@ export function ClientSession() {
 		return (
 			<div className="space-y-2">
 				<p className="text-sm font-medium">Client Session</p>
+				<LoadingStatus message="Checking your session..." className="[&>div]:justify-start" />
 				<Skeleton className="h-20 w-full" />
 			</div>
 		)

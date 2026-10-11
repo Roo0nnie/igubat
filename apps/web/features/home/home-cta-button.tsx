@@ -28,10 +28,11 @@ export function HomeCtaButton({ href, isLoggedIn }: HomeCtaButtonProps) {
 			<Button
 				size="lg"
 				onClick={() => signOutMutation.mutate()}
-				disabled={signOutMutation.isPending}
+				loading={signOutMutation.isPending}
+				loadingText="Logging out..."
 			>
 				<HugeiconsIcon icon={Logout01FreeIcons} strokeWidth={2} className="size-4" />
-				{signOutMutation.isPending ? "Logging out..." : "Logout"}
+				Logout
 			</Button>
 		)
 	}

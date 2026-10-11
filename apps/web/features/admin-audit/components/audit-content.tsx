@@ -4,6 +4,7 @@ import { FileDown, Lock } from "lucide-react"
 
 import { Button } from "@/core/components/ui/button"
 import { Card, CardContent } from "@/core/components/ui/card"
+import { TableStateRows } from "@/core/components/ui/loading-state"
 import {
 	Table,
 	TableBody,
@@ -84,27 +85,16 @@ export function AuditContent() {
 								</TableRow>
 							</TableHeader>
 							<TableBody>
-								{audit.isLoading && (
-									<TableRow>
-										<TableCell colSpan={5} className="text-muted-foreground h-24 text-center">
-											Loading audit logs...
-										</TableCell>
-									</TableRow>
-								)}
-								{audit.isError && (
-									<TableRow>
-										<TableCell colSpan={5} className="text-destructive h-24 text-center">
-											Audit logs could not be loaded.
-										</TableCell>
-									</TableRow>
-								)}
-								{!audit.isLoading && !audit.isError && rows.length === 0 && (
-									<TableRow>
-										<TableCell colSpan={5} className="text-muted-foreground h-24 text-center">
-											No audit logs found.
-										</TableCell>
-									</TableRow>
-								)}
+								<TableStateRows
+									colSpan={5}
+									isLoading={audit.isLoading}
+									isError={audit.isError}
+									isEmpty={rows.length === 0}
+									onRetry={() => void audit.refetch()}
+									loadingText="Loading audit logs..."
+									errorText="Audit logs could not be loaded."
+									emptyText="No audit logs found."
+								/>
 								{rows.map(row => (
 									<TableRow key={row.id}>
 										<TableCell>{formatDate(row.createdAt)}</TableCell>

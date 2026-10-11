@@ -17,6 +17,7 @@ import {
 import { Checkbox } from "@/core/components/ui/checkbox"
 import { Input } from "@/core/components/ui/input"
 import { Label } from "@/core/components/ui/label"
+import { TableStateRows } from "@/core/components/ui/loading-state"
 import {
 	Select,
 	SelectContent,
@@ -622,7 +623,7 @@ export function TransparencyManagement({
 								onChange={event => setFiscalYear(event.target.value.replace(/\D/g, ""))}
 							/>
 							<div className="relative min-w-[180px] flex-1">
-								<Search className="text-muted-foreground absolute left-2.5 top-2.5 size-4" />
+								<Search className="text-muted-foreground absolute top-2.5 left-2.5 size-4" />
 								<Input
 									className="pl-8"
 									placeholder="Search title or ref. number"
@@ -648,27 +649,16 @@ export function TransparencyManagement({
 									</TableRow>
 								</TableHeader>
 								<TableBody>
-									{items.isLoading && (
-										<TableRow>
-											<TableCell colSpan={8} className="text-muted-foreground h-24 text-center">
-												Loading transparency items...
-											</TableCell>
-										</TableRow>
-									)}
-									{items.isError && (
-										<TableRow>
-											<TableCell colSpan={8} className="text-destructive h-24 text-center">
-												Items could not be loaded.
-											</TableCell>
-										</TableRow>
-									)}
-									{!items.isLoading && !items.isError && (items.data ?? []).length === 0 && (
-										<TableRow>
-											<TableCell colSpan={8} className="text-muted-foreground h-24 text-center">
-												No transparency items found.
-											</TableCell>
-										</TableRow>
-									)}
+									<TableStateRows
+										colSpan={8}
+										isLoading={items.isLoading}
+										isError={items.isError}
+										isEmpty={(items.data ?? []).length === 0}
+										onRetry={() => void items.refetch()}
+										loadingText="Loading transparency items..."
+										errorText="Items could not be loaded."
+										emptyText="No transparency items found."
+									/>
 									{items.data?.map(item => (
 										<TableRow
 											key={item.id}
@@ -944,7 +934,7 @@ export function TransparencyManagement({
 								</div>
 								{editor.summary && <p className="text-sm">{editor.summary}</p>}
 								{editor.body && (
-									<div className="prose prose-sm max-w-none whitespace-pre-wrap text-sm">
+									<div className="prose prose-sm max-w-none text-sm whitespace-pre-wrap">
 										{editor.body}
 									</div>
 								)}
@@ -1000,10 +990,21 @@ export function TransparencyManagement({
 							<Button variant="outline" onClick={() => setShowPreview(current => !current)}>
 								<Eye className="size-4" /> {showPreview ? "Hide Preview" : "Preview"}
 							</Button>
-							<Button variant="outline" disabled={isSaving || !canSubmit} onClick={saveDraft}>
+							<Button
+								variant="outline"
+								disabled={publishItem.isPending || !canSubmit}
+								loading={isSaving && !publishItem.isPending}
+								loadingText="Saving..."
+								onClick={saveDraft}
+							>
 								<Save className="size-4" /> Save Draft
 							</Button>
-							<Button disabled={isSaving || publishItem.isPending || !canSubmit} onClick={publish}>
+							<Button
+								disabled={isSaving || !canSubmit}
+								loading={publishItem.isPending}
+								loadingText={editor.scheduledAt ? "Scheduling..." : "Publishing..."}
+								onClick={publish}
+							>
 								<Send className="size-4" />
 								{editor.scheduledAt ? "Schedule" : "Publish Now"}
 							</Button>

@@ -7,6 +7,7 @@ import { Badge } from "@/core/components/ui/badge"
 import { Button } from "@/core/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/core/components/ui/card"
 import { Input } from "@/core/components/ui/input"
+import { TableStateRows } from "@/core/components/ui/loading-state"
 import {
 	Select,
 	SelectContent,
@@ -115,27 +116,17 @@ export function CitizensContent() {
 								</TableRow>
 							</TableHeader>
 							<TableBody>
-								{citizens.isLoading && (
-									<TableRow>
-										<TableCell colSpan={6} className="text-muted-foreground h-24 text-center">
-											Loading citizens...
-										</TableCell>
-									</TableRow>
-								)}
-								{citizens.isError && (
-									<TableRow>
-										<TableCell colSpan={6} className="text-destructive h-24 text-center">
-											Citizens could not be loaded.
-										</TableCell>
-									</TableRow>
-								)}
-								{!citizens.isLoading && !citizens.isError && rows.length === 0 && (
-									<TableRow>
-										<TableCell colSpan={6} className="text-muted-foreground h-24 text-center">
-											No citizens found.
-										</TableCell>
-									</TableRow>
-								)}
+								<TableStateRows
+									colSpan={6}
+									isLoading={citizens.isLoading}
+									isError={citizens.isError}
+									isEmpty={rows.length === 0}
+									onRetry={() => void citizens.refetch()}
+									loadingText="Loading citizens..."
+									errorText="Citizens could not be loaded."
+									emptyText="No citizens found."
+									emptyHint="Try a different name, email, or barangay."
+								/>
 								{rows.map(user => (
 									<TableRow key={user.id}>
 										<TableCell className="font-medium">

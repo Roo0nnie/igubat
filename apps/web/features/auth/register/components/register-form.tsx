@@ -139,8 +139,13 @@ export function RegisterForm({ className, ...props }: React.ComponentProps<"div"
 							/>
 
 							<Field>
-								<Button type="submit" disabled={isPending} className="w-full hover:cursor-pointer">
-									{isPending ? "Creating account..." : "Create account"}
+								<Button
+									type="submit"
+									loading={isPending}
+									loadingText="Creating account..."
+									className="w-full hover:cursor-pointer"
+								>
+									Create account
 								</Button>
 							</Field>
 

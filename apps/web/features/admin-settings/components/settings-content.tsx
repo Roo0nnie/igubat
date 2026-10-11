@@ -15,6 +15,7 @@ import {
 import { Checkbox } from "@/core/components/ui/checkbox"
 import { Input } from "@/core/components/ui/input"
 import { Label } from "@/core/components/ui/label"
+import { TableStateRows } from "@/core/components/ui/loading-state"
 import {
 	Table,
 	TableBody,
@@ -74,20 +75,17 @@ export function SettingsContent() {
 									</TableRow>
 								</TableHeader>
 								<TableBody>
-									{settings.isLoading && (
-										<TableRow>
-											<TableCell colSpan={5} className="text-muted-foreground h-24 text-center">
-												Loading settings...
-											</TableCell>
-										</TableRow>
-									)}
-									{settings.isError && (
-										<TableRow>
-											<TableCell colSpan={5} className="text-destructive h-24 text-center">
-												Settings could not be loaded.
-											</TableCell>
-										</TableRow>
-									)}
+									<TableStateRows
+										colSpan={5}
+										isLoading={settings.isLoading}
+										isError={settings.isError}
+										isEmpty={(settings.data ?? []).length === 0}
+										onRetry={() => void settings.refetch()}
+										loadingText="Loading settings..."
+										errorText="Settings could not be loaded."
+										emptyText="No settings saved yet."
+										emptyHint="Add one using the editor."
+									/>
 									{settings.data?.map(setting => (
 										<TableRow key={setting.id}>
 											<TableCell className="font-medium">{setting.key}</TableCell>
@@ -156,8 +154,13 @@ export function SettingsContent() {
 							/>
 							Secret value
 						</label>
-						<Button disabled={upsert.isPending || !key || !category} onClick={saveSetting}>
-							<Save className="size-4" /> {upsert.isPending ? "Saving..." : "Save setting"}
+						<Button
+							disabled={!key || !category}
+							loading={upsert.isPending}
+							loadingText="Saving..."
+							onClick={saveSetting}
+						>
+							<Save className="size-4" /> Save setting
 						</Button>
 					</CardContent>
 				</Card>

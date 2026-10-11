@@ -9,6 +9,7 @@ import { Badge } from "@/core/components/ui/badge"
 import { Button } from "@/core/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/core/components/ui/card"
 import { Input } from "@/core/components/ui/input"
+import { TableStateRows } from "@/core/components/ui/loading-state"
 import {
 	Select,
 	SelectContent,
@@ -128,27 +129,21 @@ export function RequestsContent() {
 								</TableRow>
 							</TableHeader>
 							<TableBody>
-								{requests.isLoading && (
-									<TableRow>
-										<TableCell colSpan={7} className="text-muted-foreground h-24 text-center">
-											Loading service requests...
-										</TableCell>
-									</TableRow>
-								)}
-								{requests.isError && (
-									<TableRow>
-										<TableCell colSpan={7} className="text-destructive h-24 text-center">
-											Service requests could not be loaded.
-										</TableCell>
-									</TableRow>
-								)}
-								{!requests.isLoading && !requests.isError && rows.length === 0 && (
-									<TableRow>
-										<TableCell colSpan={7} className="text-muted-foreground h-24 text-center">
-											No service requests found.
-										</TableCell>
-									</TableRow>
-								)}
+								<TableStateRows
+									colSpan={7}
+									isLoading={requests.isLoading}
+									isError={requests.isError}
+									isEmpty={rows.length === 0}
+									onRetry={() => void requests.refetch()}
+									loadingText="Loading service requests..."
+									errorText="Service requests could not be loaded."
+									emptyText="No service requests found."
+									emptyHint={
+										search || status !== "all"
+											? "Try a different search term or status filter."
+											: "New citizen requests will appear here."
+									}
+								/>
 								{rows.map(request => (
 									<TableRow key={request.id}>
 										<TableCell className="font-medium">{request.trackingNumber}</TableCell>

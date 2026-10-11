@@ -11,6 +11,7 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/core/components/ui/dropdown-menu"
+import { TableStateRows } from "@/core/components/ui/loading-state"
 import {
 	Table,
 	TableBody,
@@ -32,6 +33,7 @@ type TransparencyListTableProps = {
 	isError?: boolean
 	isArchiving?: boolean
 	isDeleting?: boolean
+	onRetry?: () => void
 	onEdit: (row: TransparencyListRow) => void
 	onPreview: (row: TransparencyListRow) => void
 	onArchive: (row: TransparencyListRow) => void
@@ -58,6 +60,7 @@ export function TransparencyListTable({
 	isError,
 	isArchiving,
 	isDeleting,
+	onRetry,
 	onEdit,
 	onPreview,
 	onArchive,
@@ -79,27 +82,17 @@ export function TransparencyListTable({
 					</TableRow>
 				</TableHeader>
 				<TableBody>
-					{isLoading && (
-						<TableRow>
-							<TableCell colSpan={8} className="text-muted-foreground h-24 text-center">
-								Loading transparency items...
-							</TableCell>
-						</TableRow>
-					)}
-					{isError && (
-						<TableRow>
-							<TableCell colSpan={8} className="text-destructive h-24 text-center">
-								Transparency items could not be loaded.
-							</TableCell>
-						</TableRow>
-					)}
-					{!isLoading && !isError && rows.length === 0 && (
-						<TableRow>
-							<TableCell colSpan={8} className="text-muted-foreground h-24 text-center">
-								No transparency items found.
-							</TableCell>
-						</TableRow>
-					)}
+					<TableStateRows
+						colSpan={8}
+						isLoading={Boolean(isLoading)}
+						isError={Boolean(isError)}
+						isEmpty={rows.length === 0}
+						onRetry={onRetry}
+						loadingText="Loading transparency items..."
+						errorText="Transparency items could not be loaded."
+						emptyText="No transparency items found."
+						emptyHint="Try adjusting the filters, or create a new item."
+					/>
 					{!isLoading &&
 						!isError &&
 						rows.map(row => (

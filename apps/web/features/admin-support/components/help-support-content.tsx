@@ -9,6 +9,12 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/core/components/ui/card"
+import {
+	EmptyState,
+	ErrorState,
+	ListSkeleton,
+	LoadingStatus,
+} from "@/core/components/ui/loading-state"
 import { useHelpArticlesQuery } from "@/features/admin-support/api/support.hooks"
 
 export function HelpSupportContent() {
@@ -26,10 +32,16 @@ export function HelpSupportContent() {
 
 			<div className="grid gap-4">
 				{help.isLoading && (
-					<p className="text-muted-foreground text-sm">Loading help articles...</p>
+					<>
+						<LoadingStatus message="Loading help articles..." onRetry={() => void help.refetch()} />
+						<ListSkeleton count={4} />
+					</>
 				)}
 				{help.isError && (
-					<p className="text-destructive text-sm">Help articles could not be loaded.</p>
+					<ErrorState
+						title="Help articles could not be loaded."
+						onRetry={() => void help.refetch()}
+					/>
 				)}
 				{rows.map(article => (
 					<Card key={article.id}>
@@ -48,8 +60,12 @@ export function HelpSupportContent() {
 				))}
 				{!help.isLoading && !help.isError && rows.length === 0 && (
 					<Card>
-						<CardContent className="text-muted-foreground py-6 text-sm">
-							No help articles are published yet.
+						<CardContent>
+							<EmptyState
+								icon={HelpCircle}
+								title="No help articles yet"
+								description="Published guides for staff and citizens will appear here."
+							/>
 						</CardContent>
 					</Card>
 				)}
