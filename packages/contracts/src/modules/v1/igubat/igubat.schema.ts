@@ -173,156 +173,6 @@ export const CommunityStatSchema = z.object({
 	value: z.number(),
 })
 
-// ============================================================================
-// DISCOVER GUBAT
-// ============================================================================
-
-export const DiscoverGubatTypeSchema = z.enum(["tourist_spot", "festival_culture", "local_product"])
-
-export const DiscoverGubatCategorySchema = z.enum([
-	"beaches_surfing",
-	"nature_eco_tourism",
-	"heritage_landmarks",
-	"festival",
-	"culture_history",
-	"local_dialect_traditions",
-	"delicacies_kakanin",
-	"pasalubong",
-	"handicrafts_otop",
-	"seafood",
-	"pili_products",
-])
-
-export const DiscoverGubatStatusSchema = z.enum(["draft", "scheduled", "published", "archived"])
-
-export const DiscoverGubatMediaSchema = z.object({
-	id: z.number(),
-	fileUrl: z.string(),
-	fileName: z.string(),
-	mimeType: z.string(),
-	sizeBytes: z.number(),
-	altText: z.string().nullable(),
-	caption: z.string().nullable(),
-	isFeatured: z.boolean(),
-	sortOrder: z.number(),
-})
-
-export const DiscoverGubatItemSummarySchema = z.object({
-	id: z.number(),
-	type: DiscoverGubatTypeSchema,
-	category: DiscoverGubatCategorySchema,
-	title: z.string(),
-	slug: z.string(),
-	summary: z.string().nullable(),
-	status: DiscoverGubatStatusSchema,
-	featuredImageUrl: z.string().nullable(),
-	featuredImageAlt: z.string().nullable(),
-	locationName: z.string().nullable(),
-	locationAddress: z.string().nullable(),
-	latitude: z.string().nullable(),
-	longitude: z.string().nullable(),
-	whereToBuy: z.string().nullable(),
-	priceRange: z.string().nullable(),
-	contactInfo: z.string().nullable(),
-	authorId: z.string().nullable(),
-	scheduledAt: DateLikeSchema.nullable(),
-	publishedAt: DateLikeSchema.nullable(),
-	archivedAt: DateLikeSchema.nullable(),
-	createdAt: DateLikeSchema,
-	updatedAt: DateLikeSchema,
-	authorName: z.string().nullable().optional(),
-})
-
-export const DiscoverGubatItemDetailSchema = DiscoverGubatItemSummarySchema.extend({
-	body: z.string(),
-	notifyOnPublish: z.boolean(),
-	media: z.array(DiscoverGubatMediaSchema),
-})
-
-const DiscoverGubatMediaInputSchema = z.object({
-	fileUrl: z.string().min(1),
-	fileName: z.string().min(1),
-	mimeType: z.string().optional(),
-	sizeBytes: z.number().int().nonnegative().optional(),
-	altText: z.string().optional(),
-	caption: z.string().optional(),
-	isFeatured: z.boolean().optional(),
-	sortOrder: z.number().int().nonnegative().optional(),
-})
-
-const DiscoverGubatItemInputSchema = z.object({
-	type: DiscoverGubatTypeSchema,
-	category: DiscoverGubatCategorySchema,
-	title: z.string().min(1),
-	slug: z.string().min(1),
-	summary: z.string().optional(),
-	body: z.string().optional(),
-	status: DiscoverGubatStatusSchema.optional(),
-	featuredImageUrl: z.string().optional(),
-	featuredImageAlt: z.string().optional(),
-	locationName: z.string().optional(),
-	locationAddress: z.string().optional(),
-	latitude: z.string().optional(),
-	longitude: z.string().optional(),
-	whereToBuy: z.string().optional(),
-	priceRange: z.string().optional(),
-	contactInfo: z.string().optional(),
-	notifyOnPublish: z.boolean().optional(),
-	scheduledAt: z.string().optional(),
-	media: z.array(DiscoverGubatMediaInputSchema).max(10).optional(),
-})
-
-function assertDiscoverGubatRequirements(
-	input: {
-		type?: z.infer<typeof DiscoverGubatTypeSchema>
-		whereToBuy?: string
-		locationName?: string
-	},
-	ctx: z.RefinementCtx
-) {
-	if (input.type === "local_product" && !input.whereToBuy?.trim()) {
-		ctx.addIssue({
-			code: "custom",
-			path: ["whereToBuy"],
-			message: "whereToBuy is required for local products",
-		})
-	}
-	if (input.type !== "local_product" && !input.locationName?.trim()) {
-		ctx.addIssue({
-			code: "custom",
-			path: ["locationName"],
-			message: "locationName is required for tourist and festival entries",
-		})
-	}
-}
-
-export const CreateDiscoverGubatItemSchema = DiscoverGubatItemInputSchema.superRefine(
-	assertDiscoverGubatRequirements
-)
-
-export const UpdateDiscoverGubatItemSchema = DiscoverGubatItemInputSchema.partial()
-	.extend({ id: z.coerce.number().int().positive() })
-	.superRefine(assertDiscoverGubatRequirements)
-
-export const DiscoverGubatListQuerySchema = z
-	.object({
-		type: DiscoverGubatTypeSchema.optional(),
-		category: DiscoverGubatCategorySchema.optional(),
-		status: DiscoverGubatStatusSchema.optional(),
-		search: z.string().optional(),
-		limit: z.coerce.number().int().positive().max(100).optional(),
-	})
-	.optional()
-
-export const PublishDiscoverGubatItemSchema = IdParamSchema.extend({
-	notifySubscribers: z.boolean(),
-	publishAt: z.string().optional(),
-})
-
-export const DeleteDiscoverGubatItemSchema = IdParamSchema.extend({
-	permanent: z.boolean().optional(),
-})
-
 export const EmergencyDirectorySchema = z.object({
 	id: z.number(),
 	name: z.string(),
@@ -816,5 +666,142 @@ const QueryBooleanSchema = z.preprocess(value => {
 }, z.boolean())
 
 export const DeleteTransparencyItemSchema = IdParamSchema.extend({
+	permanent: QueryBooleanSchema.optional(),
+})
+
+// ============================================================================
+// DISCOVER GUBAT (Module 12)
+// ============================================================================
+
+export const DiscoverGubatTypeSchema = z.enum(["tourist_spot", "festival_culture", "local_product"])
+
+export const DiscoverGubatStatusSchema = z.enum(["draft", "scheduled", "published", "archived"])
+
+export const DiscoverGubatMetadataSchema = z.discriminatedUnion("type", [
+	z.object({
+		type: z.literal("tourist_spot"),
+		mapLocation: z.string().min(1),
+		latitude: z.number().optional(),
+		longitude: z.number().optional(),
+		bestFor: z.string().optional(),
+		travelNote: z.string().optional(),
+	}),
+	z.object({
+		type: z.literal("festival_culture"),
+		cultureKind: z.enum(["festival", "heritage", "history", "tradition", "language"]).optional(),
+		eventDate: z.string().optional(),
+		culturalNote: z.string().optional(),
+	}),
+	z.object({
+		type: z.literal("local_product"),
+		productKind: z
+			.enum(["delicacy", "pasalubong", "handicraft", "seafood", "pili_product"])
+			.optional(),
+		whereToBuy: z.string().min(1),
+		pasalubongNote: z.string().optional(),
+	}),
+])
+
+export const DiscoverGubatPhotoSchema = z.object({
+	id: z.number(),
+	imageUrl: z.string(),
+	altText: z.string().nullable(),
+	sortOrder: z.number(),
+})
+
+export const DiscoverGubatEntrySummarySchema = z.object({
+	id: z.number(),
+	type: DiscoverGubatTypeSchema,
+	title: z.string(),
+	slug: z.string().nullable(),
+	summary: z.string().nullable(),
+	category: z.string(),
+	status: DiscoverGubatStatusSchema,
+	coverImageUrl: z.string().nullable(),
+	mapLocation: z.string().nullable(),
+	whereToBuy: z.string().nullable(),
+	eventDate: DateLikeSchema.nullable(),
+	authorId: z.string().nullable(),
+	scheduledAt: DateLikeSchema.nullable(),
+	publishedAt: DateLikeSchema.nullable(),
+	archivedAt: DateLikeSchema.nullable(),
+	createdAt: DateLikeSchema,
+	updatedAt: DateLikeSchema,
+	authorName: z.string().nullable().optional(),
+})
+
+export const DiscoverGubatEntryDetailSchema = DiscoverGubatEntrySummarySchema.extend({
+	body: z.string(),
+	metadata: DiscoverGubatMetadataSchema.nullable(),
+	notifyOnPublish: z.boolean(),
+	photos: z.array(DiscoverGubatPhotoSchema),
+})
+
+const DiscoverGubatPhotoInputSchema = z.object({
+	imageUrl: z.string().min(1),
+	altText: z.string().optional(),
+	sortOrder: z.number().int().nonnegative().optional(),
+})
+
+const DiscoverGubatEntryInputSchema = z.object({
+	type: DiscoverGubatTypeSchema,
+	title: z.string().min(1),
+	summary: z.string().optional(),
+	body: z.string().optional(),
+	category: z.string().min(1),
+	coverImageUrl: z.string().optional(),
+	mapLocation: z.string().optional(),
+	whereToBuy: z.string().optional(),
+	eventDate: z.string().optional(),
+	metadata: DiscoverGubatMetadataSchema,
+	status: DiscoverGubatStatusSchema.optional(),
+	notifyOnPublish: z.boolean().optional(),
+	scheduledAt: z.string().optional(),
+	photos: z.array(DiscoverGubatPhotoInputSchema).max(10).optional(),
+})
+
+function assertMatchingDiscoverGubatMetadataType(
+	input: {
+		type?: z.infer<typeof DiscoverGubatTypeSchema>
+		metadata?: z.infer<typeof DiscoverGubatMetadataSchema>
+	},
+	ctx: z.RefinementCtx
+) {
+	if (input.type && input.metadata && input.type !== input.metadata.type) {
+		ctx.addIssue({
+			code: "custom",
+			path: ["metadata", "type"],
+			message: "metadata.type must match type",
+		})
+	}
+}
+
+export const CreateDiscoverGubatEntrySchema = DiscoverGubatEntryInputSchema.superRefine(
+	assertMatchingDiscoverGubatMetadataType
+)
+
+export const UpdateDiscoverGubatEntrySchema = DiscoverGubatEntryInputSchema.partial()
+	.extend({
+		id: z.coerce.number().int().positive(),
+	})
+	.superRefine(assertMatchingDiscoverGubatMetadataType)
+
+export const DiscoverGubatListQuerySchema = z
+	.object({
+		type: DiscoverGubatTypeSchema.optional(),
+		status: DiscoverGubatStatusSchema.optional(),
+		category: z.string().optional(),
+		search: z.string().optional(),
+		limit: z.coerce.number().int().positive().max(100).optional(),
+		cursor: z.coerce.number().int().nonnegative().optional(),
+	})
+	.optional()
+
+export const PublishDiscoverGubatEntrySchema = IdParamSchema.extend({
+	notifySubscribers: z.boolean(),
+	publishAt: z.string().optional(),
+})
+
+export const DeleteDiscoverGubatEntrySchema = IdParamSchema.extend({
 	permanent: QueryBooleanSchema.optional(),
 })

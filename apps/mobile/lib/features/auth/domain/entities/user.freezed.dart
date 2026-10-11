@@ -221,7 +221,7 @@ return $default(_that.id,_that.name,_that.email,_that.image,_that.emailVerified,
 
 class _User implements User {
   const _User({required this.id, required this.name, required this.email, this.image, this.emailVerified = false, this.role = UserRole.registeredCitizen, this.status, this.mobileNumber, this.barangay, this.address, this.dpaConsent = false, this.departmentId, this.createdAt, this.updatedAt, this.lastLoginAt});
-  
+
 
 @override final  String id;
 @override final  String name;

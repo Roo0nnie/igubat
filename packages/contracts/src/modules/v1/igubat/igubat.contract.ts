@@ -10,15 +10,15 @@ import {
 	ContentPlacementSchema,
 	CreateBroadcastSchema,
 	CreateCitizenReportSchema,
-	CreateDiscoverGubatItemSchema,
+	CreateDiscoverGubatEntrySchema,
 	CreateServiceRequestSchema,
 	CreateStaffSchema,
 	CreateTransparencyItemSchema,
 	DashboardSchema,
-	DeleteDiscoverGubatItemSchema,
+	DeleteDiscoverGubatEntrySchema,
 	DeleteTransparencyItemSchema,
-	DiscoverGubatItemDetailSchema,
-	DiscoverGubatItemSummarySchema,
+	DiscoverGubatEntryDetailSchema,
+	DiscoverGubatEntrySummarySchema,
 	DiscoverGubatListQuerySchema,
 	EmergencyBroadcastSchema,
 	EmergencyDirectorySchema,
@@ -30,7 +30,7 @@ import {
 	NotificationPreferenceSchema,
 	NotificationSchema,
 	PolicyDocumentSchema,
-	PublishDiscoverGubatItemSchema,
+	PublishDiscoverGubatEntrySchema,
 	PublishTransparencyItemSchema,
 	ServiceCategorySchema,
 	ServiceRequestDetailSchema,
@@ -42,7 +42,7 @@ import {
 	TransparencyItemSummarySchema,
 	TransparencyListQuerySchema,
 	UpdateCommunityStatsSchema,
-	UpdateDiscoverGubatItemSchema,
+	UpdateDiscoverGubatEntrySchema,
 	UpdateProfileSchema,
 	UpdateReportStatusSchema,
 	UpdateRequestStatusSchema,
@@ -189,7 +189,7 @@ export const igubatContract = oc.prefix("/igubat").router(
 							spec: spec => ({ ...spec, security: [] }),
 						})
 						.input(DiscoverGubatListQuerySchema)
-						.output(z.array(DiscoverGubatItemSummarySchema)),
+						.output(z.array(DiscoverGubatEntrySummarySchema)),
 					detail: oc
 						.route({
 							method: "GET",
@@ -198,7 +198,7 @@ export const igubatContract = oc.prefix("/igubat").router(
 							spec: spec => ({ ...spec, security: [] }),
 						})
 						.input(SlugParamSchema)
-						.output(DiscoverGubatItemDetailSchema),
+						.output(DiscoverGubatEntryDetailSchema),
 				}),
 			})
 		),
@@ -418,7 +418,7 @@ export const igubatContract = oc.prefix("/igubat").router(
 					list: oc
 						.route({ method: "GET", path: "/discover-gubat", tags: ["iGubat Discover Gubat"] })
 						.input(DiscoverGubatListQuerySchema)
-						.output(z.array(DiscoverGubatItemSummarySchema)),
+						.output(z.array(DiscoverGubatEntrySummarySchema)),
 					detail: oc
 						.route({
 							method: "GET",
@@ -426,27 +426,27 @@ export const igubatContract = oc.prefix("/igubat").router(
 							tags: ["iGubat Discover Gubat"],
 						})
 						.input(IdParamSchema)
-						.output(DiscoverGubatItemDetailSchema),
+						.output(DiscoverGubatEntryDetailSchema),
 					create: oc
 						.route({ method: "POST", path: "/discover-gubat", tags: ["iGubat Discover Gubat"] })
-						.input(CreateDiscoverGubatItemSchema)
-						.output(DiscoverGubatItemDetailSchema),
+						.input(CreateDiscoverGubatEntrySchema)
+						.output(DiscoverGubatEntryDetailSchema),
 					update: oc
 						.route({
 							method: "PATCH",
 							path: "/discover-gubat/{id}",
 							tags: ["iGubat Discover Gubat"],
 						})
-						.input(UpdateDiscoverGubatItemSchema)
-						.output(DiscoverGubatItemDetailSchema),
+						.input(UpdateDiscoverGubatEntrySchema)
+						.output(DiscoverGubatEntryDetailSchema),
 					publish: oc
 						.route({
 							method: "POST",
 							path: "/discover-gubat/{id}/publish",
 							tags: ["iGubat Discover Gubat"],
 						})
-						.input(PublishDiscoverGubatItemSchema)
-						.output(DiscoverGubatItemDetailSchema),
+						.input(PublishDiscoverGubatEntrySchema)
+						.output(DiscoverGubatEntryDetailSchema),
 					archive: oc
 						.route({
 							method: "POST",
@@ -454,14 +454,14 @@ export const igubatContract = oc.prefix("/igubat").router(
 							tags: ["iGubat Discover Gubat"],
 						})
 						.input(IdParamSchema)
-						.output(DiscoverGubatItemDetailSchema),
+						.output(DiscoverGubatEntryDetailSchema),
 					delete: oc
 						.route({
 							method: "DELETE",
 							path: "/discover-gubat/{id}",
 							tags: ["iGubat Discover Gubat"],
 						})
-						.input(DeleteDiscoverGubatItemSchema)
+						.input(DeleteDiscoverGubatEntrySchema)
 						.output(z.object({ success: z.boolean(), permanent: z.boolean() })),
 				}),
 			})

@@ -1,19 +1,21 @@
 import { describe, expect, it } from "vitest"
 
 import {
-	CreateDiscoverGubatItemSchema,
+	CreateDiscoverGubatEntrySchema,
 	CreateTransparencyItemSchema,
 	DateLikeSchema,
 	DEFAULT_COMMUNITY_STATS,
+	DeleteDiscoverGubatEntrySchema,
 	DeleteTransparencyItemSchema,
-	DiscoverGubatItemDetailSchema,
-	DiscoverGubatItemSummarySchema,
+	DiscoverGubatEntryDetailSchema,
+	DiscoverGubatEntrySummarySchema,
+	DiscoverGubatMetadataSchema,
 	NotificationPreferenceSchema,
 	TransparencyItemDetailSchema,
 	TransparencyItemSummarySchema,
 	TransparencyMetadataSchema,
 	UpdateCommunityStatsSchema,
-	UpdateDiscoverGubatItemSchema,
+	UpdateDiscoverGubatEntrySchema,
 } from "./igubat.schema"
 
 describe("Transparency contracts", () => {
@@ -136,91 +138,127 @@ describe("Transparency contracts", () => {
 })
 
 describe("Discover Gubat contracts", () => {
-	it("keeps public summaries lighter than detail payloads", () => {
-		const base = {
+	it("parses permanent delete query flags without treating 'false' as true", () => {
+		expect(DeleteDiscoverGubatEntrySchema.parse({ id: "7", permanent: "true" })).toEqual({
 			id: 7,
+			permanent: true,
+		})
+		expect(DeleteDiscoverGubatEntrySchema.parse({ id: "7", permanent: "false" })).toEqual({
+			id: 7,
+			permanent: false,
+		})
+	})
+
+	it("requires type-specific Discover Gubat metadata", () => {
+		const missingMapLocation = CreateDiscoverGubatEntrySchema.safeParse({
 			type: "tourist_spot",
-			category: "beaches_surfing",
-			title: "Rizal Beach",
-			slug: "rizal-beach",
-			summary: "A public beach destination",
+			title: "Buenavista Beach",
+			category: "Beach",
+			body: "Surfing beach in Gubat.",
+			metadata: {
+				type: "tourist_spot",
+			},
+		})
+		const product = DiscoverGubatMetadataSchema.parse({
+			type: "local_product",
+			productKind: "delicacy",
+			whereToBuy: "Public Market pasalubong stalls",
+			pasalubongNote: "Best bought fresh in the morning.",
+		})
+
+		expect(missingMapLocation.success).toBe(false)
+		if (product.type === "local_product") {
+			expect(product.whereToBuy).toBe("Public Market pasalubong stalls")
+		}
+	})
+
+	it("keeps Discover Gubat summaries lighter than detail payloads", () => {
+		const base = {
+			id: 1,
+			type: "tourist_spot",
+			title: "Buenavista Beach",
+			slug: "buenavista-beach",
+			summary: "Surfing beach in Gubat.",
+			category: "Beach",
 			status: "published",
-			featuredImageUrl: null,
-			featuredImageAlt: null,
-			locationName: "Rizal Beach",
-			locationAddress: "Gubat, Sorsogon",
-			latitude: null,
-			longitude: null,
+			coverImageUrl: null,
+			mapLocation: "Buenavista, Gubat, Sorsogon",
 			whereToBuy: null,
-			priceRange: null,
-			contactInfo: null,
-			authorId: "admin-user",
+			eventDate: null,
+			authorId: "staff-user",
 			scheduledAt: null,
-			publishedAt: new Date("2026-01-01T00:00:00.000Z"),
+			publishedAt: new Date("2026-06-01T00:00:00.000Z"),
 			archivedAt: null,
-			createdAt: new Date("2026-01-01T00:00:00.000Z"),
-			updatedAt: new Date("2026-01-01T00:00:00.000Z"),
+			createdAt: new Date("2026-06-01T00:00:00.000Z"),
+			updatedAt: new Date("2026-06-01T00:00:00.000Z"),
+		} as const
+		const metadata = {
+			type: "tourist_spot",
+			mapLocation: "Buenavista, Gubat, Sorsogon",
+			latitude: 12.9201,
+			longitude: 124.1234,
 		} as const
 
-		const summary = DiscoverGubatItemSummarySchema.parse({
+		const summary = DiscoverGubatEntrySummarySchema.parse({
 			...base,
-			body: "Full detail body",
-			media: [],
+			body: "Should not be exposed in summary rows.",
+			metadata,
 		})
-		const detail = DiscoverGubatItemDetailSchema.parse({
+		const detail = DiscoverGubatEntryDetailSchema.parse({
 			...base,
-			body: "Full detail body",
-			media: [],
+			body: "Full destination write-up.",
+			metadata,
 			notifyOnPublish: false,
+			photos: [],
 		})
 
 		expect("body" in summary).toBe(false)
-		expect("media" in summary).toBe(false)
-		expect(detail.body).toBe("Full detail body")
+		expect("metadata" in summary).toBe(false)
+		expect(detail.metadata?.type).toBe("tourist_spot")
 	})
 
-	it("requires local product fields only for local product entries", () => {
-		const result = CreateDiscoverGubatItemSchema.safeParse({
-			type: "local_product",
-			category: "delicacies_kakanin",
-			title: "Pili Tart",
-			slug: "pili-tart",
-			body: "Local delicacy from Gubat.",
+	it("includes Discover Gubat in notification preferences", () => {
+		const result = NotificationPreferenceSchema.parse({
+			news: true,
+			serviceRequests: true,
+			issueReports: true,
+			emergencyBroadcasts: true,
+			discoverGubat: false,
+			transparency: true,
+			pushEnabled: true,
+			emailEnabled: false,
 		})
 
-		expect(result.success).toBe(false)
-
-		const complete = CreateDiscoverGubatItemSchema.parse({
-			type: "local_product",
-			category: "delicacies_kakanin",
-			title: "Pili Tart",
-			slug: "pili-tart",
-			body: "Local delicacy from Gubat.",
-			whereToBuy: "Gubat Public Market",
-		})
-
-		expect(complete.whereToBuy).toBe("Gubat Public Market")
+		expect(result.discoverGubat).toBe(false)
 	})
 
-	it("requires a location name for tourist and festival entries", () => {
-		const result = CreateDiscoverGubatItemSchema.safeParse({
-			type: "tourist_spot",
-			category: "beaches_surfing",
-			title: "Rizal Beach",
-			slug: "rizal-beach",
-			locationName: "   ",
-		})
-
-		expect(result.success).toBe(false)
-		expect(result.error?.issues[0]?.path).toEqual(["locationName"])
-
-		const update = UpdateDiscoverGubatItemSchema.parse({
-			id: "7",
+	it("requires Discover Gubat metadata to match the selected type", () => {
+		const mismatch = CreateDiscoverGubatEntrySchema.safeParse({
 			type: "festival_culture",
-			locationName: "Gubat Town Plaza",
+			title: "Ginubat Festival",
+			category: "Festival",
+			metadata: {
+				type: "tourist_spot",
+				mapLocation: "Gubat, Sorsogon",
+			},
 		})
 
-		expect(update).toMatchObject({ id: 7, locationName: "Gubat Town Plaza" })
+		expect(mismatch.success).toBe(false)
+		expect(mismatch.error?.issues[0]?.path).toEqual(["metadata", "type"])
+	})
+
+	it("allows partial Discover Gubat updates with or without metadata", () => {
+		expect(UpdateDiscoverGubatEntrySchema.parse({ id: "4", title: "Renamed" })).toMatchObject({
+			id: 4,
+			title: "Renamed",
+		})
+		expect(
+			UpdateDiscoverGubatEntrySchema.safeParse({
+				id: 4,
+				type: "local_product",
+				metadata: { type: "tourist_spot", mapLocation: "Gubat" },
+			}).success
+		).toBe(false)
 	})
 })
 

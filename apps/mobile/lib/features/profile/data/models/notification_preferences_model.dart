@@ -6,7 +6,8 @@ part 'notification_preferences_model.freezed.dart';
 part 'notification_preferences_model.g.dart';
 
 @freezed
-abstract class NotificationPreferencesModel with _$NotificationPreferencesModel {
+abstract class NotificationPreferencesModel
+    with _$NotificationPreferencesModel {
   const NotificationPreferencesModel._();
 
   const factory NotificationPreferencesModel({
@@ -14,6 +15,7 @@ abstract class NotificationPreferencesModel with _$NotificationPreferencesModel 
     @Default(true) bool serviceRequests,
     @Default(true) bool issueReports,
     @Default(true) bool emergencyBroadcasts,
+    @Default(true) bool discoverGubat,
     @Default(true) bool transparency,
     @Default(true) bool pushEnabled,
     @Default(true) bool emailEnabled,
@@ -28,6 +30,7 @@ abstract class NotificationPreferencesModel with _$NotificationPreferencesModel 
         serviceRequests: e.serviceRequests,
         issueReports: e.issueReports,
         emergencyBroadcasts: e.emergencyBroadcasts,
+        discoverGubat: e.discoverGubat,
         transparency: e.transparency,
         pushEnabled: e.pushEnabled,
         emailEnabled: e.emailEnabled,
@@ -38,6 +41,7 @@ abstract class NotificationPreferencesModel with _$NotificationPreferencesModel 
     serviceRequests: serviceRequests,
     issueReports: issueReports,
     emergencyBroadcasts: emergencyBroadcasts,
+    discoverGubat: discoverGubat,
     transparency: transparency,
     pushEnabled: pushEnabled,
     emailEnabled: emailEnabled,

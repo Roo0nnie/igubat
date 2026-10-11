@@ -3,6 +3,7 @@ import {
 	BellRing,
 	BookOpenText,
 	ClipboardList,
+	Compass,
 	HelpCircle,
 	History,
 	LayoutDashboard,
@@ -72,6 +73,7 @@ export const NAV_GROUPS: NavGroup[] = [
 		label: "Content & Emergency",
 		items: [
 			{ title: "Content", url: "/content", icon: Newspaper, access: "staff" },
+			{ title: "Discover Gubat", url: "/discover-gubat", icon: Compass, access: "staff" },
 			{ title: "Emergency", url: "/emergency", icon: Siren, access: "staff" },
 			{ title: "Transparency", url: "/transparency", icon: Scale, access: "staff" },
 			{ title: "Notifications", url: "/notifications", icon: BellRing, access: "staff" },

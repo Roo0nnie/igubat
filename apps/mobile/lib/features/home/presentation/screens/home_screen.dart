@@ -15,6 +15,7 @@ import '../../../../shared/widgets/glass/glass_skeleton.dart';
 import '../../../../shared/widgets/glass/glass_surface.dart';
 import '../../../../shared/widgets/main_scaffold.dart';
 import '../widgets/home_collapsing_header.dart';
+import '../../../discover/presentation/screens/discover_gubat_screen.dart';
 import '../../../news/presentation/screens/news_detail_screen.dart';
 import '../../../news/presentation/providers/news_provider.dart';
 import '../../../reports/presentation/screens/report_issue_screen.dart';
@@ -348,7 +349,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         Icons.explore_outlined,
         'Discover Gubat',
         const Color(0xFF0891B2),
-        () => context.push('/discover-gubat'),
+        () => Navigator.push(
+          context,
+          GlassPageRoute(page: const DiscoverGubatScreen()),
+        ),
       ),
       (
         Icons.apps,

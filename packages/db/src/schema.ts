@@ -289,78 +289,6 @@ export const events = createTable("events", t => ({
 }))
 
 // ============================================================================
-// TOURISM, CULTURE & LOCAL PRODUCTS (DISCOVER GUBAT)
-// ============================================================================
-
-export type DiscoverGubatType = "tourist_spot" | "festival_culture" | "local_product"
-export type DiscoverGubatCategory =
-	| "beaches_surfing"
-	| "nature_eco_tourism"
-	| "heritage_landmarks"
-	| "festival"
-	| "culture_history"
-	| "local_dialect_traditions"
-	| "delicacies_kakanin"
-	| "pasalubong"
-	| "handicrafts_otop"
-	| "seafood"
-	| "pili_products"
-
-export const discoverGubatItems = createTable(
-	"discover_gubat_items",
-	t => ({
-		id: t.serial("id").primaryKey(),
-		type: t.text("type").notNull().$type<DiscoverGubatType>(),
-		category: t.text("category").notNull().$type<DiscoverGubatCategory>(),
-		title: t.text("title").notNull(),
-		slug: t.text("slug").notNull().unique(),
-		summary: t.text("summary"),
-		body: t.text("body").notNull().default(""),
-		status: t.text("status").notNull().default("draft").$type<ContentStatus>(),
-		featuredImageUrl: t.text("featured_image_url"),
-		featuredImageAlt: t.text("featured_image_alt"),
-		locationName: t.text("location_name"),
-		locationAddress: t.text("location_address"),
-		latitude: t.numeric("latitude"),
-		longitude: t.numeric("longitude"),
-		whereToBuy: t.text("where_to_buy"),
-		priceRange: t.text("price_range"),
-		contactInfo: t.text("contact_info"),
-		authorId: t.text("author_id").references(() => users.id, { onDelete: "set null" }),
-		publishedById: t.text("published_by_id").references(() => users.id, { onDelete: "set null" }),
-		notifyOnPublish: t.boolean("notify_on_publish").notNull().default(false),
-		scheduledAt: t.timestamp("scheduled_at"),
-		publishedAt: t.timestamp("published_at"),
-		archivedAt: t.timestamp("archived_at"),
-		deletedAt: t.timestamp("deleted_at"),
-		metadata: t.json("metadata"),
-		createdAt: t.timestamp("created_at").notNull().defaultNow(),
-		updatedAt: t.timestamp("updated_at").notNull().defaultNow(),
-	}),
-	t => [
-		index("discover_gubat_type_status_published_idx").on(t.type, t.status, t.publishedAt),
-		index("discover_gubat_category_idx").on(t.category),
-	]
-)
-
-export const discoverGubatMedia = createTable("discover_gubat_media", t => ({
-	id: t.serial("id").primaryKey(),
-	discoverGubatItemId: t
-		.integer("discover_gubat_item_id")
-		.notNull()
-		.references(() => discoverGubatItems.id, { onDelete: "cascade" }),
-	fileUrl: t.text("file_url").notNull(),
-	fileName: t.text("file_name").notNull(),
-	mimeType: t.text("mime_type").notNull().default("image/jpeg"),
-	sizeBytes: t.integer("size_bytes").notNull().default(0),
-	altText: t.text("alt_text"),
-	caption: t.text("caption"),
-	isFeatured: t.boolean("is_featured").notNull().default(false),
-	sortOrder: t.integer("sort_order").notNull().default(0),
-	createdAt: t.timestamp("created_at").notNull().defaultNow(),
-}))
-
-// ============================================================================
 // TRANSPARENCY & GOOD GOVERNANCE (Module 13)
 // ============================================================================
 
@@ -438,6 +366,59 @@ export const transparencyAttachments = createTable("transparency_attachments", t
 	uploadedById: t.text("uploaded_by_id").references(() => users.id, { onDelete: "set null" }),
 	signedUrlExpiresAt: t.timestamp("signed_url_expires_at"),
 	deletedAt: t.timestamp("deleted_at"),
+	sortOrder: t.integer("sort_order").notNull().default(0),
+	createdAt: t.timestamp("created_at").notNull().defaultNow(),
+}))
+
+// ============================================================================
+// DISCOVER GUBAT (Module 12)
+// ============================================================================
+
+export type DiscoverGubatType = "tourist_spot" | "festival_culture" | "local_product"
+
+export const discoverGubatEntries = createTable(
+	"discover_gubat_entries",
+	t => ({
+		id: t.serial("id").primaryKey(),
+		type: t.text("type").notNull().$type<DiscoverGubatType>(),
+		title: t.text("title").notNull(),
+		slug: t.text("slug").unique(),
+		summary: t.text("summary"),
+		body: t.text("body").notNull().default(""),
+		category: t.text("category").notNull(),
+		status: t
+			.text("status")
+			.notNull()
+			.default("draft")
+			.$type<"draft" | "scheduled" | "published" | "archived">(),
+		coverImageUrl: t.text("cover_image_url"),
+		mapLocation: t.text("map_location"),
+		whereToBuy: t.text("where_to_buy"),
+		eventDate: t.timestamp("event_date"),
+		metadata: t.json("metadata"),
+		authorId: t.text("author_id").references(() => users.id, { onDelete: "set null" }),
+		notifyOnPublish: t.boolean("notify_on_publish").notNull().default(false),
+		scheduledAt: t.timestamp("scheduled_at"),
+		publishedAt: t.timestamp("published_at"),
+		archivedAt: t.timestamp("archived_at"),
+		deletedAt: t.timestamp("deleted_at"),
+		createdAt: t.timestamp("created_at").notNull().defaultNow(),
+		updatedAt: t.timestamp("updated_at").notNull().defaultNow(),
+	}),
+	t => [
+		index("discover_gubat_entries_type_status_published_idx").on(t.type, t.status, t.publishedAt),
+		index("discover_gubat_entries_category_idx").on(t.category),
+	]
+)
+
+export const discoverGubatPhotos = createTable("discover_gubat_photos", t => ({
+	id: t.serial("id").primaryKey(),
+	discoverGubatEntryId: t
+		.integer("discover_gubat_entry_id")
+		.notNull()
+		.references(() => discoverGubatEntries.id, { onDelete: "cascade" }),
+	imageUrl: t.text("image_url").notNull(),
+	altText: t.text("alt_text"),
 	sortOrder: t.integer("sort_order").notNull().default(0),
 	createdAt: t.timestamp("created_at").notNull().defaultNow(),
 }))
@@ -1009,10 +990,10 @@ export const relations = defineRelations(
 		newsArticles,
 		contentPlacements,
 		events,
-		discoverGubatItems,
-		discoverGubatMedia,
 		transparencyItems,
 		transparencyAttachments,
+		discoverGubatEntries,
+		discoverGubatPhotos,
 		citizenReports,
 		citizenReportAttachments,
 		citizenReportStatusHistory,
@@ -1047,10 +1028,6 @@ export const relations = defineRelations(
 			newsArticles: r.many.newsArticles({
 				from: r.users.id,
 				to: r.newsArticles.authorId,
-			}),
-			discoverGubatItems: r.many.discoverGubatItems({
-				from: r.users.id,
-				to: r.discoverGubatItems.authorId,
 			}),
 			citizenReports: r.many.citizenReports({
 				from: r.users.id,
@@ -1178,19 +1155,6 @@ export const relations = defineRelations(
 				to: r.users.id,
 			}),
 		},
-		discoverGubatItems: {
-			author: r.one.users({
-				from: r.discoverGubatItems.authorId,
-				to: r.users.id,
-			}),
-			media: r.many.discoverGubatMedia(),
-		},
-		discoverGubatMedia: {
-			item: r.one.discoverGubatItems({
-				from: r.discoverGubatMedia.discoverGubatItemId,
-				to: r.discoverGubatItems.id,
-			}),
-		},
 		transparencyItems: {
 			author: r.one.users({
 				from: r.transparencyItems.authorId,
@@ -1202,6 +1166,19 @@ export const relations = defineRelations(
 			transparencyItem: r.one.transparencyItems({
 				from: r.transparencyAttachments.transparencyItemId,
 				to: r.transparencyItems.id,
+			}),
+		},
+		discoverGubatEntries: {
+			author: r.one.users({
+				from: r.discoverGubatEntries.authorId,
+				to: r.users.id,
+			}),
+			photos: r.many.discoverGubatPhotos(),
+		},
+		discoverGubatPhotos: {
+			discoverGubatEntry: r.one.discoverGubatEntries({
+				from: r.discoverGubatPhotos.discoverGubatEntryId,
+				to: r.discoverGubatEntries.id,
 			}),
 		},
 		citizenReports: {
@@ -1264,10 +1241,10 @@ export const schema = Object.assign(
 		newsArticles,
 		contentPlacements,
 		events,
-		discoverGubatItems,
-		discoverGubatMedia,
 		transparencyItems,
 		transparencyAttachments,
+		discoverGubatEntries,
+		discoverGubatPhotos,
 		citizenReports,
 		citizenReportAttachments,
 		citizenReportStatusHistory,
