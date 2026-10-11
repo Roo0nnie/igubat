@@ -20,6 +20,7 @@ class GlassSlideToCall extends StatefulWidget {
     this.icon = Icons.call,
     this.color = const Color(0xFFB91C1C),
     this.height = 64,
+    this.onColoredBackground = false,
   });
 
   /// Instructional text shown on the track, e.g. "Slide to call 911".
@@ -36,6 +37,9 @@ class GlassSlideToCall extends StatefulWidget {
 
   /// Overall control height; the thumb is sized to fit inside it.
   final double height;
+
+  /// Renders a white track and thumb so the control reads on a [color] card.
+  final bool onColoredBackground;
 
   @override
   State<GlassSlideToCall> createState() => _GlassSlideToCallState();
@@ -86,6 +90,16 @@ class _GlassSlideToCallState extends State<GlassSlideToCall> {
   @override
   Widget build(BuildContext context) {
     final thumbSize = widget.height - 8;
+    final onColor = widget.onColoredBackground;
+    final trackColor = onColor
+        ? Colors.white.withValues(alpha: 0.18)
+        : widget.color.withValues(alpha: 0.12);
+    final trackBorder = onColor
+        ? Colors.white.withValues(alpha: 0.45)
+        : widget.color.withValues(alpha: 0.3);
+    final labelColor = onColor ? Colors.white : widget.color;
+    final thumbColor = onColor ? Colors.white : widget.color;
+    final thumbIconColor = onColor ? widget.color : Colors.white;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -129,11 +143,12 @@ class _GlassSlideToCallState extends State<GlassSlideToCall> {
           // path to the call.
           onTap: _confirmAndCall,
           child: Container(
+            width: double.infinity,
             height: widget.height,
             decoration: BoxDecoration(
-              color: widget.color.withValues(alpha: 0.12),
+              color: trackColor,
               borderRadius: BorderRadius.circular(widget.height / 2),
-              border: Border.all(color: widget.color.withValues(alpha: 0.3)),
+              border: Border.all(color: trackBorder, width: 1.5),
             ),
             child: Stack(
               alignment: Alignment.center,
@@ -143,15 +158,28 @@ class _GlassSlideToCallState extends State<GlassSlideToCall> {
                 Opacity(
                   opacity: (1 - progress * 1.4).clamp(0.0, 1.0),
                   child: Padding(
-                    padding: EdgeInsets.only(left: thumbSize),
+                    padding: EdgeInsets.only(left: thumbSize + 8, right: 40),
                     child: Text(
                       widget.label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: widget.color,
-                        fontSize: 15,
+                        color: labelColor,
+                        fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        letterSpacing: 0.5,
+                        letterSpacing: 0.3,
                       ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  right: 16,
+                  child: Opacity(
+                    opacity: (1 - progress * 1.4).clamp(0.0, 1.0),
+                    child: Icon(
+                      Icons.keyboard_double_arrow_right_rounded,
+                      color: labelColor.withValues(alpha: 0.8),
+                      size: 24,
                     ),
                   ),
                 ),
@@ -172,11 +200,14 @@ class _GlassSlideToCallState extends State<GlassSlideToCall> {
                         width: thumbSize,
                         height: thumbSize,
                         decoration: BoxDecoration(
-                          color: widget.color,
+                          color: thumbColor,
                           shape: BoxShape.circle,
-                          boxShadow: GlassTokens.ambientShadow(),
+                          boxShadow: GlassTokens.ambientShadow(
+                            color: Colors.black,
+                            opacity: 0.18,
+                          ),
                         ),
-                        child: Icon(widget.icon, color: Colors.white, size: 26),
+                        child: Icon(widget.icon, color: thumbIconColor, size: 26),
                       ),
                     ),
                   ),

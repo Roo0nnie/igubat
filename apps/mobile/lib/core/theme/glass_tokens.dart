@@ -18,6 +18,8 @@ class GlassTheme extends ThemeExtension<GlassTheme> {
     required this.navTint,
     required this.textOnGlass,
     required this.textOnGlassMuted,
+    required this.brandOnGlass,
+    required this.dangerOnGlass,
   });
 
   final bool isDark;
@@ -34,6 +36,13 @@ class GlassTheme extends ThemeExtension<GlassTheme> {
   final Color textOnGlass;
   final Color textOnGlassMuted;
 
+  /// Brand green for text, icons, and outlines that sit directly on glass.
+  /// Must keep 4.5:1 contrast against the mode's background.
+  final Color brandOnGlass;
+
+  /// Emergency red for text and icons that sit directly on glass.
+  final Color dangerOnGlass;
+
   static const light = GlassTheme(
     isDark: false,
     surfaceLight: Color(0xB8FFFFFF),
@@ -48,6 +57,8 @@ class GlassTheme extends ThemeExtension<GlassTheme> {
     navTint: Color(0xE60F3D26),
     textOnGlass: Color(0xFF1E293B),
     textOnGlassMuted: Color(0xFF64748B),
+    brandOnGlass: Color(0xFF0F3D26),
+    dangerOnGlass: Color(0xFFB91C1C),
   );
 
   static const dark = GlassTheme(
@@ -63,8 +74,19 @@ class GlassTheme extends ThemeExtension<GlassTheme> {
     gradientEnd: Color(0xFF142818),
     navTint: Color(0xF20A2E1C),
     textOnGlass: Color(0xFFF1F5F9),
-    textOnGlassMuted: Color(0xFF94A3B8),
+    textOnGlassMuted: Color(0xFFA8B5C7),
+    brandOnGlass: Color(0xFFA5D46A),
+    dangerOnGlass: Color(0xFFF87171),
   );
+
+  /// Returns [color] adjusted so it stays legible as text on this theme's
+  /// glass surfaces (dark brand colors are lightened in dark mode).
+  Color readable(Color color) {
+    if (!isDark) return color;
+    final luminance = color.computeLuminance();
+    if (luminance >= 0.25) return color;
+    return Color.lerp(color, Colors.white, luminance < 0.05 ? 0.6 : 0.45)!;
+  }
 
   Color surfaceFor(GlassIntensity intensity) {
     switch (intensity) {
@@ -103,6 +125,8 @@ class GlassTheme extends ThemeExtension<GlassTheme> {
     Color? navTint,
     Color? textOnGlass,
     Color? textOnGlassMuted,
+    Color? brandOnGlass,
+    Color? dangerOnGlass,
   }) {
     return GlassTheme(
       isDark: isDark ?? this.isDark,
@@ -118,6 +142,8 @@ class GlassTheme extends ThemeExtension<GlassTheme> {
       navTint: navTint ?? this.navTint,
       textOnGlass: textOnGlass ?? this.textOnGlass,
       textOnGlassMuted: textOnGlassMuted ?? this.textOnGlassMuted,
+      brandOnGlass: brandOnGlass ?? this.brandOnGlass,
+      dangerOnGlass: dangerOnGlass ?? this.dangerOnGlass,
     );
   }
 
@@ -138,6 +164,8 @@ class GlassTheme extends ThemeExtension<GlassTheme> {
       navTint: Color.lerp(navTint, other.navTint, t)!,
       textOnGlass: Color.lerp(textOnGlass, other.textOnGlass, t)!,
       textOnGlassMuted: Color.lerp(textOnGlassMuted, other.textOnGlassMuted, t)!,
+      brandOnGlass: Color.lerp(brandOnGlass, other.brandOnGlass, t)!,
+      dangerOnGlass: Color.lerp(dangerOnGlass, other.dangerOnGlass, t)!,
     );
   }
 }
@@ -156,11 +184,19 @@ class GlassTokens {
   static const Color primaryGreen = Color(0xFF0F3D26);
   static const Color secondaryGreen = Color(0xFF7DB343);
   static const Color accentGreen = Color(0xFF1B5E3C);
+  static const Color emergencyRed = Color(0xFFB91C1C);
+  static const Color emergencyRedDeep = Color(0xFF7F1D1D);
 
   static const LinearGradient accentGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [primaryGreen, accentGreen, secondaryGreen],
+  );
+
+  static const LinearGradient emergencyGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFFDC2626), emergencyRed, emergencyRedDeep],
   );
 
   static List<BoxShadow> ambientShadow({Color? color, double opacity = 0.12}) {

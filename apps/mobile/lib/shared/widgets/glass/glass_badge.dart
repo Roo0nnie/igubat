@@ -19,7 +19,7 @@ class GlassBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final badgeColor = color ?? GlassTokens.secondaryGreen;
+    final badgeColor = glassThemeOf(context).readable(color ?? GlassTokens.secondaryGreen);
 
     return GlassSurface(
       intensity: GlassIntensity.subtle,

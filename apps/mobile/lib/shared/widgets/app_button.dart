@@ -6,6 +6,7 @@ class AppButton extends StatelessWidget {
   final Widget child;
   final bool isSecondary;
   final bool isLoading;
+  final String? loadingLabel;
 
   const AppButton({
     super.key,
@@ -13,6 +14,7 @@ class AppButton extends StatelessWidget {
     required this.child,
     this.isSecondary = false,
     this.isLoading = false,
+    this.loadingLabel,
   });
 
   @override
@@ -37,22 +39,37 @@ class AppButton extends StatelessWidget {
           style: FilledButton.styleFrom(
             backgroundColor: color,
             foregroundColor: onColor,
-            disabledBackgroundColor: color.withOpacity(0.5),
-            disabledForegroundColor: onColor.withOpacity(0.5),
+            disabledBackgroundColor: color.withValues(alpha: 0.5),
+            disabledForegroundColor: onColor.withValues(alpha: 0.5),
             shape: RoundedRectangleBorder(
               borderRadius: AppRadii.smallRadius,
             ),
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s24),
             elevation: 0,
           ),
-          child: isLoading 
-              ? SizedBox(
-                  height: 24, 
-                  width: 24, 
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2, 
-                    color: onColor,
-                  ),
+          child: isLoading
+              ? Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: onColor,
+                      ),
+                    ),
+                    if (loadingLabel != null) ...[
+                      const SizedBox(width: AppSpacing.s12),
+                      Text(
+                        loadingLabel!,
+                        style: theme.textTheme.bodyLarge!.copyWith(
+                          color: onColor,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ],
                 )
               : DefaultTextStyle(
                   style: theme.textTheme.bodyLarge!.copyWith(

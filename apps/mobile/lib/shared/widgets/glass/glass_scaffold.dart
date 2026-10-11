@@ -156,6 +156,17 @@ class _GlassAppBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final canGoBack =
+        ModalRoute.of(context)?.impliesAppBarDismissal ?? false;
+    final effectiveLeading = leading ??
+        (canGoBack
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+                tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+                onPressed: () => Navigator.of(context).maybePop(),
+              )
+            : null);
+
     return GlassToolbarShell(
       isDark: isDark,
       child: SafeArea(
@@ -165,7 +176,7 @@ class _GlassAppBar extends StatelessWidget {
           child: SizedBox(
             height: kToolbarHeight,
             child: NavigationToolbar(
-              leading: leading,
+              leading: effectiveLeading,
               middle: Text(
                 title,
                 style: const TextStyle(
