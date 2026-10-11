@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useMutation } from "@tanstack/react-query"
 
 import { Button } from "@/core/components/ui/button"
 import {
@@ -13,6 +14,7 @@ import {
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/core/components/ui/field"
 import { Input } from "@/core/components/ui/input"
 import { Textarea } from "@/core/components/ui/textarea"
+import { orpc } from "@/services/orpc/client"
 
 type FormState = "idle" | "submitting" | "success" | "error"
 
@@ -37,21 +39,30 @@ export default function SubmitTicketPage() {
 
 function SubmitTicketForm() {
 	const [state, setState] = useState<FormState>("idle")
+	const submitTicket = useMutation(orpc.ticket.submit.mutationOptions())
 
 	return (
 		<form
 			onSubmit={async event => {
 				event.preventDefault()
-				const formData = new FormData(event.currentTarget)
+				const form = event.currentTarget
+				const formData = new FormData(form)
 
 				setState("submitting")
 				try {
-					// Replace this placeholder with an oRPC mutation or REST call to the backend.
-					const payload = Object.fromEntries(formData.entries())
-					await new Promise(resolve => setTimeout(resolve, 800))
-					void payload
+					await submitTicket.mutateAsync({
+						name: String(formData.get("name") ?? ""),
+						email: String(formData.get("email") ?? ""),
+						subject: String(formData.get("subject") ?? ""),
+						priority: String(formData.get("priority") ?? "medium") as
+							| "low"
+							| "medium"
+							| "high"
+							| "urgent",
+						concern: String(formData.get("concern") ?? ""),
+					})
 					setState("success")
-					event.currentTarget.reset()
+					form.reset()
 				} catch {
 					setState("error")
 				}
@@ -96,15 +107,19 @@ function SubmitTicketForm() {
 					/>
 				</Field>
 				<FieldDescription className="text-muted-foreground text-xs">
-					All submissions are handled by the NestJS tickets module. Wire this mock form to the API
-					to persist real data.
+					All submissions are handled by the NestJS tickets module and saved to the backend.
 				</FieldDescription>
-				<Button type="submit" disabled={state === "submitting"} className="w-full">
-					{state === "submitting" ? "Submitting..." : "Submit Ticket"}
+				<Button
+					type="submit"
+					loading={state === "submitting"}
+					loadingText="Submitting your ticket..."
+					className="w-full"
+				>
+					Submit Ticket
 				</Button>
 				{state === "success" && (
 					<p role="status" className="text-sm text-emerald-600">
-						Ticket submitted! Replace the placeholder handler to persist it.
+						Ticket submitted and saved.
 					</p>
 				)}
 				{state === "error" && (
