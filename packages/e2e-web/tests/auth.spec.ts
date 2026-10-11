@@ -17,8 +17,8 @@ test.describe("login page", () => {
 		await expect(page.getByLabel("Password", { exact: true })).toBeVisible()
 	})
 
-	test("has a login submit button", async ({ page }) => {
-		await expect(page.getByRole("button", { name: /^login$/i })).toBeVisible()
+	test("has a sign in submit button", async ({ page }) => {
+		await expect(page.getByRole("button", { name: /^sign in$/i })).toBeVisible()
 	})
 
 	test("has a link to the register page", async ({ page }) => {
@@ -37,21 +37,23 @@ test.describe("login page", () => {
 
 		await page.getByLabel(/email/i).fill("test@gmail.com")
 		await page.getByLabel("Password", { exact: true }).fill("WrongPassword123")
-		await page.getByRole("button", { name: /^login$/i }).click()
+		await page.getByRole("button", { name: /^sign in$/i }).click()
 
 		await expect(page).toHaveURL(/\/login/)
 		// Error banner is a red/destructive block; we assert by its message rather than styling.
 		await expect(page.getByText(/failed to sign in|invalid|incorrect|unauthorized/i)).toBeVisible()
 	})
 
-	test("blocks submit with invalid email / missing password (native validation)", async ({ page }) => {
+	test("blocks submit with invalid email / missing password (native validation)", async ({
+		page,
+	}) => {
 		const email = page.getByLabel(/email/i)
 		const password = page.getByLabel("Password", { exact: true })
 
 		await email.fill("not-an-email")
 		await password.fill("")
 
-		await page.getByRole("button", { name: /^login$/i }).click()
+		await page.getByRole("button", { name: /^sign in$/i }).click()
 		await expect(page).toHaveURL(/\/login/)
 
 		// Login form uses native constraints (type=email + required). Assert validity states.

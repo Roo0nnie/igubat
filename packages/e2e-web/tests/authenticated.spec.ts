@@ -36,7 +36,7 @@ test.describe("authenticated home page", () => {
 			baseURL: authApi,
 			extraHTTPHeaders: {
 				"Content-Type": "application/json",
-				Origin: webOrigin,
+				"Origin": webOrigin,
 			},
 		})
 
@@ -63,7 +63,9 @@ test.describe("authenticated dashboard", () => {
 
 	test("shows the Dashboard breadcrumb", async ({ page }) => {
 		await page.goto("/dashboard")
-		await expect(page.locator('[data-slot="breadcrumb-page"]', { hasText: /dashboard/i })).toBeVisible()
+		await expect(
+			page.locator('[data-slot="breadcrumb-page"]', { hasText: /dashboard/i })
+		).toBeVisible()
 	})
 })
 
@@ -84,7 +86,7 @@ test.describe("authenticated session page", () => {
 
 	test("server session is not null", async ({ page }) => {
 		// Session JSON is rendered inside a <pre> in the ServerSession component.
-		await expect(page.locator("pre").first()).not.toContainText("\"null\"")
+		await expect(page.locator("pre").first()).not.toContainText('"null"')
 	})
 
 	test("server session includes user email", async ({ page }) => {
