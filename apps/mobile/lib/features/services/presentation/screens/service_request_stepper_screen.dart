@@ -170,11 +170,11 @@ class _ServiceRequestStepperScreenState
               if (_step > 0 && _step != lastIndex) const SizedBox(width: 12),
               Expanded(
                 child: GlassButton(
-                  label: _submitting
-                      ? 'Submitting...'
-                      : (_step == lastIndex ? 'Done' : 'Continue'),
+                  label: _step == lastIndex ? 'Done' : 'Continue',
+                  loadingLabel: 'Submitting request...',
+                  isLoading: _submitting,
                   icon: _step == lastIndex ? Icons.check : Icons.arrow_forward,
-                  onPressed: _submitting ? null : () => _onPrimaryPressed(steps),
+                  onPressed: () => _onPrimaryPressed(steps),
                 ),
               ),
             ],

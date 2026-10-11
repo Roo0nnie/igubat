@@ -6,7 +6,9 @@ import '../../../../core/theme/glass_tokens.dart';
 import '../../../../shared/widgets/glass/glass_badge.dart';
 import '../../../../shared/widgets/glass/glass_card.dart';
 import '../../../../shared/widgets/glass/glass_scaffold.dart';
+import '../../../../shared/widgets/glass/glass_skeleton.dart';
 import '../../../../shared/widgets/glass/glass_surface.dart';
+import '../../../../shared/widgets/states/app_state_views.dart';
 import '../../../service_requests/domain/entities/request_status_change.dart';
 import '../../../service_requests/domain/entities/service_request.dart';
 import '../../../service_requests/domain/entities/service_request_status.dart';
@@ -50,20 +52,26 @@ class RequestDetailsScreen extends ConsumerWidget {
         await ref.read(serviceRequestDetailProvider(requestId).future);
       },
       body: detailAsync.when(
-        loading: () => const Center(
-          child: Padding(
-            padding: EdgeInsets.symmetric(vertical: 64),
-            child: CircularProgressIndicator(),
+        loading: () => StateScrollView(
+          padding: const EdgeInsets.all(24),
+          child: LoadingStateView(
+            message: 'Loading request details...',
+            skeleton: const Column(
+              children: [
+                GlassSkeletonCard(imageHeight: 0),
+                SizedBox(height: 16),
+                GlassSkeletonList(count: 3),
+              ],
+            ),
+            onRetry: () => ref.invalidate(serviceRequestDetailProvider(requestId)),
           ),
         ),
-        error: (_, _) => Center(
-          child: Padding(
-            padding: const EdgeInsets.all(32),
-            child: Text(
-              'Could not load this request. Pull down to retry.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: glass.textOnGlassMuted),
-            ),
+        error: (error, _) => StateScrollView(
+          padding: const EdgeInsets.all(24),
+          child: ErrorStateView(
+            title: 'Unable to load this request',
+            error: error,
+            onRetry: () => ref.invalidate(serviceRequestDetailProvider(requestId)),
           ),
         ),
         data: (request) => _buildContent(context, glass, request),

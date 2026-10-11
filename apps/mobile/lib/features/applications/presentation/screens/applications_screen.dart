@@ -8,33 +8,18 @@ import '../../../../core/navigation/glass_page_route.dart';
 import '../../../../shared/widgets/glass/glass_background.dart';
 import '../../../../shared/widgets/glass/glass_badge.dart';
 import '../../../../shared/widgets/glass/glass_card.dart';
+import '../../../../shared/widgets/glass/glass_skeleton.dart';
 import '../../../../shared/widgets/glass/glass_surface.dart';
+import '../../../../shared/widgets/states/app_state_views.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../service_requests/domain/entities/service_request.dart';
-import '../../../service_requests/domain/entities/service_request_status.dart';
 import '../../../service_requests/presentation/providers/service_requests_provider.dart';
+import '../../../service_requests/presentation/service_request_status_color.dart';
 import '../../../services/presentation/screens/request_details_screen.dart';
 
 /// The citizen's "My Requests" list, backed by live `/me/requests` data.
 class ApplicationsScreen extends ConsumerWidget {
   const ApplicationsScreen({super.key});
-
-  Color _statusColor(ServiceRequestStatus status) {
-    switch (status) {
-      case ServiceRequestStatus.approved:
-      case ServiceRequestStatus.completed:
-        return AppTheme.primaryColor;
-      case ServiceRequestStatus.forPickup:
-        return const Color(0xFF2563EB);
-      case ServiceRequestStatus.pending:
-      case ServiceRequestStatus.inReview:
-        return const Color(0xFFD97706);
-      case ServiceRequestStatus.rejected:
-        return const Color(0xFFB91C1C);
-      case ServiceRequestStatus.unknown:
-        return Colors.grey;
-    }
-  }
 
   IconData _serviceIcon(String serviceType) {
     final t = serviceType.toLowerCase();
@@ -76,7 +61,12 @@ class ApplicationsScreen extends ConsumerWidget {
           icon: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 20),
           onPressed: () => Navigator.of(context).maybePop(),
         ),
-        title: const IgubatLogo(height: 24, darkText: false),
+        title: IgubatLogo(
+          height: 36,
+          tapHint: 'Go to Home',
+          onTap: () =>
+              Navigator.of(context).popUntil((route) => route.isFirst),
+        ),
         centerTitle: true,
       ),
       body: GlassBackground(
@@ -131,22 +121,22 @@ class ApplicationsScreen extends ConsumerWidget {
               SliverPadding(
                 padding: const EdgeInsets.all(20),
                 sliver: requestsAsync.when(
-                  loading: () => const SliverToBoxAdapter(
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(vertical: 64),
-                      child: Center(child: CircularProgressIndicator()),
+                  loading: () => SliverToBoxAdapter(
+                    child: LoadingStateView(
+                      message: 'Loading your requests...',
+                      skeleton: const GlassSkeletonList(count: 4),
+                      onRetry: () => ref
+                          .read(serviceRequestsControllerProvider.notifier)
+                          .reload(),
                     ),
                   ),
-                  error: (_, _) => SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 64),
-                      child: Center(
-                        child: Text(
-                          'Could not load your requests.\nPull down to retry.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: glass.textOnGlassMuted),
-                        ),
-                      ),
+                  error: (error, _) => SliverToBoxAdapter(
+                    child: ErrorStateView(
+                      title: 'Unable to load your requests',
+                      error: error,
+                      onRetry: () => ref
+                          .read(serviceRequestsControllerProvider.notifier)
+                          .reload(),
                     ),
                   ),
                   data: (requests) {
@@ -220,7 +210,7 @@ class ApplicationsScreen extends ConsumerWidget {
     ServiceRequest request,
     GlassTheme glass,
   ) {
-    final statusColor = _statusColor(request.status);
+    final statusColor = request.status.color;
 
     return GlassCard(
       onTap: () {
