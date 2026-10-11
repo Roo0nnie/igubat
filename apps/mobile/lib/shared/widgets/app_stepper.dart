@@ -38,7 +38,7 @@ class AppStepper extends StatelessWidget {
                       return Expanded(
                         child: Container(
                           height: 2,
-                          color: isActive ? activeColor : inactiveColor.withOpacity(0.3),
+                          color: isActive ? activeColor : inactiveColor.withValues(alpha: 0.3),
                         ),
                       );
                     },
@@ -65,7 +65,7 @@ class AppStepper extends StatelessWidget {
                               color: isActive ? activeColor : Colors.white,
                               shape: BoxShape.circle,
                               border: Border.all(
-                                color: isActive ? activeColor : inactiveColor.withOpacity(0.5),
+                                color: isActive ? activeColor : inactiveColor.withValues(alpha: 0.5),
                                 width: 2,
                               ),
                             ),

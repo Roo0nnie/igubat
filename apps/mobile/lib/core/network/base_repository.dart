@@ -1,5 +1,3 @@
-import 'package:fpdart/fpdart.dart';
-
 import '../error/error_mapper.dart';
 import '../error/exceptions.dart';
 import '../usecases/result.dart';

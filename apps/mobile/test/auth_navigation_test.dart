@@ -95,19 +95,19 @@ void main() {
         routes: [
           GoRoute(
             path: AppRoutes.login,
-            builder: (_, __) => const LoginScreen(),
+            builder: (_, _) => const LoginScreen(),
           ),
           GoRoute(
             path: AppRoutes.register,
-            builder: (_, __) => const RegisterScreen(),
+            builder: (_, _) => const RegisterScreen(),
           ),
           GoRoute(
             path: AppRoutes.otp,
-            builder: (_, __) => const OtpScreen(),
+            builder: (_, _) => const OtpScreen(),
           ),
           GoRoute(
             path: AppRoutes.home,
-            builder: (_, __) => const _ContinuationProbe(),
+            builder: (_, _) => const _ContinuationProbe(),
           ),
         ],
       );

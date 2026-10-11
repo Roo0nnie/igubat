@@ -84,14 +84,14 @@ class _AppTextFieldState extends State<AppTextField> {
           textInputAction: widget.textInputAction,
           autofillHints: widget.autofillHints,
           style: theme.textTheme.bodyLarge?.copyWith(
-            color: theme.colorScheme.onSurface.withOpacity(0.9),
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.9),
           ),
           decoration: InputDecoration(
             labelText: widget.labelText,
             hintText: widget.hintText,
             prefixIcon: widget.prefixIcon != null ? IconTheme(
               data: IconThemeData(
-                color: _isFocused ? theme.colorScheme.primary : theme.colorScheme.onSurface.withOpacity(0.6),
+                color: _isFocused ? theme.colorScheme.primary : theme.colorScheme.onSurface.withValues(alpha: 0.6),
               ),
               child: widget.prefixIcon!,
             ) : null,
@@ -106,7 +106,7 @@ class _AppTextFieldState extends State<AppTextField> {
               color: _errorText != null ? theme.colorScheme.error : theme.colorScheme.primary,
             ),
             labelStyle: theme.textTheme.bodyLarge?.copyWith(
-              color: theme.colorScheme.onSurface.withOpacity(0.6),
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
             ),
             errorStyle: const TextStyle(height: 0, fontSize: 0),
           ),

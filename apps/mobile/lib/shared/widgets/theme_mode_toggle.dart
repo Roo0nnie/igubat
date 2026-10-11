@@ -244,7 +244,6 @@ class ThemeModePopupMenu extends ConsumerWidget {
       ThemeMode.system => Icons.brightness_auto,
       ThemeMode.light => Icons.light_mode,
       ThemeMode.dark => Icons.dark_mode,
-      _ => Icons.brightness_auto,
     };
 
     return PopupMenuButton<ThemeMode>(
@@ -302,7 +301,6 @@ class ThemeModeListTile extends ConsumerWidget {
       ThemeMode.system => Icons.brightness_auto,
       ThemeMode.light => Icons.light_mode,
       ThemeMode.dark => Icons.dark_mode,
-      _ => Icons.brightness_auto,
     };
 
     return ListTile(
@@ -311,7 +309,7 @@ class ThemeModeListTile extends ConsumerWidget {
       subtitle: Text(displayName),
       trailing: Icon(
         Icons.chevron_right,
-        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
+        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3),
       ),
       onTap: () => _showThemeModeSheet(context, ref, themeMode),
     );

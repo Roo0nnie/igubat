@@ -24,7 +24,7 @@ class HelpSupportScreen extends StatelessWidget {
       body: ListView.separated(
         padding: const EdgeInsets.all(24),
         itemCount: articles.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 12),
+        separatorBuilder: (_, _) => const SizedBox(height: 12),
         itemBuilder: (context, index) {
           final article = articles[index];
           return GlassCard(
