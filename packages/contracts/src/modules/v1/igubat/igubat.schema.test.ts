@@ -1,12 +1,19 @@
 import { describe, expect, it } from "vitest"
 
 import {
+	CreateDiscoverGubatItemSchema,
 	CreateTransparencyItemSchema,
+	DateLikeSchema,
+	DEFAULT_COMMUNITY_STATS,
 	DeleteTransparencyItemSchema,
+	DiscoverGubatItemDetailSchema,
+	DiscoverGubatItemSummarySchema,
 	NotificationPreferenceSchema,
 	TransparencyItemDetailSchema,
 	TransparencyItemSummarySchema,
 	TransparencyMetadataSchema,
+	UpdateCommunityStatsSchema,
+	UpdateDiscoverGubatItemSchema,
 } from "./igubat.schema"
 
 describe("Transparency contracts", () => {
@@ -117,6 +124,7 @@ describe("Transparency contracts", () => {
 			news: true,
 			serviceRequests: true,
 			issueReports: true,
+			discoverGubat: true,
 			emergencyBroadcasts: true,
 			transparency: false,
 			pushEnabled: true,
@@ -124,5 +132,127 @@ describe("Transparency contracts", () => {
 		})
 
 		expect(result.transparency).toBe(false)
+	})
+})
+
+describe("Discover Gubat contracts", () => {
+	it("keeps public summaries lighter than detail payloads", () => {
+		const base = {
+			id: 7,
+			type: "tourist_spot",
+			category: "beaches_surfing",
+			title: "Rizal Beach",
+			slug: "rizal-beach",
+			summary: "A public beach destination",
+			status: "published",
+			featuredImageUrl: null,
+			featuredImageAlt: null,
+			locationName: "Rizal Beach",
+			locationAddress: "Gubat, Sorsogon",
+			latitude: null,
+			longitude: null,
+			whereToBuy: null,
+			priceRange: null,
+			contactInfo: null,
+			authorId: "admin-user",
+			scheduledAt: null,
+			publishedAt: new Date("2026-01-01T00:00:00.000Z"),
+			archivedAt: null,
+			createdAt: new Date("2026-01-01T00:00:00.000Z"),
+			updatedAt: new Date("2026-01-01T00:00:00.000Z"),
+		} as const
+
+		const summary = DiscoverGubatItemSummarySchema.parse({
+			...base,
+			body: "Full detail body",
+			media: [],
+		})
+		const detail = DiscoverGubatItemDetailSchema.parse({
+			...base,
+			body: "Full detail body",
+			media: [],
+			notifyOnPublish: false,
+		})
+
+		expect("body" in summary).toBe(false)
+		expect("media" in summary).toBe(false)
+		expect(detail.body).toBe("Full detail body")
+	})
+
+	it("requires local product fields only for local product entries", () => {
+		const result = CreateDiscoverGubatItemSchema.safeParse({
+			type: "local_product",
+			category: "delicacies_kakanin",
+			title: "Pili Tart",
+			slug: "pili-tart",
+			body: "Local delicacy from Gubat.",
+		})
+
+		expect(result.success).toBe(false)
+
+		const complete = CreateDiscoverGubatItemSchema.parse({
+			type: "local_product",
+			category: "delicacies_kakanin",
+			title: "Pili Tart",
+			slug: "pili-tart",
+			body: "Local delicacy from Gubat.",
+			whereToBuy: "Gubat Public Market",
+		})
+
+		expect(complete.whereToBuy).toBe("Gubat Public Market")
+	})
+
+	it("requires a location name for tourist and festival entries", () => {
+		const result = CreateDiscoverGubatItemSchema.safeParse({
+			type: "tourist_spot",
+			category: "beaches_surfing",
+			title: "Rizal Beach",
+			slug: "rizal-beach",
+			locationName: "   ",
+		})
+
+		expect(result.success).toBe(false)
+		expect(result.error?.issues[0]?.path).toEqual(["locationName"])
+
+		const update = UpdateDiscoverGubatItemSchema.parse({
+			id: "7",
+			type: "festival_culture",
+			locationName: "Gubat Town Plaza",
+		})
+
+		expect(update).toMatchObject({ id: 7, locationName: "Gubat Town Plaza" })
+	})
+})
+
+describe("Community stats contracts", () => {
+	it("accepts the default community stats configuration", () => {
+		expect(UpdateCommunityStatsSchema.parse({ stats: DEFAULT_COMMUNITY_STATS }).stats).toHaveLength(
+			DEFAULT_COMMUNITY_STATS.length
+		)
+	})
+
+	it("rejects duplicate stat keys", () => {
+		const result = UpdateCommunityStatsSchema.safeParse({
+			stats: [
+				{ key: "pending_requests", label: "Pending", enabled: true },
+				{ key: "pending_requests", label: "Pending again", enabled: false },
+			],
+		})
+
+		expect(result.success).toBe(false)
+	})
+})
+
+describe("Shared contract helpers", () => {
+	it("coerces date strings into Date instances", () => {
+		const parsed = DateLikeSchema.parse("2026-01-01T00:00:00.000Z")
+
+		expect(parsed).toBeInstanceOf(Date)
+		expect(parsed.toISOString()).toBe("2026-01-01T00:00:00.000Z")
+	})
+
+	it("accepts native boolean and rejects non-string permanent delete flags", () => {
+		expect(DeleteTransparencyItemSchema.parse({ id: 3, permanent: true }).permanent).toBe(true)
+		expect(DeleteTransparencyItemSchema.safeParse({ id: 3, permanent: 1 }).success).toBe(false)
 	})
 })

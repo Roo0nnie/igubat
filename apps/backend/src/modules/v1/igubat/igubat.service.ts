@@ -5,8 +5,14 @@ import {
 	NotFoundException,
 } from "@nestjs/common"
 import { randomBytes, scryptSync } from "node:crypto"
-import { asc, desc, eq } from "drizzle-orm"
+import { and, asc, desc, eq, gte, isNull, or } from "drizzle-orm"
+import { z } from "zod"
 
+import {
+	COMMUNITY_STATS_SETTING_KEY,
+	CommunityStatConfigSchema,
+	DEFAULT_COMMUNITY_STATS,
+} from "@repo/contracts"
 import {
 	accounts,
 	auditLogs,
@@ -14,6 +20,8 @@ import {
 	citizenReports,
 	citizenReportStatusHistory,
 	contentPlacements,
+	discoverGubatItems,
+	discoverGubatMedia,
 	emergencyBroadcasts,
 	emergencyDirectory,
 	events,
@@ -48,6 +56,15 @@ type UpdateRequestStatusInput = V1Inputs["igubat"]["admin"]["updateRequestStatus
 type UpdateReportStatusInput = V1Inputs["igubat"]["admin"]["updateReportStatus"]
 type CreateBroadcastInput = V1Inputs["igubat"]["admin"]["createBroadcast"]
 type CreateStaffInput = V1Inputs["igubat"]["admin"]["createStaff"]
+type DiscoverGubatListQuery = NonNullable<V1Inputs["igubat"]["public"]["discoverGubat"]["list"]>
+type CreateDiscoverGubatInput = V1Inputs["igubat"]["admin"]["discoverGubat"]["create"]
+type UpdateDiscoverGubatInput = V1Inputs["igubat"]["admin"]["discoverGubat"]["update"]
+type PublishDiscoverGubatInput = V1Inputs["igubat"]["admin"]["discoverGubat"]["publish"]
+type DeleteDiscoverGubatInput = V1Inputs["igubat"]["admin"]["discoverGubat"]["delete"]
+type UpsertEventInput = V1Inputs["igubat"]["admin"]["upsertEvent"]
+type UpdateCommunityStatsInput = V1Inputs["igubat"]["admin"]["updateCommunityStats"]
+type CommunityStatConfig = z.infer<typeof CommunityStatConfigSchema>
+type CommunityStatKey = CommunityStatConfig["key"]
 
 const ADMIN_ROLES = new Set(["ict_admin", "super_admin"])
 const STAFF_ROLES = new Set([
@@ -176,25 +193,87 @@ export class IgubatService {
 	}
 
 	async publicDashboard() {
-		const [allUsers, requests, reports, articles, services, upcomingEvents] = await Promise.all([
-			db.select().from(users),
-			this.requestRows(),
-			this.reportRows(),
-			db.select().from(newsArticles).where(eq(newsArticles.status, "published")),
-			db.select().from(serviceTypes).where(eq(serviceTypes.isActive, true)),
-			db.select().from(events).where(eq(events.status, "published")).orderBy(asc(events.startsAt)),
-		])
+		const [allUsers, requests, reports, articles, services, upcomingEvents, statsConfig] =
+			await Promise.all([
+				db.select().from(users),
+				this.requestRows(),
+				this.reportRows(),
+				db
+					.select()
+					.from(newsArticles)
+					.where(and(eq(newsArticles.status, "published"), isNull(newsArticles.deletedAt))),
+				db.select().from(serviceTypes).where(eq(serviceTypes.isActive, true)),
+				this.listEvents(),
+				this.communityStatsConfig(),
+			])
 
-		return {
+		const totals = {
 			totalUsers: allUsers.filter(user => user.role === "registered_citizen").length,
 			pendingRequests: requests.filter(request => request.status === "pending").length,
 			activeServices: services.length,
 			newReports: reports.filter(report => report.status === "received").length,
 			publishedAnnouncements: articles.length,
+		}
+		const values: Record<CommunityStatKey, number> = {
+			registered_citizens: totals.totalUsers,
+			pending_requests: totals.pendingRequests,
+			completed_requests: requests.filter(request => request.status === "completed").length,
+			active_services: totals.activeServices,
+			new_reports: totals.newReports,
+			published_news: totals.publishedAnnouncements,
+			upcoming_events: upcomingEvents.length,
+		}
+
+		return {
+			...totals,
 			recentRequests: requests.slice(0, 5),
 			recentReports: reports.slice(0, 5),
 			upcomingEvents: upcomingEvents.slice(0, 5),
+			communityStats: statsConfig
+				.filter(stat => stat.enabled)
+				.map(stat => ({ key: stat.key, label: stat.label, value: values[stat.key] })),
 		}
+	}
+
+	/**
+	 * Admin-configured Community Stats (order, labels, visibility). Falls back to
+	 * defaults when unset/invalid; stats added later are appended disabled.
+	 */
+	private async communityStatsConfig(): Promise<CommunityStatConfig[]> {
+		const [setting] = await db
+			.select()
+			.from(systemSettings)
+			.where(eq(systemSettings.key, COMMUNITY_STATS_SETTING_KEY))
+		const parsed = z.array(CommunityStatConfigSchema).safeParse(setting?.value)
+		if (!parsed.success) return DEFAULT_COMMUNITY_STATS
+		const seen = new Set(parsed.data.map(stat => stat.key))
+		return [
+			...parsed.data,
+			...DEFAULT_COMMUNITY_STATS.filter(stat => !seen.has(stat.key)).map(stat => ({
+				...stat,
+				enabled: false,
+			})),
+		]
+	}
+
+	async getAdminCommunityStats(user: SessionUser) {
+		this.assertStaff(user)
+		return this.communityStatsConfig()
+	}
+
+	async updateCommunityStats(user: SessionUser, input: UpdateCommunityStatsInput) {
+		this.assertStaff(user)
+		await this.upsertSettingValue(user.id, COMMUNITY_STATS_SETTING_KEY, "home", input.stats)
+		await this.audit(user.id, "update", "system_setting", COMMUNITY_STATS_SETTING_KEY)
+		return this.communityStatsConfig()
+	}
+
+	private async upsertSettingValue(actorId: string, key: string, category: string, value: unknown) {
+		const payload = { key, category, value, updatedById: actorId, updatedAt: new Date() }
+		await db
+			.insert(systemSettings)
+			.values(payload)
+			.onConflictDoUpdate({ target: systemSettings.key, set: payload })
 	}
 
 	async listNews(query?: PublicListQuery, includeDrafts = false) {
@@ -224,18 +303,392 @@ export class IgubatService {
 			.orderBy(asc(contentPlacements.sortOrder))
 	}
 
+	/** Published events that haven't ended yet, soonest first. */
 	listEvents() {
+		const now = new Date()
 		return db
 			.select()
 			.from(events)
-			.where(eq(events.status, "published"))
+			.where(
+				and(
+					eq(events.status, "published"),
+					isNull(events.deletedAt),
+					or(gte(events.endsAt, now), and(isNull(events.endsAt), gte(events.startsAt, now)))
+				)
+			)
 			.orderBy(asc(events.startsAt))
 	}
 
 	async getEvent(slug: string) {
 		const [event] = await db.select().from(events).where(eq(events.slug, slug))
-		if (!event || event.status !== "published") throw new NotFoundException("Event not found")
+		if (!event || event.status !== "published" || event.deletedAt) {
+			throw new NotFoundException("Event not found")
+		}
 		return event
+	}
+
+	async listAdminEvents(user: SessionUser, query?: PublicListQuery) {
+		this.assertStaff(user)
+		const rows = await db
+			.select()
+			.from(events)
+			.where(isNull(events.deletedAt))
+			.orderBy(desc(events.startsAt))
+		const search = query?.search?.trim().toLowerCase()
+		return this.filterRows(rows, query).filter(
+			row =>
+				!search || `${row.title} ${row.location} ${row.category}`.toLowerCase().includes(search)
+		)
+	}
+
+	async upsertEvent(user: SessionUser, input: UpsertEventInput) {
+		this.assertStaff(user)
+		const startsAt = new Date(input.startsAt)
+		const endsAt = input.endsAt ? new Date(input.endsAt) : null
+		if (Number.isNaN(startsAt.getTime()) || (endsAt && Number.isNaN(endsAt.getTime()))) {
+			throw new BadRequestException("Invalid event date")
+		}
+		if (endsAt && endsAt < startsAt) {
+			throw new BadRequestException("End date must be after the start date")
+		}
+
+		const [slugOwner] = await db.select().from(events).where(eq(events.slug, input.slug))
+		if (slugOwner && slugOwner.id !== input.id && !slugOwner.deletedAt) {
+			throw new BadRequestException("Another event already uses this slug")
+		}
+
+		const existing = input.id
+			? requireRow(
+					(await db.select().from(events).where(eq(events.id, input.id)))[0],
+					"Event not found"
+				)
+			: undefined
+		const now = new Date()
+		const payload = {
+			title: input.title,
+			slug: input.slug,
+			description: input.description,
+			category: input.category,
+			location: input.location,
+			imageUrl: input.imageUrl || null,
+			status: input.status,
+			startsAt,
+			endsAt,
+			publishedAt:
+				input.status === "published" ? (existing?.publishedAt ?? now) : existing?.publishedAt,
+			archivedAt: input.status === "archived" ? (existing?.archivedAt ?? now) : null,
+			updatedAt: now,
+		}
+		const [event] = existing
+			? await db.update(events).set(payload).where(eq(events.id, existing.id)).returning()
+			: slugOwner?.deletedAt
+				? // Re-use a soft-deleted row so the unique slug can be taken again.
+					await db
+						.update(events)
+						.set({ ...payload, deletedAt: null, authorId: user.id, createdAt: now })
+						.where(eq(events.id, slugOwner.id))
+						.returning()
+				: await db
+						.insert(events)
+						.values({ ...payload, authorId: user.id })
+						.returning()
+		const savedEvent = requireRow(event, "Event was not saved")
+		await this.audit(user.id, existing ? "update" : "create", "event", String(savedEvent.id), {
+			status: input.status,
+		})
+		return savedEvent
+	}
+
+	async deleteEvent(user: SessionUser, id: number) {
+		this.assertStaff(user)
+		const [event] = await db
+			.update(events)
+			.set({ deletedAt: new Date(), updatedAt: new Date() })
+			.where(and(eq(events.id, id), isNull(events.deletedAt)))
+			.returning({ id: events.id })
+		requireRow(event, "Event not found")
+		await this.audit(user.id, "delete", "event", String(id))
+		return { success: true }
+	}
+
+	private filterDiscoverRows(
+		rows: (typeof discoverGubatItems.$inferSelect)[],
+		query?: DiscoverGubatListQuery
+	) {
+		if (!query) return rows
+		const search = query.search?.trim().toLowerCase()
+		const limit = typeof query.limit === "number" ? query.limit : rows.length
+		return rows
+			.filter(row => {
+				if (query.type && row.type !== query.type) return false
+				if (query.category && row.category !== query.category) return false
+				if (query.status && row.status !== query.status) return false
+				if (
+					search &&
+					!`${row.title} ${row.summary ?? ""} ${row.body}`.toLowerCase().includes(search)
+				) {
+					return false
+				}
+				return true
+			})
+			.slice(0, limit)
+	}
+
+	async listDiscoverGubat(query?: DiscoverGubatListQuery, includeDrafts = false) {
+		const rows = await db
+			.select()
+			.from(discoverGubatItems)
+			.orderBy(desc(discoverGubatItems.publishedAt), desc(discoverGubatItems.createdAt))
+		const visible = includeDrafts
+			? rows.filter(row => row.deletedAt === null)
+			: rows.filter(row => row.status === "published" && row.deletedAt === null)
+		return this.filterDiscoverRows(visible, query)
+	}
+
+	async getDiscoverGubatBySlug(slug: string) {
+		const [item] = await db
+			.select()
+			.from(discoverGubatItems)
+			.where(eq(discoverGubatItems.slug, slug))
+		if (!item || item.status !== "published" || item.deletedAt !== null) {
+			throw new NotFoundException("Discover Gubat item not found")
+		}
+		return this.discoverGubatDetail(item.id)
+	}
+
+	async discoverGubatDetail(id: number, user?: SessionUser, includeDrafts = false) {
+		if (user) this.assertStaff(user)
+		const [item] = await db.select().from(discoverGubatItems).where(eq(discoverGubatItems.id, id))
+		if (!item || item.deletedAt !== null || (!includeDrafts && item.status !== "published")) {
+			throw new NotFoundException("Discover Gubat item not found")
+		}
+		const media = await db
+			.select()
+			.from(discoverGubatMedia)
+			.where(eq(discoverGubatMedia.discoverGubatItemId, id))
+			.orderBy(asc(discoverGubatMedia.sortOrder), asc(discoverGubatMedia.id))
+		return { ...item, media }
+	}
+
+	private createDiscoverGubatPayload(
+		input: CreateDiscoverGubatInput
+	): typeof discoverGubatItems.$inferInsert {
+		const status = input.status ?? "draft"
+		return {
+			type: input.type,
+			category: input.category,
+			title: input.title,
+			slug: input.slug,
+			summary: input.summary,
+			body: input.body ?? "",
+			status,
+			featuredImageUrl: input.featuredImageUrl,
+			featuredImageAlt: input.featuredImageAlt,
+			locationName: input.locationName,
+			locationAddress: input.locationAddress,
+			latitude: input.latitude,
+			longitude: input.longitude,
+			whereToBuy: input.whereToBuy,
+			priceRange: input.priceRange,
+			contactInfo: input.contactInfo,
+			notifyOnPublish: input.notifyOnPublish ?? false,
+			scheduledAt: input.scheduledAt ? new Date(input.scheduledAt) : null,
+			publishedAt: status === "published" ? new Date() : null,
+			archivedAt: status === "archived" ? new Date() : null,
+			updatedAt: new Date(),
+		}
+	}
+
+	private updateDiscoverGubatPayload(
+		input: UpdateDiscoverGubatInput
+	): Partial<typeof discoverGubatItems.$inferInsert> {
+		const payload: Partial<typeof discoverGubatItems.$inferInsert> = {
+			updatedAt: new Date(),
+		}
+		if (input.type !== undefined) payload.type = input.type
+		if (input.category !== undefined) payload.category = input.category
+		if (input.title !== undefined) payload.title = input.title
+		if (input.slug !== undefined) payload.slug = input.slug
+		if (input.summary !== undefined) payload.summary = input.summary
+		if (input.body !== undefined) payload.body = input.body
+		if (input.featuredImageUrl !== undefined) payload.featuredImageUrl = input.featuredImageUrl
+		if (input.featuredImageAlt !== undefined) payload.featuredImageAlt = input.featuredImageAlt
+		if (input.locationName !== undefined) payload.locationName = input.locationName
+		if (input.locationAddress !== undefined) payload.locationAddress = input.locationAddress
+		if (input.latitude !== undefined) payload.latitude = input.latitude
+		if (input.longitude !== undefined) payload.longitude = input.longitude
+		if (input.whereToBuy !== undefined) payload.whereToBuy = input.whereToBuy
+		if (input.priceRange !== undefined) payload.priceRange = input.priceRange
+		if (input.contactInfo !== undefined) payload.contactInfo = input.contactInfo
+		if (input.notifyOnPublish !== undefined) payload.notifyOnPublish = input.notifyOnPublish
+		if (input.scheduledAt !== undefined) {
+			payload.scheduledAt = input.scheduledAt ? new Date(input.scheduledAt) : null
+		}
+		if (input.status !== undefined) {
+			payload.status = input.status
+			if (input.status === "draft") {
+				payload.scheduledAt = null
+				payload.publishedAt = null
+				payload.archivedAt = null
+			}
+			if (input.status === "published") {
+				payload.scheduledAt = null
+				payload.publishedAt = new Date()
+				payload.archivedAt = null
+			}
+			if (input.status === "archived") {
+				payload.archivedAt = new Date()
+			}
+		}
+		return payload
+	}
+
+	private async replaceDiscoverGubatMedia(
+		itemId: number,
+		media: CreateDiscoverGubatInput["media"] | UpdateDiscoverGubatInput["media"]
+	) {
+		if (media === undefined) return
+		await db.delete(discoverGubatMedia).where(eq(discoverGubatMedia.discoverGubatItemId, itemId))
+		if (!media.length) return
+		await db.insert(discoverGubatMedia).values(
+			media.map((file, index) => ({
+				discoverGubatItemId: itemId,
+				fileUrl: file.fileUrl,
+				fileName: file.fileName,
+				mimeType: file.mimeType ?? "image/jpeg",
+				sizeBytes: file.sizeBytes ?? 0,
+				altText: file.altText,
+				caption: file.caption,
+				isFeatured: file.isFeatured ?? false,
+				sortOrder: file.sortOrder ?? index,
+			}))
+		)
+	}
+
+	async listAdminDiscoverGubat(user: SessionUser, query?: DiscoverGubatListQuery) {
+		this.assertStaff(user)
+		return this.listDiscoverGubat(query, true)
+	}
+
+	async createDiscoverGubat(user: SessionUser, input: CreateDiscoverGubatInput) {
+		this.assertStaff(user)
+		const [created] = await db
+			.insert(discoverGubatItems)
+			.values({
+				...this.createDiscoverGubatPayload(input),
+				authorId: user.id,
+				publishedById: input.status === "published" ? user.id : null,
+				createdAt: new Date(),
+			})
+			.returning()
+		const item = requireRow(created, "Discover Gubat item was not created")
+		await this.replaceDiscoverGubatMedia(item.id, input.media)
+		await this.audit(user.id, "discover_gubat.create", "discover_gubat_item", String(item.id), {
+			status: item.status,
+		})
+		return this.discoverGubatDetail(item.id, user, true)
+	}
+
+	async updateDiscoverGubat(user: SessionUser, input: UpdateDiscoverGubatInput) {
+		this.assertStaff(user)
+		const id = positiveId(input.id)
+		await this.discoverGubatDetail(id, user, true)
+		const [updated] = await db
+			.update(discoverGubatItems)
+			.set(this.updateDiscoverGubatPayload(input))
+			.where(eq(discoverGubatItems.id, id))
+			.returning()
+		const item = requireRow(updated, "Discover Gubat item was not updated")
+		await this.replaceDiscoverGubatMedia(item.id, input.media)
+		await this.audit(user.id, "discover_gubat.update", "discover_gubat_item", String(item.id), {
+			status: item.status,
+		})
+		return this.discoverGubatDetail(item.id, user, true)
+	}
+
+	async publishDiscoverGubat(user: SessionUser, input: PublishDiscoverGubatInput) {
+		this.assertStaff(user)
+		const id = positiveId(input.id)
+		const item = await this.discoverGubatDetail(id, user, true)
+		const publishAt = input.publishAt ? new Date(input.publishAt) : new Date()
+		const isScheduled = publishAt.getTime() > Date.now()
+		const [updated] = await db
+			.update(discoverGubatItems)
+			.set({
+				status: isScheduled ? "scheduled" : "published",
+				scheduledAt: isScheduled ? publishAt : null,
+				publishedAt: isScheduled ? item.publishedAt : publishAt,
+				publishedById: user.id,
+				notifyOnPublish: input.notifySubscribers,
+				updatedAt: new Date(),
+			})
+			.where(eq(discoverGubatItems.id, id))
+			.returning()
+		const saved = requireRow(updated, "Discover Gubat item was not published")
+		if (!isScheduled && input.notifySubscribers) {
+			await this.notifyDiscoverGubatSubscribers(saved)
+		}
+		await this.audit(
+			user.id,
+			isScheduled ? "discover_gubat.schedule" : "discover_gubat.publish",
+			"discover_gubat_item",
+			String(saved.id)
+		)
+		return this.discoverGubatDetail(saved.id, user, true)
+	}
+
+	async archiveDiscoverGubat(user: SessionUser, id: number) {
+		this.assertStaff(user)
+		await this.discoverGubatDetail(id, user, true)
+		const [updated] = await db
+			.update(discoverGubatItems)
+			.set({ status: "archived", archivedAt: new Date(), updatedAt: new Date() })
+			.where(eq(discoverGubatItems.id, id))
+			.returning()
+		const item = requireRow(updated, "Discover Gubat item was not archived")
+		await this.audit(user.id, "discover_gubat.archive", "discover_gubat_item", String(item.id))
+		return this.discoverGubatDetail(item.id, user, true)
+	}
+
+	async deleteDiscoverGubat(user: SessionUser, input: DeleteDiscoverGubatInput) {
+		this.assertStaff(user)
+		const id = positiveId(input.id)
+		if (input.permanent) this.assertAdmin(user)
+		await this.discoverGubatDetail(id, user, true)
+		if (input.permanent) {
+			await db.delete(discoverGubatItems).where(eq(discoverGubatItems.id, id))
+		} else {
+			await db
+				.update(discoverGubatItems)
+				.set({ deletedAt: new Date(), updatedAt: new Date() })
+				.where(eq(discoverGubatItems.id, id))
+		}
+		await this.audit(
+			user.id,
+			input.permanent ? "discover_gubat.permanent_delete" : "discover_gubat.delete",
+			"discover_gubat_item",
+			String(id)
+		)
+		return { success: true, permanent: input.permanent ?? false }
+	}
+
+	private async notifyDiscoverGubatSubscribers(item: typeof discoverGubatItems.$inferSelect) {
+		const optedIn = await db
+			.select()
+			.from(notificationPreferences)
+			.where(eq(notificationPreferences.discoverGubat, true))
+		if (!optedIn.length) return
+		await db.insert(notifications).values(
+			optedIn.map(preference => ({
+				userId: preference.userId,
+				title: `New Discover Gubat item: ${item.title}`,
+				body: item.summary ?? "A new Discover Gubat item has been published.",
+				type: "in_app" as const,
+				category: "discover_gubat" as const,
+				deepLink: `/discover-gubat/${item.slug}`,
+				metadata: { entityType: "discover_gubat_item", entityId: String(item.id) },
+			}))
+		)
 	}
 
 	listServiceCategories() {
@@ -322,9 +775,20 @@ export class IgubatService {
 		input: V1Inputs["igubat"]["me"]["updateNotificationPreferences"]
 	) {
 		await this.getNotificationPreferences(user)
+		const { emergencyOptOutConfirmedAt, ...preferences } = input
 		const [updated] = await db
 			.update(notificationPreferences)
-			.set({ ...input, updatedAt: new Date() })
+			.set({
+				...preferences,
+				...(emergencyOptOutConfirmedAt !== undefined
+					? {
+							emergencyOptOutConfirmedAt: emergencyOptOutConfirmedAt
+								? new Date(emergencyOptOutConfirmedAt)
+								: null,
+						}
+					: {}),
+				updatedAt: new Date(),
+			})
 			.where(eq(notificationPreferences.userId, user.id))
 			.returning()
 		return requireRow(updated, "Notification preferences were not updated")

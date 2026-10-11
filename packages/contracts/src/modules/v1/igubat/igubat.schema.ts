@@ -73,7 +73,7 @@ export const NewsArticleSchema = z.object({
 	excerpt: z.string().nullable(),
 	body: z.string(),
 	category: z.string(),
-	status: z.enum(["draft", "published", "archived"]),
+	status: z.enum(["draft", "scheduled", "published", "archived"]),
 	imageUrl: z.string().nullable(),
 	isFeatured: z.boolean(),
 	authorId: z.string().nullable(),
@@ -102,15 +102,231 @@ export const EventSchema = z.object({
 	category: z.string(),
 	location: z.string(),
 	imageUrl: z.string().nullable(),
-	status: z.enum(["draft", "published", "archived"]),
+	status: z.enum(["draft", "scheduled", "published", "archived"]),
 	startsAt: DateLikeSchema,
 	endsAt: DateLikeSchema.nullable(),
+	publishedAt: DateLikeSchema.nullable().optional(),
+})
+
+export const UpsertEventSchema = z.object({
+	id: z.number().int().positive().optional(),
+	title: z.string().trim().min(1),
+	slug: z
+		.string()
+		.trim()
+		.min(1)
+		.regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Use lowercase letters, numbers and dashes"),
+	description: z.string().trim().min(1),
+	category: z.string().trim().min(1),
+	location: z.string().trim().min(1),
+	imageUrl: z.string().optional(),
+	status: z.enum(["draft", "published", "archived"]),
+	startsAt: z.string().min(1),
+	endsAt: z.string().nullable().optional(),
+})
+
+// ============================================================================
+// HOME — COMMUNITY STATS (admin-configurable, values computed live)
+// ============================================================================
+
+export const COMMUNITY_STATS_SETTING_KEY = "home.community_stats"
+
+export const CommunityStatKeySchema = z.enum([
+	"registered_citizens",
+	"pending_requests",
+	"completed_requests",
+	"active_services",
+	"new_reports",
+	"published_news",
+	"upcoming_events",
+])
+
+export const CommunityStatConfigSchema = z.object({
+	key: CommunityStatKeySchema,
+	label: z.string().trim().min(1).max(40),
+	enabled: z.boolean(),
+})
+
+/** Display order is the array order. */
+export const DEFAULT_COMMUNITY_STATS: z.infer<typeof CommunityStatConfigSchema>[] = [
+	{ key: "registered_citizens", label: "Citizens Registered", enabled: true },
+	{ key: "pending_requests", label: "Pending Requests", enabled: true },
+	{ key: "active_services", label: "Active Services", enabled: true },
+	{ key: "new_reports", label: "New Reports", enabled: true },
+	{ key: "published_news", label: "Published News", enabled: true },
+	{ key: "completed_requests", label: "Requests Completed", enabled: false },
+	{ key: "upcoming_events", label: "Upcoming Events", enabled: false },
+]
+
+export const UpdateCommunityStatsSchema = z.object({
+	stats: z
+		.array(CommunityStatConfigSchema)
+		.refine(
+			stats => new Set(stats.map(stat => stat.key)).size === stats.length,
+			"Each stat can only appear once"
+		),
+})
+
+export const CommunityStatSchema = z.object({
+	key: CommunityStatKeySchema,
+	label: z.string(),
+	value: z.number(),
+})
+
+// ============================================================================
+// DISCOVER GUBAT
+// ============================================================================
+
+export const DiscoverGubatTypeSchema = z.enum(["tourist_spot", "festival_culture", "local_product"])
+
+export const DiscoverGubatCategorySchema = z.enum([
+	"beaches_surfing",
+	"nature_eco_tourism",
+	"heritage_landmarks",
+	"festival",
+	"culture_history",
+	"local_dialect_traditions",
+	"delicacies_kakanin",
+	"pasalubong",
+	"handicrafts_otop",
+	"seafood",
+	"pili_products",
+])
+
+export const DiscoverGubatStatusSchema = z.enum(["draft", "scheduled", "published", "archived"])
+
+export const DiscoverGubatMediaSchema = z.object({
+	id: z.number(),
+	fileUrl: z.string(),
+	fileName: z.string(),
+	mimeType: z.string(),
+	sizeBytes: z.number(),
+	altText: z.string().nullable(),
+	caption: z.string().nullable(),
+	isFeatured: z.boolean(),
+	sortOrder: z.number(),
+})
+
+export const DiscoverGubatItemSummarySchema = z.object({
+	id: z.number(),
+	type: DiscoverGubatTypeSchema,
+	category: DiscoverGubatCategorySchema,
+	title: z.string(),
+	slug: z.string(),
+	summary: z.string().nullable(),
+	status: DiscoverGubatStatusSchema,
+	featuredImageUrl: z.string().nullable(),
+	featuredImageAlt: z.string().nullable(),
+	locationName: z.string().nullable(),
+	locationAddress: z.string().nullable(),
+	latitude: z.string().nullable(),
+	longitude: z.string().nullable(),
+	whereToBuy: z.string().nullable(),
+	priceRange: z.string().nullable(),
+	contactInfo: z.string().nullable(),
+	authorId: z.string().nullable(),
+	scheduledAt: DateLikeSchema.nullable(),
+	publishedAt: DateLikeSchema.nullable(),
+	archivedAt: DateLikeSchema.nullable(),
+	createdAt: DateLikeSchema,
+	updatedAt: DateLikeSchema,
+	authorName: z.string().nullable().optional(),
+})
+
+export const DiscoverGubatItemDetailSchema = DiscoverGubatItemSummarySchema.extend({
+	body: z.string(),
+	notifyOnPublish: z.boolean(),
+	media: z.array(DiscoverGubatMediaSchema),
+})
+
+const DiscoverGubatMediaInputSchema = z.object({
+	fileUrl: z.string().min(1),
+	fileName: z.string().min(1),
+	mimeType: z.string().optional(),
+	sizeBytes: z.number().int().nonnegative().optional(),
+	altText: z.string().optional(),
+	caption: z.string().optional(),
+	isFeatured: z.boolean().optional(),
+	sortOrder: z.number().int().nonnegative().optional(),
+})
+
+const DiscoverGubatItemInputSchema = z.object({
+	type: DiscoverGubatTypeSchema,
+	category: DiscoverGubatCategorySchema,
+	title: z.string().min(1),
+	slug: z.string().min(1),
+	summary: z.string().optional(),
+	body: z.string().optional(),
+	status: DiscoverGubatStatusSchema.optional(),
+	featuredImageUrl: z.string().optional(),
+	featuredImageAlt: z.string().optional(),
+	locationName: z.string().optional(),
+	locationAddress: z.string().optional(),
+	latitude: z.string().optional(),
+	longitude: z.string().optional(),
+	whereToBuy: z.string().optional(),
+	priceRange: z.string().optional(),
+	contactInfo: z.string().optional(),
+	notifyOnPublish: z.boolean().optional(),
+	scheduledAt: z.string().optional(),
+	media: z.array(DiscoverGubatMediaInputSchema).max(10).optional(),
+})
+
+function assertDiscoverGubatRequirements(
+	input: {
+		type?: z.infer<typeof DiscoverGubatTypeSchema>
+		whereToBuy?: string
+		locationName?: string
+	},
+	ctx: z.RefinementCtx
+) {
+	if (input.type === "local_product" && !input.whereToBuy?.trim()) {
+		ctx.addIssue({
+			code: "custom",
+			path: ["whereToBuy"],
+			message: "whereToBuy is required for local products",
+		})
+	}
+	if (input.type !== "local_product" && !input.locationName?.trim()) {
+		ctx.addIssue({
+			code: "custom",
+			path: ["locationName"],
+			message: "locationName is required for tourist and festival entries",
+		})
+	}
+}
+
+export const CreateDiscoverGubatItemSchema = DiscoverGubatItemInputSchema.superRefine(
+	assertDiscoverGubatRequirements
+)
+
+export const UpdateDiscoverGubatItemSchema = DiscoverGubatItemInputSchema.partial()
+	.extend({ id: z.coerce.number().int().positive() })
+	.superRefine(assertDiscoverGubatRequirements)
+
+export const DiscoverGubatListQuerySchema = z
+	.object({
+		type: DiscoverGubatTypeSchema.optional(),
+		category: DiscoverGubatCategorySchema.optional(),
+		status: DiscoverGubatStatusSchema.optional(),
+		search: z.string().optional(),
+		limit: z.coerce.number().int().positive().max(100).optional(),
+	})
+	.optional()
+
+export const PublishDiscoverGubatItemSchema = IdParamSchema.extend({
+	notifySubscribers: z.boolean(),
+	publishAt: z.string().optional(),
+})
+
+export const DeleteDiscoverGubatItemSchema = IdParamSchema.extend({
+	permanent: z.boolean().optional(),
 })
 
 export const EmergencyDirectorySchema = z.object({
 	id: z.number(),
 	name: z.string(),
-	type: z.enum(["hospital", "bfp", "police", "comcen"]),
+	type: z.enum(["hospital", "bfp", "police", "comcen", "disaster_response"]),
 	contactNumber: z.string(),
 	address: z.string().nullable(),
 	hours: z.string().nullable(),
@@ -195,10 +411,18 @@ export const UpdateRequestStatusSchema = IdParamSchema.extend({
 })
 
 export const CitizenReportStatusSchema = z.enum(["received", "in_progress", "resolved", "closed"])
+export const CitizenReportCategorySchema = z.enum([
+	"Road Damage",
+	"Flooding",
+	"Waste Management",
+	"Street Lighting",
+	"Public Safety",
+	"Others",
+])
 
 export const CitizenReportSchema = z.object({
 	id: z.number(),
-	category: z.string(),
+	category: CitizenReportCategorySchema,
 	description: z.string(),
 	status: CitizenReportStatusSchema,
 	barangay: z.string().nullable(),
@@ -230,7 +454,7 @@ export const CitizenReportDetailSchema = CitizenReportSchema.extend({
 })
 
 export const CreateCitizenReportSchema = z.object({
-	category: z.string().min(1),
+	category: CitizenReportCategorySchema,
 	description: z.string().min(1),
 	barangay: z.string().optional(),
 	locationAddress: z.string().optional(),
@@ -259,6 +483,7 @@ export const NotificationSchema = z.object({
 		"issue_report",
 		"emergency",
 		"general",
+		"discover_gubat",
 		"transparency",
 	]),
 	isRead: z.boolean(),
@@ -271,10 +496,13 @@ export const NotificationPreferenceSchema = z.object({
 	news: z.boolean(),
 	serviceRequests: z.boolean(),
 	issueReports: z.boolean(),
+	discoverGubat: z.boolean(),
 	emergencyBroadcasts: z.boolean(),
+	emergencyOptOutConfirmedAt: DateLikeSchema.nullable().optional(),
 	transparency: z.boolean(),
 	pushEnabled: z.boolean(),
 	emailEnabled: z.boolean(),
+	smsEnabled: z.boolean().optional(),
 })
 
 export const HelpArticleSchema = z.object({
@@ -327,6 +555,8 @@ export const DashboardSchema = z.object({
 	recentRequests: z.array(ServiceRequestSchema),
 	recentReports: z.array(CitizenReportSchema),
 	upcomingEvents: z.array(EventSchema),
+	/** Enabled stats in admin-configured order (Home → Community Stats). */
+	communityStats: z.array(CommunityStatSchema),
 })
 
 export const AnalyticsSchema = z.object({
@@ -346,7 +576,7 @@ export const UpsertArticleSchema = z.object({
 	excerpt: z.string().optional(),
 	body: z.string().min(1),
 	category: z.string().min(1),
-	status: z.enum(["draft", "published", "archived"]),
+	status: z.enum(["draft", "scheduled", "published", "archived"]),
 	imageUrl: z.string().optional(),
 	isFeatured: z.boolean().optional(),
 	scheduledAt: z.string().optional(),
@@ -355,7 +585,7 @@ export const UpsertArticleSchema = z.object({
 export const UpsertDirectoryEntrySchema = z.object({
 	id: z.number().int().positive().optional(),
 	name: z.string().min(1),
-	type: z.enum(["hospital", "bfp", "police", "comcen"]),
+	type: z.enum(["hospital", "bfp", "police", "comcen", "disaster_response"]),
 	contactNumber: z.string().min(1),
 	address: z.string().optional(),
 	hours: z.string().optional(),

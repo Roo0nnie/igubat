@@ -87,6 +87,22 @@ export class IgubatController {
 	}
 
 	@AllowAnonymous()
+	@Implement(v1.igubat.public.discoverGubat.list)
+	async publicDiscoverGubat() {
+		return implement(v1.igubat.public.discoverGubat.list).handler(({ input }) =>
+			this.igubatService.listDiscoverGubat(input)
+		)
+	}
+
+	@AllowAnonymous()
+	@Implement(v1.igubat.public.discoverGubat.detail)
+	async publicDiscoverGubatDetail() {
+		return implement(v1.igubat.public.discoverGubat.detail).handler(({ input }) =>
+			this.igubatService.getDiscoverGubatBySlug(input.slug)
+		)
+	}
+
+	@AllowAnonymous()
 	@Implement(v1.igubat.public.emergencyDirectory)
 	async publicEmergencyDirectory() {
 		return implement(v1.igubat.public.emergencyDirectory).handler(() =>
@@ -269,6 +285,41 @@ export class IgubatController {
 		)
 	}
 
+	@Implement(v1.igubat.admin.events)
+	async adminEvents(@Session() session: UserSession) {
+		return implement(v1.igubat.admin.events).handler(({ input }) =>
+			this.igubatService.listAdminEvents(sessionUser(session), input)
+		)
+	}
+
+	@Implement(v1.igubat.admin.upsertEvent)
+	async upsertEvent(@Session() session: UserSession) {
+		return implement(v1.igubat.admin.upsertEvent).handler(({ input }) =>
+			this.igubatService.upsertEvent(sessionUser(session), input)
+		)
+	}
+
+	@Implement(v1.igubat.admin.deleteEvent)
+	async deleteEvent(@Session() session: UserSession) {
+		return implement(v1.igubat.admin.deleteEvent).handler(({ input }) =>
+			this.igubatService.deleteEvent(sessionUser(session), input.id)
+		)
+	}
+
+	@Implement(v1.igubat.admin.communityStats)
+	async adminCommunityStats(@Session() session: UserSession) {
+		return implement(v1.igubat.admin.communityStats).handler(() =>
+			this.igubatService.getAdminCommunityStats(sessionUser(session))
+		)
+	}
+
+	@Implement(v1.igubat.admin.updateCommunityStats)
+	async updateCommunityStats(@Session() session: UserSession) {
+		return implement(v1.igubat.admin.updateCommunityStats).handler(({ input }) =>
+			this.igubatService.updateCommunityStats(sessionUser(session), input)
+		)
+	}
+
 	@Implement(v1.igubat.admin.emergencyDirectory)
 	async adminEmergencyDirectory(@Session() session: UserSession) {
 		return implement(v1.igubat.admin.emergencyDirectory).handler(() =>
@@ -350,6 +401,55 @@ export class IgubatController {
 	async upsertSetting(@Session() session: UserSession) {
 		return implement(v1.igubat.admin.upsertSetting).handler(({ input }) =>
 			this.igubatService.upsertSetting(sessionUser(session), input)
+		)
+	}
+
+	@Implement(v1.igubat.admin.discoverGubat.list)
+	async adminDiscoverGubat(@Session() session: UserSession) {
+		return implement(v1.igubat.admin.discoverGubat.list).handler(({ input }) =>
+			this.igubatService.listAdminDiscoverGubat(sessionUser(session), input)
+		)
+	}
+
+	@Implement(v1.igubat.admin.discoverGubat.detail)
+	async adminDiscoverGubatDetail(@Session() session: UserSession) {
+		return implement(v1.igubat.admin.discoverGubat.detail).handler(({ input }) =>
+			this.igubatService.discoverGubatDetail(input.id, sessionUser(session), true)
+		)
+	}
+
+	@Implement(v1.igubat.admin.discoverGubat.create)
+	async createDiscoverGubat(@Session() session: UserSession) {
+		return implement(v1.igubat.admin.discoverGubat.create).handler(({ input }) =>
+			this.igubatService.createDiscoverGubat(sessionUser(session), input)
+		)
+	}
+
+	@Implement(v1.igubat.admin.discoverGubat.update)
+	async updateDiscoverGubat(@Session() session: UserSession) {
+		return implement(v1.igubat.admin.discoverGubat.update).handler(({ input }) =>
+			this.igubatService.updateDiscoverGubat(sessionUser(session), input)
+		)
+	}
+
+	@Implement(v1.igubat.admin.discoverGubat.publish)
+	async publishDiscoverGubat(@Session() session: UserSession) {
+		return implement(v1.igubat.admin.discoverGubat.publish).handler(({ input }) =>
+			this.igubatService.publishDiscoverGubat(sessionUser(session), input)
+		)
+	}
+
+	@Implement(v1.igubat.admin.discoverGubat.archive)
+	async archiveDiscoverGubat(@Session() session: UserSession) {
+		return implement(v1.igubat.admin.discoverGubat.archive).handler(({ input }) =>
+			this.igubatService.archiveDiscoverGubat(sessionUser(session), input.id)
+		)
+	}
+
+	@Implement(v1.igubat.admin.discoverGubat.delete)
+	async deleteDiscoverGubat(@Session() session: UserSession) {
+		return implement(v1.igubat.admin.discoverGubat.delete).handler(({ input }) =>
+			this.igubatService.deleteDiscoverGubat(sessionUser(session), input)
 		)
 	}
 }
