@@ -92,6 +92,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
 														onBlur={field.handleBlur}
 														onChange={e => field.handleChange(e.target.value)}
 														aria-invalid={isInvalid}
+														aria-label="Email"
 														placeholder="Email"
 														autoComplete="email"
 														required
@@ -124,6 +125,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
 															onChange={e => field.handleChange(e.target.value)}
 															aria-invalid={isInvalid}
 															required
+															aria-label="Password"
 															placeholder="Password"
 															autoComplete="current-password"
 															disabled={isPending}
