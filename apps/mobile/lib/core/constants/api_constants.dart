@@ -41,6 +41,10 @@ class ApiConstants {
   static String get publicEvents => '$_igubat/public/events';
   static String publicEvent(String slug) => '$_igubat/public/events/$slug';
 
+  static String get publicDiscoverGubat => '$_igubat/public/discover-gubat';
+  static String publicDiscoverGubatItem(String slug) =>
+      '$_igubat/public/discover-gubat/$slug';
+
   static String get publicPlacements => '$_igubat/public/placements';
 
   static String get serviceCategories => '$_igubat/public/service-categories';

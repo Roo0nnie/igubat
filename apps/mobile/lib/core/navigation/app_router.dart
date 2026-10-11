@@ -4,6 +4,8 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:mobile/features/auth/presentation/providers/auth_provider.dart';
 import 'package:mobile/features/auth/presentation/screens/login_screen.dart';
 import 'package:mobile/features/auth/presentation/screens/register_screen.dart';
+import 'package:mobile/features/discover_gubat/presentation/screens/discover_gubat_detail_screen.dart';
+import 'package:mobile/features/discover_gubat/presentation/screens/discover_gubat_list_screen.dart';
 import 'package:mobile/features/auth/presentation/screens/otp_screen.dart';
 import 'package:mobile/features/onboarding/presentation/providers/onboarding_provider.dart';
 import 'package:mobile/features/onboarding/presentation/screens/onboarding_screen.dart';
@@ -139,6 +141,18 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: AppRoutes.home,
         builder: (context, state) => const MainScaffold(),
+      ),
+      GoRoute(
+        path: '/discover-gubat',
+        builder: (context, state) => const DiscoverGubatListScreen(),
+        routes: [
+          GoRoute(
+            path: ':slug',
+            builder: (context, state) => DiscoverGubatDetailScreen(
+              slug: state.pathParameters['slug'] ?? '',
+            ),
+          ),
+        ],
       ),
       // Transparency & Good Governance deep links. `:type` is a route slug
       // (e.g. "legislative-ordinances"); push notifications carrying
