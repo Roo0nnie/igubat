@@ -6,6 +6,7 @@ import '../../../../shared/widgets/glass/glass_button.dart';
 import '../../../../shared/widgets/glass/glass_card.dart';
 import '../../../../shared/widgets/glass/glass_scaffold.dart';
 import '../../../../shared/widgets/glass/glass_surface.dart';
+import '../../domain/entities/citizen_report_category.dart';
 import '../../domain/usecases/citizen_report_params.dart';
 import '../providers/citizen_report_controller.dart';
 
@@ -19,7 +20,7 @@ class ReportIssueScreen extends ConsumerStatefulWidget {
 class _ReportIssueScreenState extends ConsumerState<ReportIssueScreen> {
   final _descriptionController = TextEditingController();
   final _locationController = TextEditingController();
-  String _category = 'Road Concern';
+  CitizenReportCategory _category = CitizenReportCategory.roadDamage;
   String _barangay = SeedData.currentUser.barangay;
   bool _submitting = false;
 
@@ -46,7 +47,7 @@ class _ReportIssueScreenState extends ConsumerState<ReportIssueScreen> {
         .read(citizenReportControllerProvider.notifier)
         .submit(
           CreateCitizenReportParams(
-            category: _category,
+            category: _category.apiValue,
             description: description,
             barangay: _barangay,
             locationAddress: location.isEmpty ? null : location,
@@ -82,17 +83,17 @@ class _ReportIssueScreenState extends ConsumerState<ReportIssueScreen> {
               children: [
                 Text('Community Issue Details', style: TextStyle(color: glass.textOnGlass, fontSize: 18, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 16),
-                DropdownButtonFormField<String>(
-                  value: _category,
+                DropdownButtonFormField<CitizenReportCategory>(
+                  initialValue: _category,
                   decoration: const InputDecoration(labelText: 'Category', border: OutlineInputBorder()),
-                  items: const ['Road Concern', 'Waste Management', 'Streetlight', 'Drainage', 'Public Safety']
-                      .map((category) => DropdownMenuItem(value: category, child: Text(category)))
+                  items: CitizenReportCategory.values
+                      .map((category) => DropdownMenuItem(value: category, child: Text(category.apiValue)))
                       .toList(),
                   onChanged: (value) => setState(() => _category = value ?? _category),
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
-                  value: _barangay,
+                  initialValue: _barangay,
                   decoration: const InputDecoration(labelText: 'Barangay', border: OutlineInputBorder()),
                   items: SeedData.barangays.map((barangay) => DropdownMenuItem(value: barangay, child: Text(barangay))).toList(),
                   onChanged: (value) => setState(() => _barangay = value ?? _barangay),
@@ -112,10 +113,12 @@ class _ReportIssueScreenState extends ConsumerState<ReportIssueScreen> {
           ),
           const SizedBox(height: 16),
           GlassButton(
-            label: _submitting ? 'Submitting...' : 'Submit Report',
+            label: 'Submit Report',
+            loadingLabel: 'Submitting report...',
+            isLoading: _submitting,
             icon: Icons.send_outlined,
             expanded: true,
-            onPressed: _submitting ? null : _submit,
+            onPressed: _submit,
           ),
         ],
       ),
