@@ -48,9 +48,30 @@ class NotificationPreferencesScreen extends ConsumerWidget {
         padding: const EdgeInsets.all(24),
         children: [
           if (loading)
-            const Padding(
-              padding: EdgeInsets.only(bottom: 16),
-              child: LinearProgressIndicator(minHeight: 3),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Semantics(
+                liveRegion: true,
+                child: Row(
+                  children: [
+                    const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: GlassTokens.secondaryGreen,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      prefsAsync.hasValue
+                          ? 'Saving your preferences...'
+                          : 'Loading your preferences...',
+                      style: TextStyle(fontSize: 13, color: glass.textOnGlassMuted),
+                    ),
+                  ],
+                ),
+              ),
             ),
           GlassCard(
             child: Column(

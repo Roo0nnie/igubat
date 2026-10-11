@@ -10,6 +10,7 @@ import 'package:mobile/core/widgets/igubat_logo.dart';
 import 'package:mobile/features/auth/presentation/providers/auth_provider.dart';
 import 'package:mobile/features/auth/presentation/providers/auth_redirect_provider.dart';
 import 'package:mobile/shared/widgets/glass/glass_background.dart';
+import 'package:mobile/shared/widgets/states/app_state_views.dart';
 
 /// Number of digits in the verification code (TOR: 6-digit OTP).
 const int _kOtpLength = 6;
@@ -195,10 +196,10 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
       height: 58,
       margin: const EdgeInsets.symmetric(horizontal: 4),
       decoration: BoxDecoration(
-        color: isDark ? theme.colorScheme.surface.withOpacity(0.5) : theme.colorScheme.surface,
+        color: isDark ? theme.colorScheme.surface.withValues(alpha: 0.5) : theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(30),
         border: Border.all(
-          color: theme.colorScheme.outline.withOpacity(0.3),
+          color: theme.colorScheme.outline.withValues(alpha: 0.3),
         ),
       ),
       alignment: Alignment.center,
@@ -238,7 +239,6 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -262,10 +262,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  IgubatLogo(
-                    height: 120, 
-                    darkText: !isDark,
-                  ),
+                  const IgubatLogo(height: 110),
                   const SizedBox(height: 32),
                   Text(
                     'Verify Code',
@@ -280,7 +277,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                   Text(
                     'Please enter the code we just sent to\nyour email',
                     style: theme.textTheme.bodyLarge?.copyWith(
-                      color: theme.colorScheme.onSurface.withOpacity(0.6),
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                       height: 1.47,
                     ),
                     textAlign: TextAlign.center,
@@ -318,7 +315,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                       Text(
                         "Didn't receive OTP? ",
                         style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurface.withOpacity(0.6),
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                         ),
                       ),
                       _resendSecondsLeft > 0
@@ -326,7 +323,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                               'Resend in ${_resendSecondsLeft}s',
                               style: theme.textTheme.bodyMedium?.copyWith(
                                 color: theme.colorScheme.onSurface
-                                    .withOpacity(0.4),
+                                    .withValues(alpha: 0.4),
                                 fontWeight: FontWeight.w700,
                               ),
                             )
@@ -361,15 +358,8 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                       ),
                       elevation: 0,
                     ),
-                    child: _isLoading 
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
+                    child: _isLoading
+                        ? const ButtonLoadingLabel(label: 'Verifying...')
                         : const Text(
                             'Verify',
                             style: TextStyle(

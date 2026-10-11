@@ -16,6 +16,7 @@ import '../../../../shared/widgets/glass/glass_button.dart';
 import '../../../../shared/widgets/glass/glass_card.dart';
 import '../../../../shared/widgets/glass/glass_scaffold.dart';
 import '../../../../shared/widgets/glass/glass_surface.dart';
+import '../../../../shared/widgets/states/app_state_views.dart';
 import 'help_support_screen.dart';
 import 'notification_preferences_screen.dart';
 import 'policy_screen.dart';
@@ -90,7 +91,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     if (authState.isLoading && user == null) {
       return GlassScaffold(
         title: 'My Profile',
-        body: const Center(child: CircularProgressIndicator()),
+        body: const BrandedLoader(message: 'Loading your profile...'),
       );
     }
 
@@ -230,7 +231,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           textAlign: TextAlign.center,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(fontSize: 10, color: glass.textOnGlassMuted),
+                          style: TextStyle(
+                            fontSize: 12,
+                            height: 1.3,
+                            fontWeight: FontWeight.w500,
+                            color: glass.textOnGlass,
+                          ),
                         ),
                       ],
                     ),
@@ -287,7 +293,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ),
                 ),
                 Divider(height: 1, color: glass.border),
-                _settingsTile(icon: Icons.language, title: 'Language (English)', glass: glass),
+                _settingsTile(
+                  icon: Icons.language,
+                  title: 'Language',
+                  glass: glass,
+                  trailing: Text(
+                    'English',
+                    style: TextStyle(fontSize: 14, color: glass.textOnGlassMuted),
+                  ),
+                ),
                 Divider(height: 1, color: glass.border),
                 _settingsTile(
                   icon: Icons.help_outline,
@@ -331,19 +345,25 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           GlassSurface(
             intensity: GlassIntensity.subtle,
             borderRadius: BorderRadius.circular(GlassTokens.radiusGlassSm),
-            tint: const Color(0xFFB91C1C).withValues(alpha: 0.08),
-            border: Border.all(color: const Color(0xFFB91C1C).withValues(alpha: 0.4)),
+            tint: glass.dangerOnGlass.withValues(alpha: 0.08),
+            border: Border.all(color: glass.dangerOnGlass.withValues(alpha: 0.5)),
+            boxShadow: const [],
             onTap: _handleSignOut,
             padding: const EdgeInsets.symmetric(vertical: 16),
-            child: const Center(
-              child: Text(
-                'Sign Out',
-                style: TextStyle(
-                  color: Color(0xFFB91C1C),
-                  fontWeight: FontWeight.bold,
-                  fontSize: 15,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.logout_rounded, color: glass.dangerOnGlass, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  'Sign Out',
+                  style: TextStyle(
+                    color: glass.dangerOnGlass,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                  ),
                 ),
-              ),
+              ],
             ),
           ),
         ],
@@ -361,7 +381,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     return ListTile(
       leading: Icon(icon, color: glass.textOnGlassMuted),
       title: Text(title, style: TextStyle(fontSize: 15, color: glass.textOnGlass)),
-      trailing: trailing ?? Icon(Icons.chevron_right, color: glass.textOnGlassMuted),
+      trailing: trailing ??
+          (onTap != null ? Icon(Icons.chevron_right, color: glass.textOnGlassMuted) : null),
       onTap: trailing == null ? onTap : null,
       minVerticalPadding: 12,
     );

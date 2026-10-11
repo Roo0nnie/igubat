@@ -9,6 +9,7 @@ import 'package:mobile/core/navigation/app_router.dart';
 import 'package:mobile/core/widgets/igubat_logo.dart';
 import 'package:mobile/features/auth/presentation/providers/auth_provider.dart';
 import 'package:mobile/shared/widgets/glass/glass_background.dart';
+import 'package:mobile/shared/widgets/states/app_state_views.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -181,7 +182,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           label,
           style: theme.textTheme.bodyMedium?.copyWith(
             fontWeight: FontWeight.w500,
-            color: theme.colorScheme.onSurface.withOpacity(0.8),
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
           ),
         ),
         const SizedBox(height: 8),
@@ -195,18 +196,18 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: theme.textTheme.bodyLarge?.copyWith(
-              color: theme.colorScheme.onSurface.withOpacity(0.4),
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
             ),
             prefixIcon: Icon(
               prefixIcon,
-              color: theme.colorScheme.onSurface.withOpacity(0.5),
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
               size: 22,
             ),
             suffixIcon: isPassword
                 ? IconButton(
                     icon: Icon(
                       _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                      color: theme.colorScheme.onSurface.withOpacity(0.5),
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                       size: 22,
                     ),
                     onPressed: () {
@@ -218,19 +219,19 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 : null,
             filled: true,
             fillColor: isDark 
-                ? theme.colorScheme.surface.withOpacity(0.5)
+                ? theme.colorScheme.surface.withValues(alpha: 0.5)
                 : theme.colorScheme.surface,
             contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(30),
               borderSide: BorderSide(
-                color: theme.colorScheme.outline.withOpacity(0.3),
+                color: theme.colorScheme.outline.withValues(alpha: 0.3),
               ),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(30),
               borderSide: BorderSide(
-                color: theme.colorScheme.outline.withOpacity(0.3),
+                color: theme.colorScheme.outline.withValues(alpha: 0.3),
               ),
             ),
             focusedBorder: OutlineInputBorder(
@@ -277,7 +278,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           'Barangay',
           style: theme.textTheme.bodyMedium?.copyWith(
             fontWeight: FontWeight.w500,
-            color: theme.colorScheme.onSurface.withOpacity(0.8),
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
           ),
         ),
         const SizedBox(height: 8),
@@ -286,7 +287,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           isExpanded: true,
           icon: Icon(
             Icons.keyboard_arrow_down,
-            color: theme.colorScheme.onSurface.withOpacity(0.5),
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
           ),
           style: theme.textTheme.bodyLarge?.copyWith(
             color: theme.colorScheme.onSurface,
@@ -295,23 +296,23 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           hint: Text(
             'Select your barangay',
             style: theme.textTheme.bodyLarge?.copyWith(
-              color: theme.colorScheme.onSurface.withOpacity(0.4),
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
             ),
           ),
           decoration: InputDecoration(
             prefixIcon: Icon(
               Icons.location_city_outlined,
-              color: theme.colorScheme.onSurface.withOpacity(0.5),
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
               size: 22,
             ),
             filled: true,
             fillColor: isDark
-                ? theme.colorScheme.surface.withOpacity(0.5)
+                ? theme.colorScheme.surface.withValues(alpha: 0.5)
                 : theme.colorScheme.surface,
             contentPadding:
                 const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
-            border: border(theme.colorScheme.outline.withOpacity(0.3)),
-            enabledBorder: border(theme.colorScheme.outline.withOpacity(0.3)),
+            border: border(theme.colorScheme.outline.withValues(alpha: 0.3)),
+            enabledBorder: border(theme.colorScheme.outline.withValues(alpha: 0.3)),
             focusedBorder: border(theme.colorScheme.primary, 2),
             errorBorder: border(theme.colorScheme.error),
             focusedErrorBorder: border(theme.colorScheme.error, 2),
@@ -346,7 +347,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(30),
             border: Border.all(
-              color: theme.colorScheme.outline.withOpacity(0.3),
+              color: theme.colorScheme.outline.withValues(alpha: 0.3),
             ),
             color: isDark ? Colors.transparent : theme.colorScheme.surface,
           ),
@@ -400,10 +401,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    IgubatLogo(
-                      height: 120, 
-                      darkText: !isDark,
-                    ),
+                    const IgubatLogo(height: 110),
                     const SizedBox(height: 32),
                     Text(
                       'Start your Journey',
@@ -418,7 +416,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     Text(
                       'Enter your register information',
                       style: theme.textTheme.bodyLarge?.copyWith(
-                        color: theme.colorScheme.onSurface.withOpacity(0.6),
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                         height: 1.47,
                       ),
                       textAlign: TextAlign.center,
@@ -555,7 +553,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                               TextSpan(
                                 style: theme.textTheme.bodyMedium?.copyWith(
                                   color: theme.colorScheme.onSurface
-                                      .withOpacity(0.8),
+                                      .withValues(alpha: 0.8),
                                   height: 1.4,
                                 ),
                                 children: [
@@ -600,15 +598,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         ),
                         elevation: 0,
                       ),
-                      child: isLoading 
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
+                      child: isLoading
+                          ? const ButtonLoadingLabel(label: 'Creating account...')
                           : const Text(
                               'Register',
                               style: TextStyle(
@@ -624,7 +615,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       children: [
                         Expanded(
                           child: Divider(
-                            color: theme.colorScheme.outline.withOpacity(0.3),
+                            color: theme.colorScheme.outline.withValues(alpha: 0.3),
                             thickness: 1,
                           ),
                         ),
@@ -633,14 +624,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           child: Text(
                             'OR',
                             style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurface.withOpacity(0.5),
+                              color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                               fontWeight: FontWeight.w600,
                             ),
                           ),
                         ),
                         Expanded(
                           child: Divider(
-                            color: theme.colorScheme.outline.withOpacity(0.3),
+                            color: theme.colorScheme.outline.withValues(alpha: 0.3),
                             thickness: 1,
                           ),
                         ),
@@ -658,7 +649,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                             'https://cdn-icons-png.flaticon.com/512/2991/2991148.png', 
                             height: 20,
                             width: 20,
-                            errorBuilder: (_, __, ___) => Icon(
+                            errorBuilder: (_, _, _) => Icon(
                               Icons.g_mobiledata, 
                               size: 24, 
                               color: isDark ? Colors.white : Colors.black,
@@ -688,7 +679,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         Text(
                           "Already have an account? ",
                           style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.onSurface.withOpacity(0.6),
+                            color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                           ),
                         ),
                         TextButton(

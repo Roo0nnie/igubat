@@ -7,7 +7,9 @@ import '../../../../core/theme/glass_tokens.dart';
 import '../../../../shared/widgets/glass/glass_card.dart';
 import '../../../../shared/widgets/glass/glass_scaffold.dart';
 import '../../../../shared/widgets/glass/glass_search_bar.dart';
+import '../../../../shared/widgets/glass/glass_skeleton.dart';
 import '../../../../shared/widgets/glass/glass_surface.dart';
+import '../../../../shared/widgets/states/app_state_views.dart';
 import '../../data/models/transparency_type.dart';
 import '../../domain/entities/transparency_item.dart';
 import '../providers/transparency_list_provider.dart';
@@ -79,17 +81,20 @@ class _TransparencyCategoryListScreenState
         await ref.read(transparencyListProvider(widget.type).future);
       },
       body: listAsync.when(
-        loading: () => const Center(
-          child: Padding(
-            padding: EdgeInsets.only(top: 80),
-            child: CircularProgressIndicator(color: AppTheme.secondaryColor),
+        loading: () => StateScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+          child: LoadingStateView(
+            message: 'Loading ${widget.type.label.toLowerCase()}...',
+            skeleton: const GlassSkeletonList(count: 5),
+            onRetry: () => ref.invalidate(transparencyListProvider(widget.type)),
           ),
         ),
-        error: (error, _) => Padding(
-          padding: const EdgeInsets.all(24),
-          child: Text(
-            'Could not load items: $error',
-            style: TextStyle(color: glass.textOnGlassMuted),
+        error: (error, _) => StateScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+          child: ErrorStateView(
+            title: 'Unable to load ${widget.type.label.toLowerCase()}',
+            error: error,
+            onRetry: () => ref.invalidate(transparencyListProvider(widget.type)),
           ),
         ),
         data: (items) {

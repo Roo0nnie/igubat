@@ -8,6 +8,7 @@ import 'package:mobile/core/widgets/igubat_logo.dart';
 import 'package:mobile/features/auth/presentation/providers/auth_provider.dart';
 import 'package:mobile/features/auth/presentation/providers/auth_redirect_provider.dart';
 import 'package:mobile/shared/widgets/glass/glass_background.dart';
+import 'package:mobile/shared/widgets/states/app_state_views.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -128,7 +129,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           label,
           style: theme.textTheme.bodyMedium?.copyWith(
             fontWeight: FontWeight.w500,
-            color: theme.colorScheme.onSurface.withOpacity(0.8),
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
           ),
         ),
         const SizedBox(height: 8),
@@ -141,18 +142,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: theme.textTheme.bodyLarge?.copyWith(
-              color: theme.colorScheme.onSurface.withOpacity(0.4),
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
             ),
             prefixIcon: Icon(
               prefixIcon,
-              color: theme.colorScheme.onSurface.withOpacity(0.5),
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
               size: 22,
             ),
             suffixIcon: isPassword
                 ? IconButton(
                     icon: Icon(
                       _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                      color: theme.colorScheme.onSurface.withOpacity(0.5),
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                       size: 22,
                     ),
                     onPressed: () {
@@ -164,19 +165,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 : null,
             filled: true,
             fillColor: isDark 
-                ? theme.colorScheme.surface.withOpacity(0.5)
+                ? theme.colorScheme.surface.withValues(alpha: 0.5)
                 : theme.colorScheme.surface,
             contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(30),
               borderSide: BorderSide(
-                color: theme.colorScheme.outline.withOpacity(0.3),
+                color: theme.colorScheme.outline.withValues(alpha: 0.3),
               ),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(30),
               borderSide: BorderSide(
-                color: theme.colorScheme.outline.withOpacity(0.3),
+                color: theme.colorScheme.outline.withValues(alpha: 0.3),
               ),
             ),
             focusedBorder: OutlineInputBorder(
@@ -224,7 +225,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(30),
             border: Border.all(
-              color: theme.colorScheme.outline.withOpacity(0.3),
+              color: theme.colorScheme.outline.withValues(alpha: 0.3),
             ),
             color: isDark ? Colors.transparent : theme.colorScheme.surface,
           ),
@@ -266,10 +267,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    IgubatLogo(
-                      height: 120, 
-                      darkText: !isDark, // Fix for logo visibility based on theme
-                    ),
+                    const IgubatLogo(height: 110),
                     const SizedBox(height: 32),
                     Text(
                       'Welcome Back To iGubat',
@@ -284,7 +282,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     Text(
                       'Enter valid email & password\nto continue',
                       style: theme.textTheme.bodyLarge?.copyWith(
-                        color: theme.colorScheme.onSurface.withOpacity(0.6),
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                         height: 1.47,
                       ),
                       textAlign: TextAlign.center,
@@ -355,7 +353,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             Text(
                               'Remember me',
                               style: theme.textTheme.bodyMedium?.copyWith(
-                                color: theme.colorScheme.onSurface.withOpacity(0.8),
+                                color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
                               ),
                             ),
                           ],
@@ -391,15 +389,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                         elevation: 0,
                       ),
-                      child: isLoading 
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
+                      child: isLoading
+                          ? const ButtonLoadingLabel(label: 'Logging in...')
                           : const Text(
                               'Log In',
                               style: TextStyle(
@@ -415,7 +406,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       children: [
                         Expanded(
                           child: Divider(
-                            color: theme.colorScheme.outline.withOpacity(0.3),
+                            color: theme.colorScheme.outline.withValues(alpha: 0.3),
                             thickness: 1,
                           ),
                         ),
@@ -424,14 +415,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           child: Text(
                             'OR',
                             style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurface.withOpacity(0.5),
+                              color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                               fontWeight: FontWeight.w600,
                             ),
                           ),
                         ),
                         Expanded(
                           child: Divider(
-                            color: theme.colorScheme.outline.withOpacity(0.3),
+                            color: theme.colorScheme.outline.withValues(alpha: 0.3),
                             thickness: 1,
                           ),
                         ),
@@ -449,7 +440,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             'https://cdn-icons-png.flaticon.com/512/2991/2991148.png', // Fallback for Google Icon
                             height: 20,
                             width: 20,
-                            errorBuilder: (_, __, ___) => Icon(
+                            errorBuilder: (_, _, _) => Icon(
                               Icons.g_mobiledata, 
                               size: 24, 
                               color: isDark ? Colors.white : Colors.black,
@@ -479,7 +470,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         Text(
                           "Haven't any account? ",
                           style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.onSurface.withOpacity(0.6),
+                            color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                           ),
                         ),
                         TextButton(

@@ -8,6 +8,7 @@ import '../../../../shared/widgets/glass/glass_markdown_body.dart';
 import '../../../../shared/widgets/glass/glass_scaffold.dart';
 import '../../../../shared/widgets/glass/glass_skeleton.dart';
 import '../../../../shared/widgets/glass/glass_surface.dart';
+import '../../../../shared/widgets/states/app_state_views.dart';
 import '../../data/models/transparency_type.dart';
 import '../../domain/entities/transparency_item.dart';
 import '../providers/transparency_detail_provider.dart';
@@ -37,31 +38,38 @@ class TransparencyItemDetailScreen extends ConsumerWidget {
       ),
       bottomPadding: false,
       useShellBackground: false,
+      onRefresh: () async => ref.refresh(transparencyDetailProvider(slug).future),
       body: itemAsync.when(
-        loading: () => ListView(
+        loading: () => StateScrollView(
           padding: const EdgeInsets.all(AppLayout.screenHorizontal),
-          children: const [
-            GlassSkeletonCard(),
-            SizedBox(height: 16),
-            GlassSkeletonCard(),
-          ],
+          child: LoadingStateView(
+            message: 'Loading document details...',
+            skeleton: const Column(
+              children: [
+                GlassSkeletonCard(),
+                SizedBox(height: 16),
+                GlassSkeletonCard(),
+              ],
+            ),
+            onRetry: () => ref.invalidate(transparencyDetailProvider(slug)),
+          ),
         ),
-        error: (error, _) => Padding(
+        error: (error, _) => StateScrollView(
           padding: const EdgeInsets.all(AppLayout.screenHorizontal),
-          child: Text(
-            'Could not load item: $error',
-            style: TextStyle(color: glass.textOnGlassMuted),
+          child: ErrorStateView(
+            title: 'Unable to load this document',
+            error: error,
+            onRetry: () => ref.invalidate(transparencyDetailProvider(slug)),
           ),
         ),
         data: (item) {
           if (item == null) {
-            return Padding(
-              padding: const EdgeInsets.all(AppLayout.screenHorizontal),
-              child: Center(
-                child: Text(
-                  'This item is no longer available.',
-                  style: TextStyle(color: glass.textOnGlassMuted),
-                ),
+            return const StateScrollView(
+              padding: EdgeInsets.all(AppLayout.screenHorizontal),
+              child: EmptyStateView(
+                icon: Icons.folder_off_outlined,
+                title: 'No longer available',
+                message: 'This item may have been unpublished or moved.',
               ),
             );
           }

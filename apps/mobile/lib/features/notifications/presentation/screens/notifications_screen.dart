@@ -6,7 +6,9 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/glass_tokens.dart';
 import '../../../../shared/widgets/glass/glass_card.dart';
 import '../../../../shared/widgets/glass/glass_scaffold.dart';
+import '../../../../shared/widgets/glass/glass_skeleton.dart';
 import '../../../../shared/widgets/glass/glass_surface.dart';
+import '../../../../shared/widgets/states/app_state_views.dart';
 import '../../domain/entities/app_notification.dart';
 import '../../domain/entities/notification_category.dart';
 import '../providers/notifications_provider.dart';
@@ -62,19 +64,34 @@ class NotificationsScreen extends ConsumerWidget {
           ),
       ],
       body: notificationsAsync.when(
-        loading: () => const Center(
-          child: Padding(
-            padding: EdgeInsets.symmetric(vertical: 64),
-            child: CircularProgressIndicator(),
+        loading: () => StateScrollView(
+          padding: const EdgeInsets.all(24),
+          child: LoadingStateView(
+            message: 'Loading your notifications...',
+            skeleton: const GlassSkeletonList(count: 6, showTrailing: false),
+            onRetry: () =>
+                ref.read(notificationsControllerProvider.notifier).reload(),
           ),
         ),
-        error: (_, _) => _message(
-          context,
-          'Could not load notifications. Pull down to retry.',
+        error: (error, _) => StateScrollView(
+          padding: const EdgeInsets.all(24),
+          child: ErrorStateView(
+            title: 'Unable to load notifications',
+            error: error,
+            onRetry: () =>
+                ref.read(notificationsControllerProvider.notifier).reload(),
+          ),
         ),
         data: (notifications) {
           if (notifications.isEmpty) {
-            return _message(context, 'You have no notifications yet.');
+            return const StateScrollView(
+              padding: EdgeInsets.all(24),
+              child: EmptyStateView(
+                icon: Icons.notifications_none_rounded,
+                title: 'You are all caught up',
+                message: 'Updates on your requests, reports and LGU announcements will appear here.',
+              ),
+            );
           }
           return ListView.separated(
             padding: const EdgeInsets.all(24),
@@ -85,23 +102,6 @@ class NotificationsScreen extends ConsumerWidget {
           );
         },
       ),
-    );
-  }
-
-  Widget _message(BuildContext context, String text) {
-    final glass = glassThemeOf(context);
-    return ListView(
-      padding: const EdgeInsets.all(24),
-      children: [
-        const SizedBox(height: 80),
-        Icon(Icons.notifications_off_outlined, size: 56, color: glass.textOnGlassMuted),
-        const SizedBox(height: 16),
-        Text(
-          text,
-          textAlign: TextAlign.center,
-          style: TextStyle(color: glass.textOnGlassMuted),
-        ),
-      ],
     );
   }
 
