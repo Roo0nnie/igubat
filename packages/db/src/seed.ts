@@ -48,6 +48,7 @@ export const SEED_USER_IDS = [
 	"seed-user-pedro",
 	"seed-user-ana",
 	"seed-user-unverified",
+	"seed-user-demo",
 	"seed-user-admin",
 	"seed-user-ict",
 	"seed-user-supervisor",
@@ -66,6 +67,13 @@ export const SEED_TRACKING_NUMBERS = [
 	"TA-2026-0007",
 	"BC-2026-0021",
 	"FU-2026-0004",
+	// Demo citizen: one request per workflow status.
+	"CT-2026-0101",
+	"SC-2026-0012",
+	"BU-2026-0005",
+	"ED-2026-0040",
+	"CV-2026-0150",
+	"GY-2026-0003",
 ] as const
 
 const SEED_DEPARTMENT_NAMES = ["MSSD", "BPLO", "Transport Office", "MHO", "MDRRMO"] as const
@@ -77,7 +85,41 @@ const SEED_SERVICE_TYPE_SLUGS = [
 	"business-permit",
 	"certification",
 	"barangay-clearance",
+	"community-tax-certificate",
+	"civil-registry-documents",
+	"building-permit",
+	"fisherfolk-registration",
+	"senior-citizen-id",
+	"pwd-id",
+	"educational-assistance",
+	"burial-assistance",
+	"gymnasium-reservation",
 ] as const
+
+const DEMO_USER_ID = "seed-user-demo"
+const DEMO_USER_EMAIL = "demo@igubat.local"
+
+type RequestStatus = NonNullable<(typeof serviceRequests.$inferInsert)["status"]>
+
+const REQUEST_STATUS_PATHS: Record<RequestStatus, RequestStatus[]> = {
+	pending: ["pending"],
+	in_review: ["pending", "in_review"],
+	approved: ["pending", "in_review", "approved"],
+	rejected: ["pending", "in_review", "rejected"],
+	for_pickup: ["pending", "in_review", "approved", "for_pickup"],
+	completed: ["pending", "in_review", "approved", "for_pickup", "completed"],
+}
+
+const REQUEST_STATUS_REMARKS: Record<RequestStatus, string> = {
+	pending: "Request submitted through iGubat.",
+	in_review: "Your request and documents are now being reviewed.",
+	approved: "Your request has been approved.",
+	rejected: "Your request could not be approved.",
+	for_pickup: "Your document is ready for pickup.",
+	completed: "Request completed. Thank you for using iGubat.",
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000
 
 const SEED_TICKET_EMAILS = [
 	"admin@igubat.local",
@@ -181,6 +223,27 @@ function buildSeedUsers(
 			createdAt: new Date("2024-05-01T12:00:00Z"),
 			updatedAt: now,
 		},
+		// Demo citizen: complete, verified profile with data on every mobile screen.
+		{
+			id: DEMO_USER_ID,
+			name: "Rosa Lim",
+			email: DEMO_USER_EMAIL,
+			emailVerified: true,
+			emailVerifiedAt: new Date("2025-01-10T08:05:00Z"),
+			image: "https://i.pravatar.cc/300?u=seed-user-demo",
+			role: "registered_citizen",
+			mobileNumber: "09271234567",
+			mobileVerified: true,
+			mobileVerifiedAt: new Date("2025-01-10T08:06:00Z"),
+			barangay: "Panganiban (Poblacion)",
+			address: "123 Rizal St., Brgy. Panganiban (Poblacion), Gubat, Sorsogon 4710",
+			appearancePreference: "system",
+			dpaConsent: true,
+			dpaConsentAt: new Date("2025-01-10T08:00:00Z"),
+			lastLoginAt: new Date(now.getTime() - DAY_MS),
+			createdAt: new Date("2025-01-10T08:00:00Z"),
+			updatedAt: now,
+		},
 		// Staff (web portal)
 		{
 			id: "seed-user-admin",
@@ -281,14 +344,19 @@ async function upsertUsersAndAccounts(
 					name: user.name,
 					email: user.email,
 					emailVerified: user.emailVerified,
+					emailVerifiedAt: user.emailVerifiedAt ?? null,
 					image: user.image,
 					role: user.role,
 					status: user.status ?? "active",
 					departmentId: user.departmentId ?? null,
 					mobileNumber: user.mobileNumber ?? null,
+					mobileVerified: user.mobileVerified ?? false,
+					mobileVerifiedAt: user.mobileVerifiedAt ?? null,
 					barangay: user.barangay ?? null,
 					address: user.address ?? null,
+					appearancePreference: user.appearancePreference ?? "system",
 					dpaConsent: user.dpaConsent ?? false,
+					dpaConsentAt: user.dpaConsentAt ?? null,
 					failedLoginAttempts: user.failedLoginAttempts ?? 0,
 					lockedUntil: user.lockedUntil ?? null,
 					forcePasswordReset: user.forcePasswordReset ?? false,
@@ -584,6 +652,192 @@ async function seedDatabase() {
 					createdAt: now,
 					updatedAt: now,
 				},
+				{
+					name: "Community Tax Certificate (Cedula)",
+					slug: "community-tax-certificate",
+					description:
+						"Get your yearly cedula, often required for permits, IDs, and notarized documents.",
+					categoryId: categoryIds.certificates,
+					requirements: [
+						"Valid ID",
+						"Previous year's cedula (if any)",
+						"Proof of income (if employed or with business)",
+					],
+					formFields: ["description", "preferredDate", "attachments"],
+					workflowSteps: WORKFLOW_STEPS,
+					processingDays: 1,
+					icon: "receipt",
+					imageUrl: "https://picsum.photos/seed/service-cedula/800/600",
+					isPopular: true,
+					isActive: true,
+					createdAt: now,
+					updatedAt: now,
+				},
+				{
+					name: "Civil Registry Documents",
+					slug: "civil-registry-documents",
+					description:
+						"Request certified copies of birth, marriage, or death records from the Municipal Civil Registrar.",
+					categoryId: categoryIds.certificates,
+					requirements: [
+						"Valid ID",
+						"Full name and date on the record",
+						"Authorization letter (if requesting for someone else)",
+					],
+					formFields: ["description", "preferredDate", "attachments"],
+					workflowSteps: WORKFLOW_STEPS,
+					processingDays: 3,
+					icon: "scroll-text",
+					imageUrl: "https://picsum.photos/seed/service-civil-registry/800/600",
+					isPopular: true,
+					isActive: true,
+					createdAt: now,
+					updatedAt: now,
+				},
+				{
+					name: "Building Permit",
+					slug: "building-permit",
+					description:
+						"Apply for a permit before building, renovating, or extending a house or structure.",
+					categoryId: categoryIds.permits,
+					requirements: [
+						"Valid ID",
+						"Land title or tax declaration",
+						"Signed building plans",
+						"Barangay clearance",
+					],
+					formFields: ["description", "preferredDate", "attachments"],
+					workflowSteps: WORKFLOW_STEPS,
+					processingDays: 7,
+					icon: "hard-hat",
+					imageUrl: "https://picsum.photos/seed/service-building-permit/800/600",
+					isPopular: false,
+					isActive: true,
+					createdAt: now,
+					updatedAt: now,
+				},
+				{
+					name: "Fisherfolk Registration",
+					slug: "fisherfolk-registration",
+					description:
+						"Register as a municipal fisherfolk or register your banca to join LGU and BFAR programs.",
+					categoryId: categoryIds.permits,
+					requirements: [
+						"Valid ID",
+						"1x1 photo",
+						"Barangay certificate of residency",
+						"Boat details (if boat owner)",
+					],
+					formFields: ["description", "preferredDate", "attachments"],
+					workflowSteps: WORKFLOW_STEPS,
+					processingDays: 3,
+					icon: "fish",
+					imageUrl: "https://picsum.photos/seed/service-fisherfolk/800/600",
+					isPopular: false,
+					isActive: true,
+					createdAt: now,
+					updatedAt: now,
+				},
+				{
+					name: "Senior Citizen ID",
+					slug: "senior-citizen-id",
+					description:
+						"Apply for a Senior Citizen ID (60 years old and above) to get discounts and benefits.",
+					categoryId: categoryIds.assistance,
+					requirements: [
+						"Birth certificate or valid ID showing age",
+						"1x1 photo",
+						"Barangay certificate of residency",
+					],
+					formFields: ["description", "preferredDate", "attachments"],
+					workflowSteps: WORKFLOW_STEPS,
+					processingDays: 5,
+					icon: "user-round",
+					imageUrl: "https://picsum.photos/seed/service-senior-id/800/600",
+					isPopular: true,
+					isActive: true,
+					createdAt: now,
+					updatedAt: now,
+				},
+				{
+					name: "PWD ID",
+					slug: "pwd-id",
+					description:
+						"Apply for a Persons with Disability ID to access discounts and government benefits.",
+					categoryId: categoryIds.assistance,
+					requirements: [
+						"Medical certificate stating the disability",
+						"1x1 photo",
+						"Barangay certificate of residency",
+					],
+					formFields: ["description", "preferredDate", "attachments"],
+					workflowSteps: WORKFLOW_STEPS,
+					processingDays: 5,
+					icon: "accessibility",
+					imageUrl: "https://picsum.photos/seed/service-pwd-id/800/600",
+					isPopular: false,
+					isActive: true,
+					createdAt: now,
+					updatedAt: now,
+				},
+				{
+					name: "Educational Assistance",
+					slug: "educational-assistance",
+					description:
+						"Request financial help for school fees, supplies, or allowance for students.",
+					categoryId: categoryIds.assistance,
+					requirements: [
+						"School ID or certificate of enrollment",
+						"Latest report card",
+						"Certificate of indigency",
+					],
+					formFields: ["description", "preferredDate", "attachments"],
+					workflowSteps: WORKFLOW_STEPS,
+					processingDays: 7,
+					icon: "graduation-cap",
+					imageUrl: "https://picsum.photos/seed/service-education/800/600",
+					isPopular: false,
+					isActive: true,
+					createdAt: now,
+					updatedAt: now,
+				},
+				{
+					name: "Burial Assistance",
+					slug: "burial-assistance",
+					description: "Request financial help for the funeral and burial of a family member.",
+					categoryId: categoryIds.assistance,
+					requirements: [
+						"Death certificate",
+						"Valid ID of the claimant",
+						"Funeral contract or billing",
+					],
+					formFields: ["description", "preferredDate", "attachments"],
+					workflowSteps: WORKFLOW_STEPS,
+					processingDays: 3,
+					icon: "heart-handshake",
+					imageUrl: "https://picsum.photos/seed/service-burial/800/600",
+					isPopular: false,
+					isActive: true,
+					createdAt: now,
+					updatedAt: now,
+				},
+				{
+					name: "Gymnasium Reservation",
+					slug: "gymnasium-reservation",
+					description:
+						"Book the municipal gymnasium or sports complex for games, events, or practice.",
+					categoryId: categoryIds.facilities,
+					requirements: ["Valid ID", "Activity letter", "Preferred date and time"],
+					formFields: ["description", "preferredDate", "attachments"],
+					workflowSteps: WORKFLOW_STEPS,
+					processingDays: 3,
+					icon: "dumbbell",
+					imageUrl: "https://picsum.photos/seed/service-gymnasium/800/600",
+					isPopular: false,
+					isActive: true,
+					createdAt: now,
+					updatedAt: now,
+				},
 			] satisfies Array<typeof serviceTypes.$inferInsert>
 			const insertedServiceTypes = await tx.insert(serviceTypes).values(serviceTypeRows).returning({
 				id: serviceTypes.id,
@@ -816,7 +1070,43 @@ async function seedDatabase() {
 			]
 			await tx.insert(contentPlacements).values(seedContentPlacements)
 
+			// Event dates are relative to the seed run so "Upcoming Events" on Home
+			// always has upcoming items. Hours are Philippine time (UTC+8).
+			const manilaTime = (daysFromNow: number, hour: number) => {
+				const date = new Date(now.getTime() + daysFromNow * DAY_MS)
+				date.setUTCHours(hour - 8, 0, 0, 0)
+				return date
+			}
 			const seedEvents: Array<typeof events.$inferInsert> = [
+				{
+					title: "Barangay Assembly",
+					slug: "barangay-assembly-cogon",
+					description: "Community assembly for residents of Barangay Cogon.",
+					category: "Community",
+					location: "Barangay Cogon Hall",
+					imageUrl: "https://picsum.photos/seed/event-assembly/800/600",
+					status: "published",
+					startsAt: manilaTime(5, 9),
+					endsAt: manilaTime(5, 12),
+					publishedAt: manilaTime(-7, 8),
+					createdAt: now,
+					updatedAt: now,
+				},
+				{
+					title: "Free Medical and Dental Mission",
+					slug: "free-medical-dental-mission",
+					description:
+						"Free check-ups, dental services and basic medicines from the Municipal Health Office. Bring a valid ID.",
+					category: "Health",
+					location: "Gubat Municipal Gymnasium",
+					imageUrl: "https://picsum.photos/seed/news-medical-mission/800/600",
+					status: "published",
+					startsAt: manilaTime(9, 8),
+					endsAt: manilaTime(9, 15),
+					publishedAt: manilaTime(-5, 8),
+					createdAt: now,
+					updatedAt: now,
+				},
 				{
 					title: "Town Fiesta Opening",
 					slug: "town-fiesta-opening",
@@ -825,9 +1115,24 @@ async function seedDatabase() {
 					location: "Municipal Plaza",
 					imageUrl: "https://picsum.photos/seed/event-fiesta/800/600",
 					status: "published",
-					startsAt: new Date("2026-06-12T08:00:00Z"),
-					endsAt: new Date("2026-06-12T18:00:00Z"),
-					publishedAt: new Date("2026-05-25T08:00:00Z"),
+					startsAt: manilaTime(14, 8),
+					endsAt: manilaTime(14, 18),
+					publishedAt: manilaTime(-6, 8),
+					createdAt: now,
+					updatedAt: now,
+				},
+				{
+					title: "Coastal Clean-up Drive",
+					slug: "coastal-clean-up-drive",
+					description:
+						"Join the MENRO and barangay volunteers in cleaning the Gubat shoreline. Gloves and sacks will be provided.",
+					category: "Environment",
+					location: "Rizal Beach, Gubat",
+					imageUrl: "https://picsum.photos/seed/news-cleanup/800/600",
+					status: "published",
+					startsAt: manilaTime(20, 6),
+					endsAt: manilaTime(20, 10),
+					publishedAt: manilaTime(-3, 8),
 					createdAt: now,
 					updatedAt: now,
 				},
@@ -839,111 +1144,184 @@ async function seedDatabase() {
 					location: "Treasurer's Office",
 					imageUrl: "https://picsum.photos/seed/event-tax-deadline/800/600",
 					status: "published",
-					startsAt: new Date("2026-06-30T08:00:00Z"),
-					endsAt: new Date("2026-06-30T17:00:00Z"),
-					publishedAt: new Date("2026-05-25T08:00:00Z"),
+					startsAt: manilaTime(30, 8),
+					endsAt: manilaTime(30, 17),
+					publishedAt: manilaTime(-6, 8),
 					createdAt: now,
 					updatedAt: now,
 				},
 				{
-					title: "Barangay Assembly",
-					slug: "barangay-assembly-cogon",
-					description: "Community assembly for residents of Barangay Cogon.",
-					category: "Community",
-					location: "Barangay Cogon Hall",
-					imageUrl: "https://picsum.photos/seed/event-assembly/800/600",
+					title: "Business Permit Orientation",
+					slug: "business-permit-orientation",
+					description: "Draft: orientation for first-time business permit applicants.",
+					category: "Business",
+					location: "Municipal Session Hall",
+					status: "draft",
+					startsAt: manilaTime(40, 9),
+					endsAt: manilaTime(40, 11),
+					createdAt: now,
+					updatedAt: now,
+				},
+				{
+					title: "Disaster Preparedness Seminar",
+					slug: "disaster-preparedness-seminar",
+					description: "Past event: MDRRMO seminar on typhoon and tsunami preparedness.",
+					category: "Safety",
+					location: "MDRRMO Training Room",
 					status: "published",
-					startsAt: new Date("2026-06-05T09:00:00Z"),
-					endsAt: new Date("2026-06-05T12:00:00Z"),
-					publishedAt: new Date("2026-05-24T08:00:00Z"),
+					startsAt: manilaTime(-10, 9),
+					endsAt: manilaTime(-10, 16),
+					publishedAt: manilaTime(-20, 8),
 					createdAt: now,
 					updatedAt: now,
 				},
 			]
 			await tx.insert(events).values(seedEvents)
 
-			const seedEmergencyDirectory: Array<typeof emergencyDirectory.$inferInsert> = [
-				{
-					name: "National Emergency Hotline",
-					type: "comcen",
-					contactNumber: "911",
-					isActive: true,
-					createdAt: now,
-					updatedAt: now,
-				},
-				{
-					name: "COMCEN Gubat (Smart)",
-					type: "comcen",
-					contactNumber: "0998-555-0117",
-					address: "Municipal Hall Compound, Brgy. Poblacion, Gubat, Sorsogon — 24/7",
-					isActive: true,
-					createdAt: now,
-					updatedAt: now,
-				},
-				{
-					name: "COMCEN Gubat (TNT)",
-					type: "comcen",
-					contactNumber: "0907-555-0117",
-					address: "Municipal Hall Compound, Brgy. Poblacion, Gubat, Sorsogon — 24/7",
-					isActive: true,
-					createdAt: now,
-					updatedAt: now,
-				},
-				{
-					name: "COMCEN Gubat (Landline)",
-					type: "comcen",
-					contactNumber: "(056) 311-0117",
-					address: "Municipal Hall Compound, Brgy. Poblacion, Gubat, Sorsogon — 24/7",
-					isActive: true,
-					createdAt: now,
-					updatedAt: now,
-				},
-				{
-					name: "Gubat Municipal Police Station",
-					type: "police",
-					contactNumber: "(056) 311-1234",
-					address: "Brgy. Poblacion, Gubat, Sorsogon — 24/7",
-					isActive: true,
-					createdAt: now,
-					updatedAt: now,
-				},
-				{
-					name: "Bureau of Fire Protection - Gubat",
-					type: "bfp",
-					contactNumber: "(056) 311-5678",
-					address: "National Road, Brgy. Cota na Daco, Gubat, Sorsogon — 24/7",
-					isActive: true,
-					createdAt: now,
-					updatedAt: now,
-				},
-				{
-					name: "Gubat District Hospital",
-					type: "hospital",
-					contactNumber: "(056) 311-9876",
-					address: "Brgy. Manook, Gubat, Sorsogon — 24/7 Emergency Room",
-					isActive: true,
-					createdAt: now,
-					updatedAt: now,
-				},
-				{
-					name: "MDRRMO Gubat",
-					type: "comcen",
-					contactNumber: "(056) 311-2468",
-					address: "Municipal Hall Compound, Brgy. Poblacion, Gubat, Sorsogon — 24/7",
-					isActive: true,
-					createdAt: now,
-					updatedAt: now,
-				},
-				{
-					name: "Rural Health Unit",
-					type: "hospital",
-					contactNumber: "(056) 311-1357",
-					address: "Brgy. Poblacion, Gubat, Sorsogon — Mon–Fri 8:00 AM – 5:00 PM",
-					isActive: true,
-					createdAt: now,
-					updatedAt: now,
-				},
-			]
+			// Contact numbers other than 911 are placeholders; replace with the
+			// official LGU directory before production.
+			const municipalHall = "Municipal Hall Compound, Brgy. Poblacion, Gubat, Sorsogon"
+			const seedEmergencyDirectory: Array<typeof emergencyDirectory.$inferInsert> = (
+				[
+					// COMCEN — shown in the "COMCEN Hotlines" card (911 feeds the slide-to-call).
+					{
+						name: "National Emergency Hotline",
+						type: "comcen",
+						contactNumber: "911",
+						address: "Nationwide, free from any network",
+						hours: "24/7",
+						sortOrder: 1,
+					},
+					{
+						name: "COMCEN Gubat (Smart)",
+						type: "comcen",
+						contactNumber: "0998-555-0117",
+						address: municipalHall,
+						hours: "24/7",
+						latitude: "12.9186",
+						longitude: "124.1225",
+						sortOrder: 2,
+					},
+					{
+						name: "COMCEN Gubat (TNT)",
+						type: "comcen",
+						contactNumber: "0907-555-0117",
+						address: municipalHall,
+						hours: "24/7",
+						latitude: "12.9186",
+						longitude: "124.1225",
+						sortOrder: 3,
+					},
+					{
+						name: "COMCEN Gubat (Landline)",
+						type: "comcen",
+						contactNumber: "(056) 311-0117",
+						address: municipalHall,
+						hours: "24/7",
+						latitude: "12.9186",
+						longitude: "124.1225",
+						sortOrder: 4,
+					},
+					// Police (PNP)
+					{
+						name: "Gubat Municipal Police Station",
+						type: "police",
+						contactNumber: "(056) 311-1234",
+						address: "Brgy. Poblacion, Gubat, Sorsogon",
+						hours: "24/7",
+						latitude: "12.9192",
+						longitude: "124.1219",
+						sortOrder: 10,
+					},
+					{
+						name: "Women and Children Protection Desk (PNP Gubat)",
+						type: "police",
+						contactNumber: "0917-555-0188",
+						address: "Gubat Municipal Police Station, Brgy. Poblacion, Gubat, Sorsogon",
+						hours: "24/7",
+						latitude: "12.9192",
+						longitude: "124.1219",
+						sortOrder: 11,
+					},
+					// Fire (BFP)
+					{
+						name: "Bureau of Fire Protection - Gubat",
+						type: "bfp",
+						contactNumber: "(056) 311-5678",
+						address: "National Road, Brgy. Cota na Daco, Gubat, Sorsogon",
+						hours: "24/7",
+						latitude: "12.9221",
+						longitude: "124.1198",
+						sortOrder: 20,
+					},
+					// Hospitals
+					{
+						name: "Gubat District Hospital",
+						type: "hospital",
+						contactNumber: "(056) 311-9876",
+						address: "Brgy. Manook, Gubat, Sorsogon (Emergency Room)",
+						hours: "24/7",
+						latitude: "12.9143",
+						longitude: "124.1187",
+						sortOrder: 30,
+					},
+					{
+						name: "Rural Health Unit",
+						type: "hospital",
+						contactNumber: "(056) 311-1357",
+						address: "Brgy. Poblacion, Gubat, Sorsogon",
+						hours: "Mon–Fri, 8:00 AM – 5:00 PM",
+						latitude: "12.9180",
+						longitude: "124.1230",
+						sortOrder: 31,
+					},
+					{
+						name: "Sorsogon Provincial Hospital",
+						type: "hospital",
+						contactNumber: "(056) 211-0222",
+						address: "Brgy. Sirangan, Sorsogon City (for referrals)",
+						hours: "24/7",
+						latitude: "12.9714",
+						longitude: "124.0064",
+						sortOrder: 32,
+					},
+					// Disaster response
+					{
+						name: "MDRRMO Gubat",
+						type: "disaster_response",
+						contactNumber: "(056) 311-2468",
+						address: municipalHall,
+						hours: "24/7",
+						latitude: "12.9186",
+						longitude: "124.1225",
+						sortOrder: 40,
+					},
+					{
+						name: "Philippine Coast Guard - Gubat Sub-Station",
+						type: "disaster_response",
+						contactNumber: "0917-555-0145",
+						address: "Gubat Port Area, Brgy. Bagacay, Gubat, Sorsogon",
+						hours: "24/7",
+						latitude: "12.9235",
+						longitude: "124.1302",
+						sortOrder: 41,
+					},
+					{
+						name: "Philippine Red Cross - Sorsogon Chapter",
+						type: "disaster_response",
+						contactNumber: "(056) 211-0143",
+						address: "Sorsogon City, Sorsogon",
+						hours: "Mon–Sat, 8:00 AM – 5:00 PM",
+						sortOrder: 42,
+					},
+				] satisfies Array<typeof emergencyDirectory.$inferInsert>
+			).map(entry => ({
+				...entry,
+				isActive: true,
+				updatedById: "seed-user-emergency",
+				createdAt: now,
+				updatedAt: now,
+			}))
 			await tx.insert(emergencyDirectory).values(seedEmergencyDirectory)
 
 			const seedEmergencyBroadcasts: Array<typeof emergencyBroadcasts.$inferInsert> = [
@@ -1057,12 +1435,58 @@ async function seedDatabase() {
 					createdAt: new Date("2026-05-24T07:30:00Z"),
 					updatedAt: now,
 				},
+				{
+					category: "Street Lighting",
+					description: "Two streetlights are not working along Rizal St. near the plaza.",
+					status: "received",
+					barangay: "Panganiban (Poblacion)",
+					locationAddress: "Rizal St. near the Municipal Plaza",
+					latitude: "12.9188",
+					longitude: "124.1228",
+					authorId: DEMO_USER_ID,
+					createdAt: new Date(now.getTime() - 1 * DAY_MS),
+					updatedAt: now,
+				},
+				{
+					category: "Waste Management",
+					description: "Garbage has not been collected for 4 days at the corner of Rizal St.",
+					status: "in_progress",
+					barangay: "Panganiban (Poblacion)",
+					locationAddress: "Corner of Rizal St. and Mabini St.",
+					latitude: "12.9184",
+					longitude: "124.1222",
+					publicRemarks: "A collection truck has been scheduled for your area.",
+					departmentId: deptIds.MDRRMO,
+					assignedOfficerId: "seed-user-officer",
+					authorId: DEMO_USER_ID,
+					createdAt: new Date(now.getTime() - 4 * DAY_MS),
+					updatedAt: now,
+				},
+				{
+					category: "Road Damage",
+					description: "Deep pothole in front of the public market entrance.",
+					status: "resolved",
+					barangay: "Panganiban (Poblacion)",
+					locationAddress: "Public Market entrance, Brgy. Poblacion",
+					latitude: "12.9179",
+					longitude: "124.1233",
+					publicRemarks: "The pothole has been patched. Thank you for reporting!",
+					departmentId: deptIds.MDRRMO,
+					assignedOfficerId: "seed-user-supervisor",
+					authorId: DEMO_USER_ID,
+					createdAt: new Date(now.getTime() - 20 * DAY_MS),
+					updatedAt: now,
+				},
 			]
 			const insertedReports = await tx.insert(citizenReports).values(seedCitizenReports).returning({
 				id: citizenReports.id,
 				category: citizenReports.category,
 				status: citizenReports.status,
+				authorId: citizenReports.authorId,
 			})
+			const demoReportIdByCategory = Object.fromEntries(
+				insertedReports.filter(r => r.authorId === DEMO_USER_ID).map(r => [r.category, r.id])
+			) as Record<string, number>
 			await tx.insert(citizenReportStatusHistory).values(
 				insertedReports.flatMap(report => [
 					{
@@ -1183,6 +1607,86 @@ async function seedDatabase() {
 					createdAt: new Date("2026-05-26T11:30:00Z"),
 					updatedAt: now,
 				},
+				{
+					trackingNumber: "CT-2026-0101",
+					serviceTypeId: serviceTypeIdsByName["Community Tax Certificate (Cedula)"],
+					serviceType: "Community Tax Certificate (Cedula)",
+					description: "Cedula for 2026, needed for my barangay clearance.",
+					status: "pending",
+					departmentId: deptIds.BPLO,
+					authorId: DEMO_USER_ID,
+					createdAt: new Date(now.getTime() - 1 * DAY_MS),
+					updatedAt: now,
+				},
+				{
+					trackingNumber: "SC-2026-0012",
+					serviceTypeId: serviceTypeIdsByName["Senior Citizen ID"],
+					serviceType: "Senior Citizen ID",
+					description: "Senior Citizen ID application for my mother, Lourdes Lim (age 64).",
+					status: "in_review",
+					publicRemarks: "OSCA is verifying the submitted birth certificate.",
+					departmentId: deptIds.MSSD,
+					assignedOfficerId: "seed-user-supervisor",
+					authorId: DEMO_USER_ID,
+					createdAt: new Date(now.getTime() - 3 * DAY_MS),
+					updatedAt: now,
+				},
+				{
+					trackingNumber: "BU-2026-0005",
+					serviceTypeId: serviceTypeIdsByName["Building Permit"],
+					serviceType: "Building Permit",
+					description: "Permit for a second-floor extension of our house on Rizal St.",
+					status: "approved",
+					publicRemarks: "Approved. Please pay the permit fee at the Treasurer's Office.",
+					departmentId: deptIds.BPLO,
+					assignedOfficerId: "seed-user-officer",
+					authorId: DEMO_USER_ID,
+					createdAt: new Date(now.getTime() - 10 * DAY_MS),
+					updatedAt: now,
+				},
+				{
+					trackingNumber: "ED-2026-0040",
+					serviceTypeId: serviceTypeIdsByName["Educational Assistance"],
+					serviceType: "Educational Assistance",
+					description:
+						"School supplies assistance for my son, Grade 9 at Gubat National High School.",
+					status: "rejected",
+					publicRemarks:
+						"The certificate of enrollment is missing. You may submit a new request with the complete documents.",
+					departmentId: deptIds.MSSD,
+					assignedOfficerId: "seed-user-supervisor",
+					authorId: DEMO_USER_ID,
+					createdAt: new Date(now.getTime() - 14 * DAY_MS),
+					updatedAt: now,
+				},
+				{
+					trackingNumber: "CV-2026-0150",
+					serviceTypeId: serviceTypeIdsByName["Civil Registry Documents"],
+					serviceType: "Civil Registry Documents",
+					description: "Two certified copies of my birth certificate for a passport application.",
+					status: "for_pickup",
+					publicRemarks:
+						"Ready for pickup at the Civil Registrar's window, Mon–Fri 8 AM – 5 PM. Bring a valid ID.",
+					departmentId: deptIds.MSSD,
+					assignedOfficerId: "seed-user-officer",
+					authorId: DEMO_USER_ID,
+					createdAt: new Date(now.getTime() - 6 * DAY_MS),
+					updatedAt: now,
+				},
+				{
+					trackingNumber: "GY-2026-0003",
+					serviceTypeId: serviceTypeIdsByName["Gymnasium Reservation"],
+					serviceType: "Gymnasium Reservation",
+					description: "Barangay youth basketball league, Saturday 1 PM – 6 PM.",
+					status: "completed",
+					publicRemarks: "Reservation completed. Thank you for keeping the venue clean!",
+					departmentId: deptIds.MSSD,
+					assignedOfficerId: "seed-user-supervisor",
+					authorId: DEMO_USER_ID,
+					createdAt: new Date(now.getTime() - 30 * DAY_MS),
+					completedAt: new Date(now.getTime() - 22 * DAY_MS),
+					updatedAt: now,
+				},
 			]
 
 			const insertedRequests = await tx
@@ -1222,29 +1726,22 @@ async function seedDatabase() {
 			const seedRequestHistory: Array<typeof serviceRequestStatusHistory.$inferInsert> =
 				insertedRequests.flatMap(request => {
 					const source = seedServiceRequests.find(r => r.trackingNumber === request.trackingNumber)
-					const currentStatus = source?.status ?? "pending"
-					return [
-						{
+					const path = REQUEST_STATUS_PATHS[source?.status ?? "pending"]
+					const submittedAt = source?.createdAt ?? now
+					return path.map((status, index) => {
+						const isCurrent = index === path.length - 1
+						return {
 							serviceRequestId: request.id,
-							status: "pending",
-							remarks: "Request submitted through iGubat.",
+							status,
+							remarks:
+								isCurrent && index > 0
+									? (source?.publicRemarks ?? source?.description ?? REQUEST_STATUS_REMARKS[status])
+									: REQUEST_STATUS_REMARKS[status],
 							visibility: "public" as const,
-							changedById: null,
-							createdAt: source?.createdAt ?? now,
-						},
-						...(currentStatus !== "pending"
-							? [
-									{
-										serviceRequestId: request.id,
-										status: currentStatus,
-										remarks: source?.description ?? "Request status updated.",
-										visibility: "public" as const,
-										changedById: source?.assignedOfficerId ?? "seed-user-officer",
-										createdAt: source?.updatedAt ?? now,
-									},
-								]
-							: []),
-					]
+							changedById: index === 0 ? null : (source?.assignedOfficerId ?? "seed-user-officer"),
+							createdAt: new Date(Math.min(submittedAt.getTime() + index * DAY_MS, now.getTime())),
+						}
+					})
 				})
 			await tx.insert(serviceRequestStatusHistory).values(seedRequestHistory)
 
@@ -1368,6 +1865,90 @@ async function seedDatabase() {
 					metadata: { entityType: "emergency", entityId: "weather-advisory-2026-05" },
 					createdAt: new Date("2026-05-25T06:00:00Z"),
 				},
+				{
+					userId: DEMO_USER_ID,
+					title: "Welcome to iGubat!",
+					body: "Your account is verified. You can now request services, report issues, and track them here.",
+					type: "in_app",
+					isRead: true,
+					createdAt: new Date("2025-01-10T08:10:00Z"),
+				},
+				{
+					userId: DEMO_USER_ID,
+					title: "Request Received",
+					body: "Your Cedula request CT-2026-0101 has been received and is waiting for review.",
+					type: "in_app",
+					category: "service_request",
+					isRead: false,
+					metadata: { entityType: "service_request", entityId: "CT-2026-0101" },
+					createdAt: new Date(now.getTime() - 1 * DAY_MS),
+				},
+				{
+					userId: DEMO_USER_ID,
+					title: "Ready for Pickup",
+					body: "Your birth certificate copies (CV-2026-0150) are ready at the Civil Registrar's window. Bring a valid ID.",
+					type: "in_app",
+					category: "service_request",
+					isRead: false,
+					metadata: { entityType: "service_request", entityId: "CV-2026-0150" },
+					createdAt: new Date(now.getTime() - 3 * DAY_MS),
+				},
+				{
+					userId: DEMO_USER_ID,
+					title: "Building Permit Approved",
+					body: "Your building permit BU-2026-0005 has been approved. Please pay the permit fee at the Treasurer's Office.",
+					type: "in_app",
+					category: "service_request",
+					isRead: false,
+					metadata: { entityType: "service_request", entityId: "BU-2026-0005" },
+					createdAt: new Date(now.getTime() - 8 * DAY_MS),
+				},
+				{
+					userId: DEMO_USER_ID,
+					title: "Action Needed: Educational Assistance",
+					body: "Request ED-2026-0040 is missing a certificate of enrollment. You may submit a new request with complete documents.",
+					type: "in_app",
+					category: "service_request",
+					isRead: true,
+					metadata: { entityType: "service_request", entityId: "ED-2026-0040" },
+					createdAt: new Date(now.getTime() - 12 * DAY_MS),
+				},
+				{
+					userId: DEMO_USER_ID,
+					title: "Report Update",
+					body: "Your waste management report is now in progress. A collection truck has been scheduled.",
+					type: "in_app",
+					category: "issue_report",
+					isRead: false,
+					metadata: {
+						entityType: "citizen_report",
+						entityId: String(demoReportIdByCategory["Waste Management"]),
+					},
+					createdAt: new Date(now.getTime() - 2 * DAY_MS),
+				},
+				{
+					userId: DEMO_USER_ID,
+					title: "Report Resolved",
+					body: "Your road damage report has been resolved. Thank you for helping improve Gubat!",
+					type: "in_app",
+					category: "issue_report",
+					isRead: true,
+					metadata: {
+						entityType: "citizen_report",
+						entityId: String(demoReportIdByCategory["Road Damage"]),
+					},
+					createdAt: new Date(now.getTime() - 15 * DAY_MS),
+				},
+				{
+					userId: DEMO_USER_ID,
+					title: "Severe Weather Advisory",
+					body: "A low pressure area is being monitored east of Sorsogon. Stay alert and prepare for possible heavy rains.",
+					type: "in_app",
+					category: "emergency",
+					isRead: false,
+					metadata: { entityType: "emergency", entityId: "weather-advisory-2026-05" },
+					createdAt: new Date(now.getTime() - 5 * DAY_MS),
+				},
 			]
 			const insertedNotifications = await tx
 				.insert(notifications)
@@ -1383,6 +1964,7 @@ async function seedDatabase() {
 				"seed-user-maria",
 				"seed-user-pedro",
 				"seed-user-ana",
+				DEMO_USER_ID,
 			].map(userId => ({
 				userId,
 				news: true,
@@ -1645,6 +2227,25 @@ async function seedDatabase() {
 					updatedAt: now,
 				},
 				{
+					// Home → Community Stats: order, labels and visibility (values are
+					// computed live). Managed in Admin → Content → Community Stats.
+					key: "home.community_stats",
+					category: "home",
+					value: [
+						{ key: "registered_citizens", label: "Citizens Registered", enabled: true },
+						{ key: "pending_requests", label: "Pending Requests", enabled: true },
+						{ key: "active_services", label: "Active Services", enabled: true },
+						{ key: "new_reports", label: "New Reports", enabled: true },
+						{ key: "published_news", label: "Published News", enabled: true },
+						{ key: "completed_requests", label: "Requests Completed", enabled: false },
+						{ key: "upcoming_events", label: "Upcoming Events", enabled: false },
+					],
+					isSecret: false,
+					updatedById: "seed-user-admin",
+					createdAt: now,
+					updatedAt: now,
+				},
+				{
 					key: "uploads.policy",
 					category: "storage",
 					value: {
@@ -1685,6 +2286,14 @@ async function seedDatabase() {
 					ipAddress: "127.0.0.1",
 					userAgent: "seed",
 					createdAt: new Date("2026-05-27T08:00:00Z"),
+				},
+				{
+					userId: DEMO_USER_ID,
+					identifier: DEMO_USER_EMAIL,
+					success: true,
+					ipAddress: "127.0.0.1",
+					userAgent: "seed",
+					createdAt: new Date(now.getTime() - DAY_MS),
 				},
 			]
 			await tx.insert(userLoginActivity).values(seedLoginActivity)
@@ -2354,6 +2963,11 @@ async function seedDatabase() {
 			console.log(`  ${table}: ${count}`)
 		}
 		console.log(`\nDefault password for all accounts: ${SEED_PASSWORD}`)
+		console.log("\nQuick demo (mobile app) — start here:")
+		console.log(`  ${DEMO_USER_EMAIL} / ${SEED_PASSWORD}`)
+		console.log(
+			"  Rosa Lim: complete verified profile, 1 request per status, 3 reports, notifications"
+		)
 		console.log("\nCitizens (mobile app):")
 		console.log("  juan@example.com, maria@example.com, pedro@example.com, ana@igubat.local")
 		console.log("  unverified@igubat.local — OTP testing only (cannot sign in until verified)")
