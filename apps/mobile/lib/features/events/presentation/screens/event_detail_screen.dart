@@ -6,7 +6,9 @@ import '../../../../core/theme/glass_tokens.dart';
 import '../../../../shared/widgets/glass/glass_badge.dart';
 import '../../../../shared/widgets/glass/glass_card.dart';
 import '../../../../shared/widgets/glass/glass_scaffold.dart';
+import '../../../../shared/widgets/glass/glass_skeleton.dart';
 import '../../../../shared/widgets/glass/glass_surface.dart';
+import '../../../../shared/widgets/states/app_state_views.dart';
 import '../../domain/entities/event.dart';
 import '../providers/events_provider.dart';
 
@@ -35,21 +37,22 @@ class EventDetailScreen extends ConsumerWidget {
       title: 'Event Details',
       bottomPadding: false,
       useShellBackground: false,
+      onRefresh: () async => ref.refresh(eventDetailProvider(slug).future),
       body: eventAsync.when(
-        loading: () => const Center(
-          child: Padding(
-            padding: EdgeInsets.only(top: 80),
-            child: CircularProgressIndicator(),
+        loading: () => StateScrollView(
+          padding: const EdgeInsets.all(24),
+          child: LoadingStateView(
+            message: 'Loading event details...',
+            skeleton: const GlassSkeletonDetail(showHero: false),
+            onRetry: () => ref.invalidate(eventDetailProvider(slug)),
           ),
         ),
-        error: (error, _) => Padding(
+        error: (error, _) => StateScrollView(
           padding: const EdgeInsets.all(24),
-          child: Center(
-            child: Text(
-              'Could not load this event. Please try again later.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: glass.textOnGlassMuted),
-            ),
+          child: ErrorStateView(
+            title: 'Unable to load this event',
+            error: error,
+            onRetry: () => ref.invalidate(eventDetailProvider(slug)),
           ),
         ),
         data: (event) => _buildContent(context, event, glass),

@@ -9,6 +9,7 @@ import '../../../../core/navigation/app_router.dart';
 import '../../../../core/navigation/glass_page_route.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/glass_tokens.dart';
+import '../../../../core/widgets/igubat_logo.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../notifications/presentation/screens/notifications_screen.dart';
 import '../../../../shared/widgets/glass/glass_scaffold.dart';
@@ -49,7 +50,10 @@ LinearGradient _igubatHeaderGradient({required bool isDark}) {
 /// (sign-in CTA, search) scrolls away; only profile + greeting + notification
 /// remain pinned in a Services-style toolbar bar.
 class HomeCollapsingHeader extends ConsumerWidget {
-  const HomeCollapsingHeader({super.key});
+  const HomeCollapsingHeader({super.key, this.onLogoTap});
+
+  /// Tapping the brand logo shown in the collapsed bar (e.g. scroll to top).
+  final VoidCallback? onLogoTap;
 
   static const _horizontalPadding = 24.0;
 
@@ -75,6 +79,7 @@ class HomeCollapsingHeader extends ConsumerWidget {
         isAuthenticated: isAuthenticated,
         userName: user?.name,
         greeting: greeting,
+        onLogoTap: onLogoTap,
       ),
     );
   }
@@ -110,15 +115,18 @@ class _HomeFlexibleSpace extends StatelessWidget {
     required this.isAuthenticated,
     required this.userName,
     required this.greeting,
+    this.onLogoTap,
   });
 
   final bool isAuthenticated;
   final String? userName;
   final String greeting;
+  final VoidCallback? onLogoTap;
 
   @override
   Widget build(BuildContext context) {
-    final settings = context.dependOnInheritedWidgetOfExactType<FlexibleSpaceBarSettings>();
+    final settings = context
+        .dependOnInheritedWidgetOfExactType<FlexibleSpaceBarSettings>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final t = settings == null
@@ -126,10 +134,12 @@ class _HomeFlexibleSpace extends StatelessWidget {
         : () {
             final delta = settings.maxExtent - settings.minExtent;
             if (delta <= 0) return 0.0;
-            return ((settings.currentExtent - settings.minExtent) / delta).clamp(0.0, 1.0);
+            return ((settings.currentExtent - settings.minExtent) / delta)
+                .clamp(0.0, 1.0);
           }();
 
-    final scrollAwayHeight = (isAuthenticated ? 0.0 : 104.0 + 12.0) + 52.0 + 20.0;
+    final scrollAwayHeight =
+        (isAuthenticated ? 0.0 : 104.0 + 12.0) + 52.0 + 20.0;
     final scrollContentOpacity = Curves.easeIn.transform(t);
     final bottomRadius = lerpDouble(0, GlassTokens.radiusGlassLg, t)!;
 
@@ -153,6 +163,7 @@ class _HomeFlexibleSpace extends StatelessWidget {
               userName: userName,
               greeting: greeting,
               expandRatio: t,
+              onLogoTap: onLogoTap,
             ),
           ),
           // Sign-in + search — fade out early as the header collapses.
@@ -192,9 +203,7 @@ class _HomeFlexibleSpace extends StatelessWidget {
     final gradient = _igubatHeaderGradient(isDark: isDark);
 
     if (t >= 0.99) {
-      return DecoratedBox(
-        decoration: BoxDecoration(gradient: gradient),
-      );
+      return DecoratedBox(decoration: BoxDecoration(gradient: gradient));
     }
 
     return Stack(
@@ -203,7 +212,10 @@ class _HomeFlexibleSpace extends StatelessWidget {
         DecoratedBox(decoration: BoxDecoration(gradient: gradient)),
         Opacity(
           opacity: 1 - t,
-          child: GlassToolbarShell(isDark: isDark, child: const SizedBox.expand()),
+          child: GlassToolbarShell(
+            isDark: isDark,
+            child: const SizedBox.expand(),
+          ),
         ),
       ],
     );
@@ -216,19 +228,22 @@ class _HomeToolbarRow extends StatelessWidget {
     required this.userName,
     required this.greeting,
     required this.expandRatio,
+    this.onLogoTap,
   });
 
   final bool isAuthenticated;
   final String? userName;
   final String greeting;
   final double expandRatio;
+  final VoidCallback? onLogoTap;
 
-  String get _firstName =>
-      (userName ?? SeedData.currentUser.name).trim().split(RegExp(r'\s+')).first;
+  String get _firstName => (userName ?? SeedData.currentUser.name)
+      .trim()
+      .split(RegExp(r'\s+'))
+      .first;
 
-  String get _primaryGreetingLine => isAuthenticated
-      ? '$greeting, $_firstName!'
-      : '$greeting, Igubat!';
+  String get _primaryGreetingLine =>
+      isAuthenticated ? '$greeting, $_firstName!' : '$greeting, Igubat!';
 
   String? get _subtitleLine => isAuthenticated
       ? (userName ?? SeedData.currentUser.name)
@@ -243,6 +258,10 @@ class _HomeToolbarRow extends StatelessWidget {
     final avatarSpacing = lerpDouble(8, 16, t)!;
     final rowHeight = lerpDouble(kToolbarHeight, 72, t)!;
     final showSubtitle = t > 0.55;
+    // Greeting fades out while collapsing; the brand logo takes its place in
+    // the pinned bar so it can act as a "back to top" control.
+    final greetingOpacity = ((t - 0.2) / 0.3).clamp(0.0, 1.0);
+    final logoOpacity = (1 - t / 0.2).clamp(0.0, 1.0);
 
     return SizedBox(
       height: rowHeight,
@@ -259,47 +278,76 @@ class _HomeToolbarRow extends StatelessWidget {
             child: CircleAvatar(
               radius: avatarRadius,
               backgroundColor: Colors.white24,
-              child: Icon(Icons.person, color: Colors.white, size: avatarIconSize),
+              child: Icon(
+                Icons.person,
+                color: Colors.white,
+                size: avatarIconSize,
+              ),
             ),
           ),
           SizedBox(width: avatarSpacing),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
+            child: Stack(
+              alignment: Alignment.centerLeft,
               children: [
-                Text(
-                  _primaryGreetingLine,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: greetingFontSize,
-                    fontWeight: FontWeight.bold,
-                    height: 1.2,
-                  ),
-                ),
-                if (showSubtitle) ...[
-                  SizedBox(height: 4 * t),
+                if (greetingOpacity > 0)
                   Opacity(
-                    opacity: ((t - 0.55) / 0.45).clamp(0.0, 1.0),
-                    child: Text(
-                      _subtitleLine!,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.85),
-                        fontSize: 14,
+                    opacity: greetingOpacity,
+                    child: _buildGreeting(t, greetingFontSize, showSubtitle),
+                  ),
+                if (logoOpacity > 0)
+                  IgnorePointer(
+                    ignoring: logoOpacity < 0.5,
+                    child: Opacity(
+                      opacity: logoOpacity,
+                      child: IgubatLogo(
+                        height: 34,
+                        onTap: onLogoTap,
+                        tapHint: 'Back to top',
                       ),
                     ),
                   ),
-                ],
               ],
             ),
           ),
           _NotificationButton(isAuthenticated: isAuthenticated, expandRatio: t),
         ],
       ),
+    );
+  }
+
+  Widget _buildGreeting(double t, double greetingFontSize, bool showSubtitle) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          _primaryGreetingLine,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: greetingFontSize,
+            fontWeight: FontWeight.bold,
+            height: 1.2,
+          ),
+        ),
+        if (showSubtitle) ...[
+          SizedBox(height: 4 * t),
+          Opacity(
+            opacity: ((t - 0.55) / 0.45).clamp(0.0, 1.0),
+            child: Text(
+              _subtitleLine!,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.85),
+                fontSize: 14,
+              ),
+            ),
+          ),
+        ],
+      ],
     );
   }
 }
@@ -358,7 +406,11 @@ class _GuestSignInBanner extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Row(
         children: [
-          const Icon(Icons.account_circle_outlined, color: Colors.white, size: 22),
+          const Icon(
+            Icons.account_circle_outlined,
+            color: Colors.white,
+            size: 22,
+          ),
           const SizedBox(width: 12),
           const Expanded(
             child: Text(

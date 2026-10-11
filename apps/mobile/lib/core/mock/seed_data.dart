@@ -32,26 +32,6 @@ class Service {
   });
 }
 
-class Announcement {
-  final String title;
-  final String content;
-  final String category;
-  final String datePublished;
-  final bool isFeatured;
-  final int views;
-  final int likes;
-
-  const Announcement({
-    required this.title,
-    required this.content,
-    required this.category,
-    required this.datePublished,
-    this.isFeatured = false,
-    this.views = 0,
-    this.likes = 0,
-  });
-}
-
 class AppNotification {
   final String title;
   final String message;
@@ -110,54 +90,11 @@ class ServiceRequest {
   });
 }
 
-class CommunityStat {
-  final String label;
-  final String value;
-  final String icon;
-
-  const CommunityStat({
-    required this.label,
-    required this.value,
-    required this.icon,
-  });
-}
-
-class UpcomingEvent {
-  final String title;
-  final String date;
-  final String location;
-  final String category;
-
-  const UpcomingEvent({
-    required this.title,
-    required this.date,
-    required this.location,
-    required this.category,
-  });
-}
-
-class RecentTransaction {
-  final String title;
-  final String amount;
-  final String date;
-  final String status;
-
-  const RecentTransaction({
-    required this.title,
-    required this.amount,
-    required this.date,
-    required this.status,
-  });
-}
-
 class AchievementBadge {
   final String title;
   final String icon;
 
-  const AchievementBadge({
-    required this.title,
-    required this.icon,
-  });
+  const AchievementBadge({required this.title, required this.icon});
 }
 
 class SeedData {
@@ -179,7 +116,8 @@ class SeedData {
     ),
     Service(
       title: 'Certificates',
-      description: 'Request barangay clearance, residency, and other certificates.',
+      description:
+          'Request barangay clearance, residency, and other certificates.',
       icon: 'file-text',
       category: 'Certificates',
       processingDays: 2,
@@ -209,21 +147,24 @@ class SeedData {
     ),
     Service(
       title: 'Medical Assistance',
-      description: 'Request support for medicine, consultation, or hospital assistance.',
+      description:
+          'Request support for medicine, consultation, or hospital assistance.',
       icon: 'heart',
       category: 'Assistance',
       processingDays: 5,
     ),
     Service(
       title: 'Transportation Assistance',
-      description: 'Request LGU transportation support for eligible citizen needs.',
+      description:
+          'Request LGU transportation support for eligible citizen needs.',
       icon: 'credit-card',
       category: 'Assistance',
       processingDays: 3,
     ),
     Service(
       title: 'Facility Use',
-      description: 'Reserve municipal facilities for approved community activities.',
+      description:
+          'Reserve municipal facilities for approved community activities.',
       icon: 'file-text',
       category: 'Facilities',
       processingDays: 4,
@@ -234,46 +175,6 @@ class SeedData {
       icon: 'file-text',
       category: 'All',
       processingDays: 7,
-    ),
-  ];
-
-  static const List<Announcement> announcements = [
-    Announcement(
-      title: 'Business Permit Renewal Period Now Open',
-      content:
-          'The Municipality of Gubat is now accepting new and renewal business permit applications for the upcoming year. Visit the BPLO office or apply online via iGubat.',
-      category: 'Business',
-      datePublished: '2026-05-20T08:00:00Z',
-      isFeatured: true,
-      views: 1240,
-      likes: 86,
-    ),
-    Announcement(
-      title: 'Free Medical Mission This Saturday',
-      content:
-          'The Municipal Health Office invites all residents to a free medical mission at the town plaza. Bring valid IDs for verification.',
-      category: 'Health',
-      datePublished: '2026-05-18T09:30:00Z',
-      views: 890,
-      likes: 124,
-    ),
-    Announcement(
-      title: 'Road Repair Schedule for May',
-      content:
-          'Expect traffic rerouting along the national road from May 22-25 due to ongoing road repair operations.',
-      category: 'Infrastructure',
-      datePublished: '2026-05-15T07:15:00Z',
-      views: 2100,
-      likes: 45,
-    ),
-    Announcement(
-      title: 'Coastal Clean-Up Drive',
-      content:
-          'Join the LGU and volunteer groups for a coastal clean-up activity at Rizal Beach this Sunday.',
-      category: 'Community',
-      datePublished: '2026-05-10T10:00:00Z',
-      views: 560,
-      likes: 98,
     ),
   ];
 
@@ -416,54 +317,6 @@ class SeedData {
       dateSubmitted: '2026-05-12T09:45:00Z',
       status: 'Approved',
       remarks: 'Certificate is available for pickup.',
-    ),
-  ];
-
-  static const List<CommunityStat> communityStats = [
-    CommunityStat(label: 'Citizens Served', value: '12,450', icon: 'people'),
-    CommunityStat(label: 'Active Requests', value: '328', icon: 'requests'),
-    CommunityStat(label: 'Avg. Processing', value: '3.2 days', icon: 'time'),
-  ];
-
-  static const List<UpcomingEvent> upcomingEvents = [
-    UpcomingEvent(
-      title: 'Town Fiesta Opening',
-      date: 'Jun 12, 2026',
-      location: 'Municipal Plaza',
-      category: 'Community',
-    ),
-    UpcomingEvent(
-      title: 'Tax Payment Deadline',
-      date: 'Jun 30, 2026',
-      location: 'Treasurer\'s Office',
-      category: 'Business',
-    ),
-    UpcomingEvent(
-      title: 'Barangay Assembly',
-      date: 'Jun 5, 2026',
-      location: 'Barangay Cogon Hall',
-      category: 'Community',
-    ),
-  ];
-
-  static const List<RecentTransaction> recentTransactions = [
-    RecentTransaction(
-      title: 'Business Permit Fee',
-      amount: '₱1,500.00',
-      date: 'May 10, 2026',
-      status: 'Paid',
-    ),
-    RecentTransaction(
-      title: 'Real Property Tax',
-      amount: '₱3,200.00',
-      date: 'Apr 28, 2026',
-      status: 'Paid',
-    ),
-    RecentTransaction(
-      title: 'Barangay Clearance',
-      amount: '₱100.00',
-      date: 'Apr 15, 2026',
-      status: 'Paid',
     ),
   ];
 

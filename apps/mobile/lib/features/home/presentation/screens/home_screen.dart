@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
-import '../../../../core/mock/seed_data.dart';
+import '../../../../core/navigation/app_router.dart';
 import '../../../../core/navigation/glass_page_route.dart';
 import '../../../../core/theme/app_styles.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -12,18 +13,27 @@ import '../../../../shared/widgets/glass/glass_card.dart';
 import '../../../../shared/widgets/glass/glass_section_header.dart';
 import '../../../../shared/widgets/glass/glass_skeleton.dart';
 import '../../../../shared/widgets/glass/glass_surface.dart';
+import '../../../../shared/widgets/main_scaffold.dart';
 import '../widgets/home_collapsing_header.dart';
 import '../../../news/presentation/screens/news_detail_screen.dart';
 import '../../../news/presentation/providers/news_provider.dart';
 import '../../../reports/presentation/screens/report_issue_screen.dart';
+import '../../../services/presentation/mappers/service_card_mapper.dart';
+import '../../../services/presentation/mappers/service_icon_mapper.dart';
 import '../../../services/presentation/screens/service_request_stepper_screen.dart';
+import '../../../services/presentation/providers/services_provider.dart';
 import '../../../applications/presentation/screens/applications_screen.dart';
 import '../../../emergency/presentation/screens/emergency_screen.dart';
 import '../../../events/presentation/screens/event_detail_screen.dart';
+import '../../../events/presentation/screens/events_screen.dart';
 import '../../../events/presentation/providers/events_provider.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../service_requests/presentation/providers/service_requests_provider.dart';
+import '../../../service_requests/presentation/service_request_status_color.dart';
+import '../../../services/presentation/screens/request_details_screen.dart';
 import '../../../transparency/presentation/widgets/transparency_section.dart';
 import '../providers/dashboard_provider.dart';
-import 'transaction_detail_screen.dart';
+import '../widgets/home_section_message.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -34,15 +44,6 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   final ScrollController _scrollController = ScrollController();
-  bool _loading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    Future.delayed(const Duration(milliseconds: 400), () {
-      if (mounted) setState(() => _loading = false);
-    });
-  }
 
   @override
   void dispose() {
@@ -50,43 +51,55 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     super.dispose();
   }
 
+  /// Re-fetches every live Home section. Individual failures are swallowed
+  /// here; each section renders its own error state with a Retry action.
   Future<void> _onRefresh() async {
-    await Future.delayed(const Duration(milliseconds: 800));
+    Future<void> quietly(Future<Object?> future) =>
+        future.then<void>((_) {}, onError: (_) {});
+
+    await Future.wait([
+      quietly(ref.refresh(dashboardProvider.future)),
+      quietly(ref.refresh(newsListProvider.future)),
+      quietly(ref.refresh(eventsListProvider.future)),
+      quietly(ref.refresh(serviceTypesProvider.future)),
+      quietly(ref.refresh(serviceCategoriesProvider.future)),
+      if (ref.read(isAuthenticatedProvider))
+        ref.read(serviceRequestsControllerProvider.notifier).reload(),
+    ]);
   }
 
-  IconData _serviceIcon(String icon) {
-    switch (icon) {
-      case 'briefcase':
-        return Icons.business_center;
-      case 'file-text':
-        return Icons.description;
-      case 'megaphone':
-        return Icons.campaign;
-      case 'credit-card':
-        return Icons.payment;
-      case 'heart':
-        return Icons.favorite;
-      default:
-        return Icons.article;
-    }
+  void _scrollToTop() {
+    if (!_scrollController.hasClients) return;
+    _scrollController.animateTo(
+      0,
+      duration: AppMotion.durationStandard,
+      curve: Curves.easeOutCubic,
+    );
   }
 
-  IconData _statIcon(String icon) {
-    switch (icon) {
-      case 'people':
-        return Icons.people_outline;
-      case 'requests':
-        return Icons.assignment_outlined;
-      case 'time':
-        return Icons.schedule;
-      default:
-        return Icons.analytics_outlined;
-    }
-  }
+  /// 12345 -> "12,345".
+  static String _formatCount(int value) => value.toString().replaceAllMapped(
+    RegExp(r'\B(?=(\d{3})+(?!\d))'),
+    (_) => ',',
+  );
+
+  IconData _statIcon(String key) => switch (key) {
+    'registered_citizens' => Icons.people_outline,
+    'pending_requests' => Icons.pending_actions_outlined,
+    'completed_requests' => Icons.task_alt,
+    'active_services' => Icons.miscellaneous_services_outlined,
+    'new_reports' => Icons.report_outlined,
+    'published_news' => Icons.article_outlined,
+    'upcoming_events' => Icons.event_outlined,
+    _ => Icons.analytics_outlined,
+  };
 
   @override
   Widget build(BuildContext context) {
     final bottomPad = AppLayout.scrollBottomPadding(context);
+    // Hide Community Stats entirely when the admin has disabled every stat.
+    final hideStats =
+        ref.watch(dashboardProvider).value?.communityStats.isEmpty ?? false;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
@@ -101,63 +114,61 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               parent: BouncingScrollPhysics(),
             ),
             slivers: [
-              const HomeCollapsingHeader(),
-              if (_loading)
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppLayout.screenHorizontal,
-                    AppLayout.screenTop,
-                    AppLayout.screenHorizontal,
-                    0,
-                  ),
-                  sliver: SliverList(
-                    delegate: SliverChildListDelegate([
-                      const GlassSkeletonCard(),
-                      const SizedBox(height: 16),
-                      const GlassSkeletonCard(),
-                    ]),
-                  ),
-                )
-              else ...[
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppLayout.screenHorizontal,
-                    AppLayout.screenTop,
-                    AppLayout.screenHorizontal,
-                    0,
-                  ),
-                  sliver: SliverToBoxAdapter(child: _buildQuickActions(context)),
+              HomeCollapsingHeader(onLogoTap: _scrollToTop),
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppLayout.screenHorizontal,
+                  AppLayout.screenTop,
+                  AppLayout.screenHorizontal,
+                  0,
                 ),
-                _buildTransparencySliver(context),
-                _sectionSliver(
-                  context,
-                  title: 'Key Services',
-                  actionLabel: 'View All',
-                  child: _buildServicesGrid(context),
-                ),
+                sliver: SliverToBoxAdapter(child: _buildQuickActions(context)),
+              ),
+              _buildTransparencySliver(context),
+              _sectionSliver(
+                context,
+                title: 'Key Services',
+                actionLabel: 'View All',
+                onAction: () =>
+                    MainScaffold.switchTab(context, MainScaffold.servicesTab),
+                child: _buildServicesGrid(context),
+              ),
+              if (!hideStats)
                 _sectionSliver(
                   context,
                   title: 'Community Stats',
                   child: _buildCommunityStats(context),
                 ),
-                _sectionSliver(
+              _sectionSliver(
+                context,
+                title: 'Featured Community News',
+                actionLabel: 'View All',
+                onAction: () =>
+                    MainScaffold.switchTab(context, MainScaffold.newsTab),
+                child: _buildFeaturedNews(context),
+              ),
+              _sectionSliver(
+                context,
+                title: 'Upcoming Events',
+                actionLabel: 'View All',
+                onAction: () => Navigator.push(
                   context,
-                  title: 'Featured Community News',
-                  actionLabel: 'View All',
-                  child: _buildFeaturedNews(context),
+                  GlassPageRoute(page: const EventsScreen()),
                 ),
-                _sectionSliver(
+                child: _buildUpcomingEvents(context),
+              ),
+              _sectionSliver(
+                context,
+                title: 'My Recent Requests',
+                actionLabel: ref.watch(isAuthenticatedProvider)
+                    ? 'View All'
+                    : null,
+                onAction: () => Navigator.push(
                   context,
-                  title: 'Upcoming Events',
-                  actionLabel: 'View All',
-                  child: _buildUpcomingEvents(context),
+                  GlassPageRoute(page: const ApplicationsScreen()),
                 ),
-                _sectionSliver(
-                  context,
-                  title: 'Recent Transactions',
-                  child: _buildRecentTransactions(context),
-                ),
-              ],
+                child: _buildMyRecentRequests(context),
+              ),
               SliverPadding(padding: EdgeInsets.only(bottom: bottomPad)),
             ],
           ),
@@ -209,6 +220,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     BuildContext context, {
     required String title,
     String? actionLabel,
+    VoidCallback? onAction,
     required Widget child,
   }) {
     return SliverPadding(
@@ -222,7 +234,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            GlassSectionHeader(title: title, actionLabel: actionLabel),
+            GlassSectionHeader(
+              title: title,
+              actionLabel: actionLabel,
+              onAction: onAction,
+            ),
             const SizedBox(height: AppLayout.titleToContent),
             child,
           ],
@@ -231,52 +247,133 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  void _onQuickActionTap(BuildContext context, int index) {
-    switch (index) {
-      case 0:
-        Navigator.push(context, GlassPageRoute(page: const EmergencyScreen()));
-        break;
-      case 1:
-        Navigator.push(context, GlassPageRoute(page: const ReportIssueScreen()));
-        break;
-      case 2:
-        Navigator.push(
-          context,
-          GlassPageRoute(page: const ApplicationsScreen()),
+  void _showPayBillsSheet(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        final theme = Theme.of(sheetContext);
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Icon(
+                  Icons.payment,
+                  size: 36,
+                  color: AppTheme.secondaryColor,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Online payment is coming soon',
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Bills can\'t be paid in the app yet. Meanwhile, you can start a '
+                  'service request or check the status of your existing ones.',
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 20),
+                FilledButton.icon(
+                  onPressed: () {
+                    Navigator.pop(sheetContext);
+                    MainScaffold.switchTab(context, MainScaffold.servicesTab);
+                  },
+                  icon: const Icon(Icons.grid_view),
+                  label: const Text('Browse Services'),
+                ),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.pop(sheetContext);
+                    Navigator.push(
+                      context,
+                      GlassPageRoute(page: const ApplicationsScreen()),
+                    );
+                  },
+                  icon: const Icon(Icons.track_changes),
+                  label: const Text('Track My Requests'),
+                ),
+              ],
+            ),
+          ),
         );
-        break;
-      default:
-        Navigator.push(
-          context,
-          GlassPageRoute(page: TransactionDetailScreen(transaction: SeedData.recentTransactions.first)),
-        );
-    }
+      },
+    );
   }
 
   Widget _buildQuickActions(BuildContext context) {
-    final actions = [
-      (Icons.phone_in_talk, 'Call 911', const Color(0xFFB91C1C)),
-      (Icons.report_problem_outlined, 'Report Issue', const Color(0xFFD97706)),
-      (Icons.track_changes, 'Track Request', AppTheme.primaryColor),
-      (Icons.payment, 'Pay Bills', AppTheme.secondaryColor),
+    final actions = <(IconData, String, Color, VoidCallback)>[
+      (
+        Icons.phone_in_talk,
+        'Call 911',
+        const Color(0xFFB91C1C),
+        () => Navigator.push(
+          context,
+          GlassPageRoute(page: const EmergencyScreen()),
+        ),
+      ),
+      (
+        Icons.report_problem_outlined,
+        'Report Issue',
+        const Color(0xFFD97706),
+        () => Navigator.push(
+          context,
+          GlassPageRoute(page: const ReportIssueScreen()),
+        ),
+      ),
+      (
+        Icons.track_changes,
+        'Track Request',
+        AppTheme.primaryColor,
+        () => Navigator.push(
+          context,
+          GlassPageRoute(page: const ApplicationsScreen()),
+        ),
+      ),
+      (
+        Icons.payment,
+        'Pay Bills',
+        AppTheme.secondaryColor,
+        () => _showPayBillsSheet(context),
+      ),
+      (
+        Icons.explore_outlined,
+        'Discover Gubat',
+        const Color(0xFF0891B2),
+        () => context.push('/discover-gubat'),
+      ),
+      (
+        Icons.apps,
+        'All Services',
+        const Color(0xFF2563EB),
+        () => MainScaffold.switchTab(context, MainScaffold.servicesTab),
+      ),
     ];
 
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
+        crossAxisCount: 3,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
-        childAspectRatio: 1.35,
+        childAspectRatio: 0.95,
       ),
       itemCount: actions.length,
       itemBuilder: (context, index) {
         final action = actions[index];
         return GlassCard(
           intensity: GlassIntensity.prominent,
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-          onTap: () => _onQuickActionTap(context, index),
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
+          onTap: action.$4,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -295,7 +392,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontSize: 13,
+                  fontSize: 12,
                   fontWeight: FontWeight.w600,
                   color: glassThemeOf(context).textOnGlass,
                 ),
@@ -307,8 +404,53 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
+  Widget _gridSkeleton({required int count, required double aspectRatio}) {
+    return GridView.count(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisCount: 2,
+      crossAxisSpacing: AppLayout.gridGap,
+      mainAxisSpacing: AppLayout.gridGap,
+      childAspectRatio: aspectRatio,
+      children: List.generate(
+        count,
+        (_) => GlassSkeleton(
+          borderRadius: BorderRadius.circular(GlassTokens.radiusGlassSm),
+          height: double.infinity,
+        ),
+      ),
+    );
+  }
+
   Widget _buildServicesGrid(BuildContext context) {
-    final services = SeedData.services.take(4).toList();
+    final servicesAsync = ref.watch(serviceTypesProvider);
+    final liveCategories =
+        ref.watch(serviceCategoriesProvider).value ?? const [];
+    final categoryNames = {for (final c in liveCategories) c.id: c.name};
+
+    if (servicesAsync.isLoading && !servicesAsync.hasValue) {
+      return _gridSkeleton(count: 4, aspectRatio: 1.25);
+    }
+    if (servicesAsync.hasError && !servicesAsync.hasValue) {
+      return HomeSectionMessage.error(
+        onAction: () => ref.invalidate(serviceTypesProvider),
+      );
+    }
+
+    // Popular services first, topped up with other active services.
+    final active = (servicesAsync.value ?? const []).where((s) => s.isActive);
+    final cards = [
+      ...active.where((s) => s.isPopular),
+      ...active.where((s) => !s.isPopular),
+    ].take(4).map((s) => s.toServiceCard(categoryNames)).toList();
+
+    if (cards.isEmpty) {
+      return const HomeSectionMessage(
+        icon: Icons.miscellaneous_services_outlined,
+        title: 'No services available yet',
+        message: 'LGU services will appear here once they are published.',
+      );
+    }
 
     return GridView.builder(
       shrinkWrap: true,
@@ -319,20 +461,30 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         mainAxisSpacing: AppLayout.gridGap,
         childAspectRatio: 1.25,
       ),
-      itemCount: services.length,
+      itemCount: cards.length,
       itemBuilder: (context, index) {
-        final service = services[index];
+        final card = cards[index];
+        final service = card.service;
         return GlassCard(
           onTap: () {
             Navigator.push(
               context,
-              GlassPageRoute(page: ServiceRequestStepperScreen(service: service)),
+              GlassPageRoute(
+                page: ServiceRequestStepperScreen(
+                  service: service,
+                  serviceTypeId: card.serviceTypeId,
+                ),
+              ),
             );
           },
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(_serviceIcon(service.icon), size: 32, color: AppTheme.secondaryColor),
+              Icon(
+                serviceIconFor(service.icon),
+                size: 32,
+                color: AppTheme.secondaryColor,
+              ),
               const SizedBox(height: 12),
               Text(
                 service.title,
@@ -352,25 +504,35 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
+  /// Horizontal strip of skeleton cards for carousel-style sections.
+  Widget _stripSkeleton({required double height, required double itemWidth}) {
+    return SizedBox(
+      height: height,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: 3,
+        separatorBuilder: (_, _) => const SizedBox(width: 12),
+        itemBuilder: (_, _) => GlassSkeleton(
+          width: itemWidth,
+          height: height,
+          borderRadius: BorderRadius.circular(GlassTokens.radiusGlassSm),
+        ),
+      ),
+    );
+  }
+
   Widget _buildCommunityStats(BuildContext context) {
-    // Live counters from the public dashboard; fall back to the seed strip
-    // while loading or if the endpoint is unavailable.
-    final dashboard = ref.watch(dashboardProvider).value;
-    final stats = dashboard == null
-        ? [
-            for (final s in SeedData.communityStats) (s.icon, s.value, s.label),
-          ]
-        : <(String, String, String)>[
-            ('people', '${dashboard.totalUsers}', 'Citizens Registered'),
-            ('requests', '${dashboard.pendingRequests}', 'Pending Requests'),
-            ('analytics', '${dashboard.activeServices}', 'Active Services'),
-            ('requests', '${dashboard.newReports}', 'New Reports'),
-            (
-              'analytics',
-              '${dashboard.publishedAnnouncements}',
-              'Published News',
-            ),
-          ];
+    final dashboardAsync = ref.watch(dashboardProvider);
+    if (dashboardAsync.isLoading && !dashboardAsync.hasValue) {
+      return _stripSkeleton(height: 110, itemWidth: 150);
+    }
+    if (dashboardAsync.hasError && !dashboardAsync.hasValue) {
+      return HomeSectionMessage.error(
+        onAction: () => ref.invalidate(dashboardProvider),
+      );
+    }
+    final stats = dashboardAsync.value?.communityStats ?? const [];
 
     return SizedBox(
       height: 110,
@@ -389,10 +551,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(_statIcon(stat.$1), color: AppTheme.secondaryColor, size: 20),
+                  Icon(
+                    _statIcon(stat.key),
+                    color: AppTheme.secondaryColor,
+                    size: 20,
+                  ),
                   const SizedBox(height: 8),
                   Text(
-                    stat.$2,
+                    _formatCount(stat.value),
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
@@ -400,7 +566,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                   ),
                   Text(
-                    stat.$3,
+                    stat.label,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -418,23 +584,35 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildFeaturedNews(BuildContext context) {
-    // Prefer a live featured article; fall back to the seed announcement while
-    // the public news endpoint is loading or unavailable.
-    final liveArticles = ref.watch(newsListProvider).value;
-    final live = (liveArticles != null && liveArticles.isNotEmpty)
-        ? liveArticles.firstWhere(
-            (a) => a.isFeatured,
-            orElse: () => liveArticles.first,
-          )
-        : null;
-    final seed = SeedData.announcements.firstWhere((a) => a.isFeatured);
+    final newsAsync = ref.watch(newsListProvider);
+    if (newsAsync.isLoading && !newsAsync.hasValue) {
+      return const GlassSkeletonCard();
+    }
+    if (newsAsync.hasError && !newsAsync.hasValue) {
+      return HomeSectionMessage.error(
+        onAction: () => ref.invalidate(newsListProvider),
+      );
+    }
+    final articles = newsAsync.value ?? const [];
+    if (articles.isEmpty) {
+      return const HomeSectionMessage(
+        icon: Icons.article_outlined,
+        title: 'No news yet',
+        message: 'Municipal announcements will appear here.',
+      );
+    }
 
-    final category = live?.category ?? seed.category;
-    final title = live?.title ?? seed.title;
-    final summary = live != null
-        ? ((live.excerpt?.isNotEmpty ?? false) ? live.excerpt! : live.body)
-        : seed.content;
-    final slug = live?.slug;
+    // The admin-featured article wins; otherwise show the latest one.
+    final article = articles.firstWhere(
+      (a) => a.isFeatured,
+      orElse: () => articles.first,
+    );
+    final category = article.category;
+    final title = article.title;
+    final summary = (article.excerpt?.isNotEmpty ?? false)
+        ? article.excerpt!
+        : article.body;
+    final slug = article.slug;
 
     return GlassCard(
       intensity: GlassIntensity.prominent,
@@ -516,8 +694,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   static const List<String> _monthAbbr = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
   ];
 
   String _formatEventDate(DateTime? date) {
@@ -527,49 +715,46 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildUpcomingEvents(BuildContext context) {
-    // Prefer live events; fall back to the seed strip while loading/unavailable.
-    final liveEvents = ref.watch(eventsListProvider).value;
-    final useLive = liveEvents != null && liveEvents.isNotEmpty;
-    final count = useLive
-        ? liveEvents.length
-        : SeedData.upcomingEvents.length;
+    final eventsAsync = ref.watch(eventsListProvider);
+    if (eventsAsync.isLoading && !eventsAsync.hasValue) {
+      return _stripSkeleton(height: 140, itemWidth: 200);
+    }
+    if (eventsAsync.hasError && !eventsAsync.hasValue) {
+      return HomeSectionMessage.error(
+        onAction: () => ref.invalidate(eventsListProvider),
+      );
+    }
+    final events = eventsAsync.value ?? const [];
+    if (events.isEmpty) {
+      return const HomeSectionMessage(
+        icon: Icons.event_busy_outlined,
+        title: 'No upcoming events',
+        message: 'Check back soon for community activities.',
+      );
+    }
 
     return SizedBox(
       height: 140,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         clipBehavior: Clip.none,
-        itemCount: count,
+        itemCount: events.length,
         separatorBuilder: (_, _) => const SizedBox(width: 12),
         itemBuilder: (context, index) {
-          final String category, title, dateStr, location;
-          final String? slug;
-          if (useLive) {
-            final e = liveEvents[index];
-            category = e.category ?? 'Event';
-            title = e.title;
-            dateStr = _formatEventDate(e.startsAt);
-            location = e.location ?? 'To be announced';
-            slug = e.slug;
-          } else {
-            final e = SeedData.upcomingEvents[index];
-            category = e.category;
-            title = e.title;
-            dateStr = e.date;
-            location = e.location;
-            slug = null;
-          }
+          final event = events[index];
+          final category = event.category ?? 'Event';
+          final title = event.title;
+          final dateStr = _formatEventDate(event.startsAt);
+          final location = (event.location?.isNotEmpty ?? false)
+              ? event.location!
+              : 'To be announced';
           return SizedBox(
             width: 200,
             child: GlassCard(
-              onTap: () {
-                if (slug != null && slug.isNotEmpty) {
-                  Navigator.push(
-                    context,
-                    GlassPageRoute(page: EventDetailScreen(slug: slug)),
-                  );
-                }
-              },
+              onTap: () => Navigator.push(
+                context,
+                GlassPageRoute(page: EventDetailScreen(slug: event.slug)),
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -588,12 +773,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   const Spacer(),
                   Row(
                     children: [
-                      Icon(Icons.calendar_today, size: 12, color: glassThemeOf(context).textOnGlassMuted),
+                      Icon(
+                        Icons.calendar_today,
+                        size: 12,
+                        color: glassThemeOf(context).textOnGlassMuted,
+                      ),
                       const SizedBox(width: 4),
                       Flexible(
                         child: Text(
                           dateStr,
-                          style: TextStyle(fontSize: 11, color: glassThemeOf(context).textOnGlassMuted),
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: glassThemeOf(context).textOnGlassMuted,
+                          ),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -602,14 +794,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      Icon(Icons.location_on_outlined, size: 12, color: glassThemeOf(context).textOnGlassMuted),
+                      Icon(
+                        Icons.location_on_outlined,
+                        size: 12,
+                        color: glassThemeOf(context).textOnGlassMuted,
+                      ),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
                           location,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(fontSize: 11, color: glassThemeOf(context).textOnGlassMuted),
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: glassThemeOf(context).textOnGlassMuted,
+                          ),
                         ),
                       ),
                     ],
@@ -623,29 +822,78 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildRecentTransactions(BuildContext context) {
+  /// Signed-in citizen's latest service requests (live `/me/requests`).
+  Widget _buildMyRecentRequests(BuildContext context) {
+    if (!ref.watch(isAuthenticatedProvider)) {
+      return HomeSectionMessage(
+        icon: Icons.lock_outline,
+        title: 'Sign in to track your requests',
+        message:
+            'See the status of your permits, certificates and other requests.',
+        actionLabel: 'Sign In',
+        onAction: () => context.push(AppRoutes.login),
+      );
+    }
+
+    final requestsAsync = ref.watch(serviceRequestsControllerProvider);
+    if (requestsAsync.isLoading && !requestsAsync.hasValue) {
+      return const Column(
+        children: [
+          GlassSkeleton(width: double.infinity, height: 72),
+          SizedBox(height: 12),
+          GlassSkeleton(width: double.infinity, height: 72),
+        ],
+      );
+    }
+    if (requestsAsync.hasError && !requestsAsync.hasValue) {
+      return HomeSectionMessage.error(
+        onAction: () =>
+            ref.read(serviceRequestsControllerProvider.notifier).reload(),
+      );
+    }
+
+    final requests = [...?requestsAsync.value]
+      ..sort(
+        (a, b) =>
+            (b.createdAt ?? DateTime(0)).compareTo(a.createdAt ?? DateTime(0)),
+      );
+    if (requests.isEmpty) {
+      return HomeSectionMessage(
+        icon: Icons.assignment_outlined,
+        title: 'You have no requests yet',
+        message: 'Start a permit, certificate or assistance request.',
+        actionLabel: 'Browse',
+        onAction: () =>
+            MainScaffold.switchTab(context, MainScaffold.servicesTab),
+      );
+    }
+
+    final glass = glassThemeOf(context);
     return Column(
-      children: SeedData.recentTransactions.map((tx) {
+      children: requests.take(3).map((request) {
+        final statusColor = request.status.color;
         return Padding(
           padding: const EdgeInsets.only(bottom: 12),
           child: GlassCard(
             intensity: GlassIntensity.subtle,
             padding: const EdgeInsets.all(16),
-            onTap: () {
-              Navigator.push(
-                context,
-                GlassPageRoute(page: TransactionDetailScreen(transaction: tx)),
-              );
-            },
+            onTap: () => Navigator.push(
+              context,
+              GlassPageRoute(page: RequestDetailsScreen(requestId: request.id)),
+            ),
             child: Row(
               children: [
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: AppTheme.secondaryColor.withValues(alpha: 0.12),
+                    color: statusColor.withValues(alpha: 0.12),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.receipt_long, color: AppTheme.secondaryColor, size: 20),
+                  child: Icon(
+                    Icons.description_outlined,
+                    color: statusColor,
+                    size: 20,
+                  ),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -653,31 +901,32 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        tx.title,
+                        request.serviceType,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
-                          color: glassThemeOf(context).textOnGlass,
+                          color: glass.textOnGlass,
                         ),
                       ),
+                      const SizedBox(height: 2),
                       Text(
-                        tx.date,
-                        style: TextStyle(fontSize: 12, color: glassThemeOf(context).textOnGlassMuted),
+                        '${request.trackingNumber} · ${_formatEventDate(request.createdAt)}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: glass.textOnGlassMuted,
+                        ),
                       ),
                     ],
                   ),
                 ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      tx.amount,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: glassThemeOf(context).textOnGlass,
-                      ),
-                    ),
-                    GlassBadge(label: tx.status, color: AppTheme.secondaryColor, compact: true),
-                  ],
+                const SizedBox(width: 8),
+                GlassBadge(
+                  label: request.status.label,
+                  color: statusColor,
+                  compact: true,
                 ),
               ],
             ),

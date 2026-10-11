@@ -1,8 +1,8 @@
 import '../../../../core/utils/json_utils.dart';
 import '../../domain/entities/dashboard.dart';
 
-/// DTO for the public dashboard. Only the count fields are modelled; the
-/// recent-activity arrays are ignored on mobile.
+/// DTO for the public dashboard. The recent-activity arrays are ignored on
+/// mobile.
 class DashboardModel {
   const DashboardModel({
     required this.totalUsers,
@@ -10,6 +10,7 @@ class DashboardModel {
     required this.activeServices,
     required this.newReports,
     required this.publishedAnnouncements,
+    this.communityStats = const [],
   });
 
   final int totalUsers;
@@ -17,6 +18,7 @@ class DashboardModel {
   final int activeServices;
   final int newReports;
   final int publishedAnnouncements;
+  final List<CommunityStat> communityStats;
 
   factory DashboardModel.fromJson(Map<String, dynamic> json) => DashboardModel(
     totalUsers: JsonUtils.asInt(json['totalUsers']),
@@ -24,6 +26,15 @@ class DashboardModel {
     activeServices: JsonUtils.asInt(json['activeServices']),
     newReports: JsonUtils.asInt(json['newReports']),
     publishedAnnouncements: JsonUtils.asInt(json['publishedAnnouncements']),
+    communityStats: [
+      for (final item in (json['communityStats'] as List?) ?? const [])
+        if (item is Map)
+          CommunityStat(
+            key: item['key']?.toString() ?? '',
+            label: item['label']?.toString() ?? '',
+            value: JsonUtils.asInt(item['value']),
+          ),
+    ],
   );
 
   Dashboard toEntity() => Dashboard(
@@ -32,5 +43,6 @@ class DashboardModel {
     activeServices: activeServices,
     newReports: newReports,
     publishedAnnouncements: publishedAnnouncements,
+    communityStats: communityStats,
   );
 }

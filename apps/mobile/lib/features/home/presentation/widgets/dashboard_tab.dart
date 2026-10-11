@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/core/widgets/igubat_logo.dart';
 import 'package:mobile/features/auth/presentation/providers/auth_provider.dart';
-import 'package:mobile/shared/widgets/app_card.dart';
-
 class DashboardTab extends ConsumerWidget {
   const DashboardTab({super.key});
 
@@ -72,7 +70,7 @@ class DashboardTab extends ConsumerWidget {
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.grey.withOpacity(0.15)),
+                      border: Border.all(color: Colors.grey.withValues(alpha: 0.15)),
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -85,9 +83,13 @@ class DashboardTab extends ConsumerWidget {
     );
   }
 
-  Widget _buildHeader(BuildContext context, String? userName, String? userImage) {
+  Widget _buildHeader(
+    BuildContext context,
+    String? userName,
+    String? userImage,
+  ) {
     final theme = Theme.of(context);
-    
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.only(top: 60, left: 20, right: 20, bottom: 24),
@@ -104,13 +106,16 @@ class DashboardTab extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const IgubatLogo(height: 28, darkText: false),
+              const IgubatLogo(height: 36),
               Row(
                 children: [
                   Stack(
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.notifications, color: Colors.white),
+                        icon: const Icon(
+                          Icons.notifications,
+                          color: Colors.white,
+                        ),
                         onPressed: () {},
                       ),
                       Positioned(
@@ -130,11 +135,18 @@ class DashboardTab extends ConsumerWidget {
                   CircleAvatar(
                     radius: 16,
                     backgroundColor: theme.colorScheme.secondary,
-                    backgroundImage: userImage != null ? NetworkImage(userImage) : null,
+                    backgroundImage: userImage != null
+                        ? NetworkImage(userImage)
+                        : null,
                     child: userImage == null
                         ? Text(
-                            userName?.isNotEmpty == true ? userName![0].toUpperCase() : 'U',
-                            style: const TextStyle(color: Colors.white, fontSize: 14),
+                            userName?.isNotEmpty == true
+                                ? userName![0].toUpperCase()
+                                : 'U',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                            ),
                           )
                         : null,
                   ),
@@ -155,7 +167,7 @@ class DashboardTab extends ConsumerWidget {
           Text(
             'One Municipality. One Digital Service.',
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: Colors.white.withOpacity(0.9),
+              color: Colors.white.withValues(alpha: 0.9),
             ),
           ),
           const SizedBox(height: 24),
@@ -209,10 +221,10 @@ class DashboardTab extends ConsumerWidget {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.grey.withOpacity(0.15)),
+            border: Border.all(color: Colors.grey.withValues(alpha: 0.15)),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.03),
+                color: Colors.black.withValues(alpha: 0.03),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -236,7 +248,7 @@ class DashboardTab extends ConsumerWidget {
                   style: theme.textTheme.labelSmall?.copyWith(
                     fontWeight: FontWeight.w600,
                     fontSize: 10,
-                    color: theme.colorScheme.onSurface.withOpacity(0.8),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
                   ),
                 ),
               ),
@@ -256,7 +268,7 @@ class DashboardTab extends ConsumerWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0F3D26).withOpacity(0.3),
+            color: const Color(0xFF0F3D26).withValues(alpha: 0.3),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -268,7 +280,7 @@ class DashboardTab extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.15),
+              color: Colors.white.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(4),
             ),
             child: const Text(
@@ -292,7 +304,7 @@ class DashboardTab extends ConsumerWidget {
           Text(
             'The Municipality is now accepting new business permit applications for the upcoming year...',
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: Colors.white.withOpacity(0.8),
+              color: Colors.white.withValues(alpha: 0.8),
             ),
           ),
         ],

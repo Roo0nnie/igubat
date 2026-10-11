@@ -20,6 +20,18 @@ import '../../features/profile/presentation/screens/profile_screen.dart';
 class MainScaffold extends ConsumerStatefulWidget {
   const MainScaffold({super.key});
 
+  static const int homeTab = 0;
+  static const int servicesTab = 1;
+  static const int newsTab = 2;
+  static const int emergencyTab = 3;
+  static const int profileTab = 4;
+
+  /// Switches the bottom-nav tab from any screen hosted inside the shell.
+  /// Applies the same guards as tapping the tab (e.g. Profile requires login).
+  static void switchTab(BuildContext context, int index) {
+    context.findAncestorStateOfType<_MainScaffoldState>()?._onTabTapped(index);
+  }
+
   @override
   ConsumerState<MainScaffold> createState() => _MainScaffoldState();
 }
@@ -27,7 +39,7 @@ class MainScaffold extends ConsumerStatefulWidget {
 class _MainScaffoldState extends ConsumerState<MainScaffold> {
   /// Index of the Profile tab. Profile management is an authenticated-only
   /// action (TOR Module 9), so Guests tapping it are sent to login instead.
-  static const int _profileIndex = 4;
+  static const int _profileIndex = MainScaffold.profileTab;
 
   int _currentIndex = 0;
 

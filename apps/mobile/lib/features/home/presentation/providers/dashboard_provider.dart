@@ -6,6 +6,8 @@ import '../../domain/usecases/get_dashboard.dart';
 
 /// Public dashboard counters for the Home "Community Stats" strip.
 final dashboardProvider = FutureProvider.autoDispose<Dashboard>((ref) async {
-  final result = await ref.watch(getDashboardUseCaseProvider).call(const NoParams());
+  final result = await ref
+      .watch(getDashboardUseCaseProvider)
+      .call(const NoParams());
   return result.fold((failure) => throw failure, (dashboard) => dashboard);
 });
