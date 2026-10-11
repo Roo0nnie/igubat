@@ -283,7 +283,6 @@ export class TransparencyService {
 		const root = slugify(base) || `item-${Date.now()}`
 		let candidate = root
 		let suffix = 1
-		// eslint-disable-next-line no-constant-condition
 		while (true) {
 			const [existing] = await db
 				.select({ id: transparencyItems.id })
