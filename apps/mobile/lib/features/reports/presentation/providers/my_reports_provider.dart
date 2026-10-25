@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/utils/auto_dispose_cache.dart';
 import '../../../../core/usecases/usecase.dart';
 import '../../domain/entities/citizen_report.dart';
 import '../../domain/usecases/get_my_reports.dart';
@@ -11,7 +12,9 @@ final myReportsProvider =
     FutureProvider.autoDispose<List<CitizenReport>>((ref) async {
       final result =
           await ref.watch(getMyReportsUseCaseProvider).call(const NoParams());
-      return result.fold((failure) => throw failure, (reports) => reports);
+      final reports = result.fold((failure) => throw failure, (value) => value);
+      cacheAutoDisposeResult(ref);
+      return reports;
     });
 
 /// A single citizen report resolved by [id] (`GET /me/reports/:id`), used by

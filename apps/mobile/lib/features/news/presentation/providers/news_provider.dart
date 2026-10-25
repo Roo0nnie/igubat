@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/utils/auto_dispose_cache.dart';
 import '../../../../core/usecases/usecase.dart';
 import '../../domain/entities/news_article.dart';
 import '../../domain/usecases/get_news_article.dart';
@@ -11,7 +12,9 @@ final newsListProvider = FutureProvider.autoDispose<List<NewsArticle>>((
   ref,
 ) async {
   final result = await ref.watch(listNewsUseCaseProvider).call(const NoParams());
-  return result.fold((failure) => throw failure, (articles) => articles);
+  final articles = result.fold((failure) => throw failure, (value) => value);
+  cacheAutoDisposeResult(ref);
+  return articles;
 });
 
 /// A single news article resolved by [slug], used by the detail screen.

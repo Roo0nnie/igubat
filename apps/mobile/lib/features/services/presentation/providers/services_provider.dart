@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/utils/auto_dispose_cache.dart';
 import '../../../../core/usecases/usecase.dart';
 import '../../domain/entities/service_category.dart';
 import '../../domain/entities/service_type.dart';
@@ -12,7 +13,9 @@ final serviceTypesProvider =
     FutureProvider.autoDispose<List<ServiceType>>((ref) async {
       final result =
           await ref.watch(getServiceTypesUseCaseProvider).call(const NoParams());
-      return result.fold((failure) => throw failure, (types) => types);
+      final types = result.fold((failure) => throw failure, (value) => value);
+      cacheAutoDisposeResult(ref);
+      return types;
     });
 
 /// Live public service categories (`/public/service-categories`), used for the
@@ -22,7 +25,12 @@ final serviceCategoriesProvider =
       final result = await ref
           .watch(getServiceCategoriesUseCaseProvider)
           .call(const NoParams());
-      return result.fold((failure) => throw failure, (categories) => categories);
+      final categories = result.fold(
+        (failure) => throw failure,
+        (value) => value,
+      );
+      cacheAutoDisposeResult(ref);
+      return categories;
     });
 
 /// A single service type by slug (`/public/services/:slug`) for detail screens.

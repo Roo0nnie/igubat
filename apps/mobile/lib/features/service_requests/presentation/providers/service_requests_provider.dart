@@ -1,5 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../../core/utils/auto_dispose_cache.dart';
 import '../../../../core/usecases/usecase.dart';
 import '../../domain/entities/service_request.dart';
 import '../../domain/usecases/cancel_service_request.dart';
@@ -18,7 +19,9 @@ class ServiceRequestsController extends _$ServiceRequestsController {
   Future<List<ServiceRequest>> build() async {
     final result =
         await ref.read(getMyRequestsUseCaseProvider).call(const NoParams());
-    return result.fold((failure) => throw failure, (requests) => requests);
+    final requests = result.fold((failure) => throw failure, (value) => value);
+    cacheAutoDisposeResult(ref);
+    return requests;
   }
 
   /// Submits a new request. On success the created request is prepended to the

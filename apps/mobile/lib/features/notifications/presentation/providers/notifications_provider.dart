@@ -1,5 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../../core/utils/auto_dispose_cache.dart';
 import '../../../../core/usecases/usecase.dart';
 import '../../domain/entities/app_notification.dart';
 import '../../domain/usecases/get_notifications.dart';
@@ -16,7 +17,9 @@ class NotificationsController extends _$NotificationsController {
   Future<List<AppNotification>> build() async {
     final result =
         await ref.read(getNotificationsUseCaseProvider).call(const NoParams());
-    return result.fold((failure) => throw failure, (items) => items);
+    final items = result.fold((failure) => throw failure, (value) => value);
+    cacheAutoDisposeResult(ref);
+    return items;
   }
 
   /// Marks a single notification read, optimistically updating its row.
