@@ -8,7 +8,11 @@ import type { V1Inputs } from "@/services/orpc/contract-types"
 type EventListInput = V1Inputs["igubat"]["admin"]["events"]
 
 export function useAdminEventsQuery(input?: EventListInput) {
-	return useQuery(orpc.igubat.admin.events.queryOptions({ input }))
+	return useQuery({
+		...orpc.igubat.admin.events.queryOptions({ input }),
+		staleTime: 60_000,
+		placeholderData: previous => previous,
+	})
 }
 
 function useInvalidateEvents() {

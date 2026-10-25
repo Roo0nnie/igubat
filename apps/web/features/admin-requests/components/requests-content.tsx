@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useState } from "react"
 import type { Route } from "next"
 import Link from "next/link"
 import { Eye, Filter, Search } from "lucide-react"
@@ -25,7 +25,11 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/core/components/ui/table"
+import { TablePagination } from "@/core/components/ui/table-pagination"
+import { useDebouncedValue } from "@/core/hooks/use-debounced-value"
 import { useAdminRequestsQuery } from "@/features/admin-requests/api/requests.hooks"
+
+const PAGE_SIZE = 25
 
 const STATUS_OPTIONS = [
 	"all",
@@ -59,12 +63,17 @@ function formatDate(value: string | Date) {
 export function RequestsContent() {
 	const [search, setSearch] = useState("")
 	const [status, setStatus] = useState<(typeof STATUS_OPTIONS)[number]>("all")
+	const [page, setPage] = useState(1)
+	const debouncedSearch = useDebouncedValue(search.trim())
 	const requests = useAdminRequestsQuery({
-		search: search.trim() || undefined,
+		search: debouncedSearch || undefined,
 		status: status === "all" ? undefined : status,
+		page,
+		limit: PAGE_SIZE,
 	})
 
-	const rows = useMemo(() => requests.data ?? [], [requests.data])
+	const fetchedRows = requests.data ?? []
+	const rows = fetchedRows.slice(0, PAGE_SIZE)
 
 	return (
 		<div className="mx-auto max-w-7xl space-y-6 p-6 md:p-8">
@@ -88,14 +97,20 @@ export function RequestsContent() {
 									placeholder="Search by tracking ID, name, or service..."
 									className="pl-8"
 									value={search}
-									onChange={event => setSearch(event.target.value)}
+									onChange={event => {
+										setSearch(event.target.value)
+										setPage(1)
+									}}
 								/>
 							</div>
 						</div>
 						<div className="flex items-center gap-2">
 							<Select
 								value={status}
-								onValueChange={value => setStatus(value as (typeof STATUS_OPTIONS)[number])}
+								onValueChange={value => {
+									setStatus(value as (typeof STATUS_OPTIONS)[number])
+									setPage(1)
+								}}
 							>
 								<SelectTrigger className="w-[165px]">
 									<SelectValue />
@@ -175,6 +190,12 @@ export function RequestsContent() {
 							</TableBody>
 						</Table>
 					</div>
+					<TablePagination
+						page={page}
+						pageSize={PAGE_SIZE}
+						rowCount={fetchedRows.length}
+						onPageChange={setPage}
+					/>
 				</CardContent>
 			</Card>
 		</div>

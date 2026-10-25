@@ -1,6 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
+import { useQueryClient } from "@tanstack/react-query"
 import {
 	Archive,
 	CalendarDays,
@@ -50,7 +51,10 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/core/components/ui/table"
+import { TablePagination } from "@/core/components/ui/table-pagination"
 import { Textarea } from "@/core/components/ui/textarea"
+import { useDebouncedValue } from "@/core/hooks/use-debounced-value"
+import { orpc } from "@/services/orpc/client"
 import type { ArrayItem, V1Inputs } from "@/services/orpc/contract-types"
 import {
 	useAdminEventsQuery,
@@ -62,6 +66,7 @@ type EventRow = ArrayItem<NonNullable<ReturnType<typeof useAdminEventsQuery>["da
 type EventStatus = V1Inputs["igubat"]["admin"]["upsertEvent"]["status"]
 
 const STATUS_FILTERS = ["all", "published", "draft", "archived"] as const
+const PAGE_SIZE = 25
 const CATEGORY_SUGGESTIONS = [
 	"Community",
 	"Health",
@@ -160,14 +165,14 @@ function toPayload(form: EventForm) {
 	}
 }
 
-function rowToForm(event: EventRow): EventForm {
+function rowToForm(event: EventRow, description: string): EventForm {
 	return {
 		id: event.id,
 		title: event.title,
 		slug: event.slug,
 		category: event.category,
 		location: event.location,
-		description: event.description,
+		description,
 		imageUrl: event.imageUrl ?? "",
 		startsAt: toLocalInput(event.startsAt),
 		endsAt: toLocalInput(event.endsAt),
@@ -182,22 +187,44 @@ function errorMessage(error: unknown, fallback: string) {
 export function EventsManagement() {
 	const [search, setSearch] = useState("")
 	const [statusFilter, setStatusFilter] = useState<(typeof STATUS_FILTERS)[number]>("all")
+	const [page, setPage] = useState(1)
 	const [form, setForm] = useState<EventForm | null>(null)
+	const [loadingEventId, setLoadingEventId] = useState<number | null>(null)
 	const [showErrors, setShowErrors] = useState(false)
+	const debouncedSearch = useDebouncedValue(search.trim())
+	const queryClient = useQueryClient()
 
 	const events = useAdminEventsQuery({
-		search: search.trim() || undefined,
+		search: debouncedSearch || undefined,
 		status: statusFilter === "all" ? undefined : statusFilter,
+		page,
+		limit: PAGE_SIZE,
 	})
 	const upsertEvent = useUpsertEventMutation()
 	const deleteEvent = useDeleteEventMutation()
 
 	const errors = useMemo(() => (form ? validate(form) : {}), [form])
-	const rows = events.data ?? []
+	const fetchedRows = events.data ?? []
+	const rows = fetchedRows.slice(0, PAGE_SIZE)
 
 	function openForm(next: EventForm) {
 		setShowErrors(false)
 		setForm(next)
+	}
+
+	async function editEvent(event: EventRow) {
+		setLoadingEventId(event.id)
+		try {
+			const fullEvent = await queryClient.fetchQuery({
+				...orpc.igubat.admin.event.queryOptions({ input: { id: event.id } }),
+				staleTime: 60_000,
+			})
+			openForm(rowToForm(event, fullEvent.description))
+		} catch (error) {
+			toast.error(errorMessage(error, "Event could not be loaded."))
+		} finally {
+			setLoadingEventId(null)
+		}
 	}
 
 	async function save() {
@@ -216,11 +243,20 @@ export function EventsManagement() {
 	}
 
 	async function changeStatus(event: EventRow, status: EventStatus, message: string) {
+		setLoadingEventId(event.id)
 		try {
-			await upsertEvent.mutateAsync(toPayload({ ...rowToForm(event), status }))
+			const fullEvent = await queryClient.fetchQuery({
+				...orpc.igubat.admin.event.queryOptions({ input: { id: event.id } }),
+				staleTime: 60_000,
+			})
+			await upsertEvent.mutateAsync(
+				toPayload({ ...rowToForm(event, fullEvent.description), status })
+			)
 			toast.success(message)
 		} catch (error) {
 			toast.error(errorMessage(error, "Event status could not be changed."))
+		} finally {
+			setLoadingEventId(null)
 		}
 	}
 
@@ -260,12 +296,18 @@ export function EventsManagement() {
 								aria-label="Search events"
 								className="pl-8"
 								value={search}
-								onChange={event => setSearch(event.target.value)}
+								onChange={event => {
+									setSearch(event.target.value)
+									setPage(1)
+								}}
 							/>
 						</div>
 						<Select
 							value={statusFilter}
-							onValueChange={value => setStatusFilter(value as typeof statusFilter)}
+							onValueChange={value => {
+								setStatusFilter(value as typeof statusFilter)
+								setPage(1)
+							}}
 						>
 							<SelectTrigger className="w-full sm:w-36" aria-label="Filter by status">
 								<SelectValue />
@@ -351,7 +393,8 @@ export function EventsManagement() {
 												<Button
 													variant="outline"
 													size="sm"
-													onClick={() => openForm(rowToForm(event))}
+													disabled={loadingEventId === event.id}
+													onClick={() => void editEvent(event)}
 												>
 													<Edit className="size-4" /> Edit
 												</Button>
@@ -359,6 +402,7 @@ export function EventsManagement() {
 													<Button
 														variant="ghost"
 														size="icon"
+														disabled={loadingEventId === event.id}
 														aria-label={`Unpublish ${event.title}`}
 														title="Unpublish (move to draft)"
 														onClick={() => changeStatus(event, "draft", "Event unpublished.")}
@@ -369,6 +413,7 @@ export function EventsManagement() {
 													<Button
 														variant="ghost"
 														size="icon"
+														disabled={loadingEventId === event.id}
 														aria-label={`Publish ${event.title}`}
 														title="Publish"
 														onClick={() => changeStatus(event, "published", "Event published.")}
@@ -380,6 +425,7 @@ export function EventsManagement() {
 													<Button
 														variant="ghost"
 														size="icon"
+														disabled={loadingEventId === event.id}
 														aria-label={`Archive ${event.title}`}
 														title="Archive"
 														onClick={() => changeStatus(event, "archived", "Event archived.")}
@@ -390,6 +436,7 @@ export function EventsManagement() {
 												<Button
 													variant="ghost"
 													size="icon"
+													disabled={loadingEventId === event.id}
 													aria-label={`Delete ${event.title}`}
 													title="Delete"
 													className="text-destructive hover:text-destructive"
@@ -405,6 +452,12 @@ export function EventsManagement() {
 						</TableBody>
 					</Table>
 				</div>
+				<TablePagination
+					page={page}
+					pageSize={PAGE_SIZE}
+					rowCount={fetchedRows.length}
+					onPageChange={setPage}
+				/>
 			</CardContent>
 
 			<Dialog open={form !== null} onOpenChange={open => !open && setForm(null)}>

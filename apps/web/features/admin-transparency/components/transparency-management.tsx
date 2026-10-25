@@ -33,8 +33,10 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/core/components/ui/table"
+import { TablePagination } from "@/core/components/ui/table-pagination"
 import { Textarea } from "@/core/components/ui/textarea"
 import { useRole } from "@/core/context/role-provider"
+import { useDebouncedValue } from "@/core/hooks/use-debounced-value"
 import { cn } from "@/core/lib/utils"
 import { orpc } from "@/services/orpc/client"
 import type { V1Outputs } from "@/services/orpc/contract-types"
@@ -87,6 +89,8 @@ type TransparencyDetailLike = TransparencyListItemLike & {
 	notifyOnPublish: boolean
 	publishedAt: Dateish
 }
+
+const PAGE_SIZE = 25
 
 type EditorState = {
 	id?: number
@@ -350,22 +354,27 @@ export function TransparencyManagement({
 	const [statusFilter, setStatusFilter] = useState<string>("all")
 	const [fiscalYear, setFiscalYear] = useState("")
 	const [search, setSearch] = useState("")
+	const [page, setPage] = useState(1)
 	const [editor, setEditor] = useState<EditorState>(emptyEditor)
 	const [loadingItemId, setLoadingItemId] = useState<number | undefined>(initialItemId)
 	const [showPreview, setShowPreview] = useState(initialPreview)
 	const selectedItemIdRef = useRef(initialItemId)
+	const debouncedSearch = useDebouncedValue(search.trim())
 
-	const listInput = useMemo(
+	const filterInput = useMemo(
 		() => ({
 			type: typeFilter === "all" ? undefined : (typeFilter as TransparencyType),
 			status: statusFilter === "all" ? undefined : (statusFilter as TransparencyStatus),
 			fiscalYear: fiscalYear ? Number(fiscalYear) : undefined,
-			search: search.trim() || undefined,
+			search: debouncedSearch || undefined,
 		}),
-		[typeFilter, statusFilter, fiscalYear, search]
+		[typeFilter, statusFilter, fiscalYear, debouncedSearch]
 	)
+	const listInput = useMemo(() => ({ ...filterInput, page, limit: PAGE_SIZE }), [filterInput, page])
 
 	const items = useTransparencyListQuery(listInput)
+	const fetchedItems = items.data ?? []
+	const itemRows = fetchedItems.slice(0, PAGE_SIZE)
 	const createItem = useCreateTransparencyMutation()
 	const updateItem = useUpdateTransparencyMutation()
 	const publishItem = usePublishTransparencyMutation()
@@ -540,7 +549,7 @@ export function TransparencyManagement({
 	async function exportCsv() {
 		try {
 			const result = await queryClient.fetchQuery(
-				orpc.igubat.admin.transparency.exportCsv.queryOptions({ input: listInput })
+				orpc.igubat.admin.transparency.exportCsv.queryOptions({ input: filterInput })
 			)
 			const blob = new Blob([result.content], { type: "text/csv;charset=utf-8" })
 			const url = URL.createObjectURL(blob)
@@ -590,7 +599,13 @@ export function TransparencyManagement({
 							Filter, then edit a row in the panel beside the table.
 						</CardDescription>
 						<div className="flex flex-wrap gap-2 pt-3">
-							<Select value={typeFilter} onValueChange={value => setTypeFilter(value ?? "all")}>
+							<Select
+								value={typeFilter}
+								onValueChange={value => {
+									setTypeFilter(value ?? "all")
+									setPage(1)
+								}}
+							>
 								<SelectTrigger className="w-[180px]">
 									<SelectValue />
 								</SelectTrigger>
@@ -603,7 +618,13 @@ export function TransparencyManagement({
 									))}
 								</SelectContent>
 							</Select>
-							<Select value={statusFilter} onValueChange={value => setStatusFilter(value ?? "all")}>
+							<Select
+								value={statusFilter}
+								onValueChange={value => {
+									setStatusFilter(value ?? "all")
+									setPage(1)
+								}}
+							>
 								<SelectTrigger className="w-[150px]">
 									<SelectValue />
 								</SelectTrigger>
@@ -620,7 +641,10 @@ export function TransparencyManagement({
 								className="w-[120px]"
 								placeholder="Fiscal year"
 								value={fiscalYear}
-								onChange={event => setFiscalYear(event.target.value.replace(/\D/g, ""))}
+								onChange={event => {
+									setFiscalYear(event.target.value.replace(/\D/g, ""))
+									setPage(1)
+								}}
 							/>
 							<div className="relative min-w-[180px] flex-1">
 								<Search className="text-muted-foreground absolute top-2.5 left-2.5 size-4" />
@@ -628,7 +652,10 @@ export function TransparencyManagement({
 									className="pl-8"
 									placeholder="Search title or ref. number"
 									value={search}
-									onChange={event => setSearch(event.target.value)}
+									onChange={event => {
+										setSearch(event.target.value)
+										setPage(1)
+									}}
 								/>
 							</div>
 						</div>
@@ -653,13 +680,13 @@ export function TransparencyManagement({
 										colSpan={8}
 										isLoading={items.isLoading}
 										isError={items.isError}
-										isEmpty={(items.data ?? []).length === 0}
+										isEmpty={itemRows.length === 0}
 										onRetry={() => void items.refetch()}
 										loadingText="Loading transparency items..."
 										errorText="Items could not be loaded."
 										emptyText="No transparency items found."
 									/>
-									{items.data?.map(item => (
+									{itemRows.map(item => (
 										<TableRow
 											key={item.id}
 											className={cn("cursor-pointer", editor.id === item.id && "bg-muted/60")}
@@ -713,6 +740,12 @@ export function TransparencyManagement({
 								</TableBody>
 							</Table>
 						</div>
+						<TablePagination
+							page={page}
+							pageSize={PAGE_SIZE}
+							rowCount={fetchedItems.length}
+							onPageChange={setPage}
+						/>
 					</CardContent>
 				</Card>
 

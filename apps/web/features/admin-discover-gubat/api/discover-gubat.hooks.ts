@@ -8,7 +8,11 @@ import type { V1Inputs } from "@/services/orpc/contract-types"
 type DiscoverGubatListInput = V1Inputs["igubat"]["admin"]["discoverGubat"]["list"]
 
 export function useDiscoverGubatListQuery(input?: DiscoverGubatListInput) {
-	return useQuery(orpc.igubat.admin.discoverGubat.list.queryOptions({ input }))
+	return useQuery({
+		...orpc.igubat.admin.discoverGubat.list.queryOptions({ input }),
+		staleTime: 60_000,
+		placeholderData: previous => previous,
+	})
 }
 
 export function useDiscoverGubatDetailQuery(id: number | undefined) {

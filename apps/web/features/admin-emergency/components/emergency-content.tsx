@@ -30,6 +30,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/core/components/ui/table"
+import { TablePagination } from "@/core/components/ui/table-pagination"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/core/components/ui/tabs"
 import { Textarea } from "@/core/components/ui/textarea"
 import {
@@ -40,6 +41,7 @@ import {
 
 const MAX_BROADCAST_LENGTH = 480
 const SEVERITIES = ["info", "warning", "critical"] as const
+const PAGE_SIZE = 25
 
 function formatDate(value: string | Date | null) {
 	if (!value) return "Scheduled"
@@ -53,8 +55,11 @@ function formatDate(value: string | Date | null) {
 }
 
 export function EmergencyContent() {
+	const [page, setPage] = useState(1)
 	const directory = useAdminEmergencyDirectoryQuery()
-	const broadcasts = useEmergencyBroadcastsQuery()
+	const broadcasts = useEmergencyBroadcastsQuery({ page, limit: PAGE_SIZE })
+	const fetchedBroadcasts = broadcasts.data ?? []
+	const broadcastRows = fetchedBroadcasts.slice(0, PAGE_SIZE)
 	const createBroadcast = useCreateBroadcastMutation()
 	const [title, setTitle] = useState("")
 	const [message, setMessage] = useState("")
@@ -270,13 +275,13 @@ export function EmergencyContent() {
 											colSpan={5}
 											isLoading={broadcasts.isLoading}
 											isError={broadcasts.isError}
-											isEmpty={(broadcasts.data ?? []).length === 0}
+											isEmpty={broadcastRows.length === 0}
 											onRetry={() => void broadcasts.refetch()}
 											loadingText="Loading broadcasts..."
 											errorText="Broadcasts could not be loaded."
 											emptyText="No broadcasts sent yet."
 										/>
-										{broadcasts.data?.map(broadcast => (
+										{broadcastRows.map(broadcast => (
 											<TableRow key={broadcast.id}>
 												<TableCell>
 													<div className="font-medium">{broadcast.title}</div>
@@ -307,6 +312,12 @@ export function EmergencyContent() {
 									</TableBody>
 								</Table>
 							</div>
+							<TablePagination
+								page={page}
+								pageSize={PAGE_SIZE}
+								rowCount={fetchedBroadcasts.length}
+								onPageChange={setPage}
+							/>
 						</CardContent>
 					</Card>
 				</TabsContent>

@@ -30,6 +30,8 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/core/components/ui/table"
+import { TablePagination } from "@/core/components/ui/table-pagination"
+import { useDebouncedValue } from "@/core/hooks/use-debounced-value"
 import { getRoleLabel } from "@/core/lib/roles"
 import { useAdminStaffQuery, useCreateStaffMutation } from "@/features/admin-staff/api/staff.hooks"
 
@@ -40,24 +42,23 @@ const STAFF_ROLES = [
 	"emergency_operator",
 	"ict_admin",
 ] as const
+const PAGE_SIZE = 25
 
 export function StaffContent() {
-	const staff = useAdminStaffQuery()
-	const createStaff = useCreateStaffMutation()
 	const [search, setSearch] = useState("")
+	const [page, setPage] = useState(1)
 	const [name, setName] = useState("")
 	const [email, setEmail] = useState("")
 	const [role, setRole] = useState<(typeof STAFF_ROLES)[number]>("frontline_officer")
-
-	const rows = (staff.data ?? []).filter(user => {
-		const term = search.trim().toLowerCase()
-		return (
-			term.length === 0 ||
-			user.name.toLowerCase().includes(term) ||
-			user.email.toLowerCase().includes(term) ||
-			user.role.toLowerCase().includes(term)
-		)
+	const debouncedSearch = useDebouncedValue(search.trim())
+	const staff = useAdminStaffQuery({
+		search: debouncedSearch || undefined,
+		page,
+		limit: PAGE_SIZE,
 	})
+	const createStaff = useCreateStaffMutation()
+	const fetchedRows = staff.data ?? []
+	const rows = fetchedRows.slice(0, PAGE_SIZE)
 
 	return (
 		<div className="mx-auto max-w-7xl space-y-6 p-6 md:p-8">
@@ -80,7 +81,10 @@ export function StaffContent() {
 								<Search className="text-muted-foreground absolute top-2.5 left-2.5 size-4" />
 								<Input
 									value={search}
-									onChange={event => setSearch(event.target.value)}
+									onChange={event => {
+										setSearch(event.target.value)
+										setPage(1)
+									}}
 									placeholder="Search staff..."
 									className="pl-8"
 								/>
@@ -127,6 +131,12 @@ export function StaffContent() {
 								</TableBody>
 							</Table>
 						</div>
+						<TablePagination
+							page={page}
+							pageSize={PAGE_SIZE}
+							rowCount={fetchedRows.length}
+							onPageChange={setPage}
+						/>
 					</CardContent>
 				</Card>
 

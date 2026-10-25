@@ -9,7 +9,11 @@ type ReportListInput = V1Inputs["igubat"]["admin"]["reports"]
 type UpdateReportInput = V1Inputs["igubat"]["admin"]["updateReportStatus"]
 
 export function useAdminReportsQuery(input?: ReportListInput) {
-	return useQuery(orpc.igubat.admin.reports.queryOptions({ input }))
+	return useQuery({
+		...orpc.igubat.admin.reports.queryOptions({ input }),
+		staleTime: 60_000,
+		placeholderData: previous => previous,
+	})
 }
 
 export function useAdminReportQuery(id: number) {

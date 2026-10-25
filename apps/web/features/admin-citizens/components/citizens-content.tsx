@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useState } from "react"
 import { Filter, Search, UserCheck } from "lucide-react"
 
 import { Badge } from "@/core/components/ui/badge"
@@ -23,9 +23,12 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/core/components/ui/table"
+import { TablePagination } from "@/core/components/ui/table-pagination"
+import { useDebouncedValue } from "@/core/hooks/use-debounced-value"
 import { useAdminCitizensQuery } from "@/features/admin-citizens/api/citizens.hooks"
 
 const STATUS_OPTIONS = ["all", "active", "locked", "deactivated"] as const
+const PAGE_SIZE = 25
 
 function formatDate(value: string | Date | undefined) {
 	if (!value) return "Not available"
@@ -39,20 +42,16 @@ function formatDate(value: string | Date | undefined) {
 export function CitizensContent() {
 	const [search, setSearch] = useState("")
 	const [status, setStatus] = useState<(typeof STATUS_OPTIONS)[number]>("all")
-	const citizens = useAdminCitizensQuery()
-
-	const rows = useMemo(() => {
-		const term = search.trim().toLowerCase()
-		return (citizens.data ?? []).filter(user => {
-			const matchesStatus = status === "all" || user.status === status
-			const matchesSearch =
-				term.length === 0 ||
-				user.name.toLowerCase().includes(term) ||
-				user.email.toLowerCase().includes(term) ||
-				(user.barangay ?? "").toLowerCase().includes(term)
-			return matchesStatus && matchesSearch
-		})
-	}, [citizens.data, search, status])
+	const [page, setPage] = useState(1)
+	const debouncedSearch = useDebouncedValue(search.trim())
+	const citizens = useAdminCitizensQuery({
+		search: debouncedSearch || undefined,
+		status: status === "all" ? undefined : status,
+		page,
+		limit: PAGE_SIZE,
+	})
+	const fetchedRows = citizens.data ?? []
+	const rows = fetchedRows.slice(0, PAGE_SIZE)
 
 	return (
 		<div className="mx-auto max-w-7xl space-y-6 p-6 md:p-8">
@@ -76,14 +75,20 @@ export function CitizensContent() {
 									placeholder="Search by name, email, or barangay..."
 									className="pl-8"
 									value={search}
-									onChange={event => setSearch(event.target.value)}
+									onChange={event => {
+										setSearch(event.target.value)
+										setPage(1)
+									}}
 								/>
 							</div>
 						</div>
 						<div className="flex items-center gap-2">
 							<Select
 								value={status}
-								onValueChange={value => setStatus(value as (typeof STATUS_OPTIONS)[number])}
+								onValueChange={value => {
+									setStatus(value as (typeof STATUS_OPTIONS)[number])
+									setPage(1)
+								}}
 							>
 								<SelectTrigger className="w-[150px]">
 									<SelectValue />
@@ -159,6 +164,12 @@ export function CitizensContent() {
 							</TableBody>
 						</Table>
 					</div>
+					<TablePagination
+						page={page}
+						pageSize={PAGE_SIZE}
+						rowCount={fetchedRows.length}
+						onPageChange={setPage}
+					/>
 				</CardContent>
 			</Card>
 		</div>

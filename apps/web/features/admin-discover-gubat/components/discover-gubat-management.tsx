@@ -24,8 +24,10 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/core/components/ui/select"
+import { TablePagination } from "@/core/components/ui/table-pagination"
 import { Textarea } from "@/core/components/ui/textarea"
 import { useRole } from "@/core/context/role-provider"
+import { useDebouncedValue } from "@/core/hooks/use-debounced-value"
 import { orpc } from "@/services/orpc/client"
 import type { V1Outputs } from "@/services/orpc/contract-types"
 import {
@@ -51,6 +53,8 @@ import {
 	type DiscoverGubatStatus,
 	type DiscoverGubatType,
 } from "@/features/admin-discover-gubat/lib/discover-gubat-types"
+
+const PAGE_SIZE = 25
 
 type Dateish = string | Date | null
 type ContractDiscoverGubatDetail = V1Outputs["igubat"]["admin"]["discoverGubat"]["detail"]
@@ -202,21 +206,27 @@ export function DiscoverGubatManagement() {
 	const [typeFilter, setTypeFilter] = useState<string>("all")
 	const [statusFilter, setStatusFilter] = useState<string>("all")
 	const [search, setSearch] = useState("")
+	const [page, setPage] = useState(1)
 	const [editor, setEditor] = useState<EditorState>(emptyEditor)
 	const [showPreview, setShowPreview] = useState(false)
 	const [loadingItemId, setLoadingItemId] = useState<number | undefined>()
 	const selectedItemIdRef = useRef<number | undefined>(undefined)
+	const debouncedSearch = useDebouncedValue(search.trim())
 
 	const listInput = useMemo<DiscoverGubatListInput>(
 		() => ({
 			type: typeFilter === "all" ? undefined : (typeFilter as DiscoverGubatType),
 			status: statusFilter === "all" ? undefined : (statusFilter as DiscoverGubatStatus),
-			search: search.trim() || undefined,
+			search: debouncedSearch || undefined,
+			page,
+			limit: PAGE_SIZE,
 		}),
-		[typeFilter, statusFilter, search]
+		[typeFilter, statusFilter, debouncedSearch, page]
 	)
 
 	const listQuery = useDiscoverGubatListQuery(listInput)
+	const fetchedRows = listQuery.data ?? []
+	const listRows = fetchedRows.slice(0, PAGE_SIZE) as DiscoverGubatListRow[]
 	const createEntry = useCreateDiscoverGubatMutation()
 	const updateEntry = useUpdateDiscoverGubatMutation()
 	const publishEntry = usePublishDiscoverGubatMutation()
@@ -370,7 +380,13 @@ export function DiscoverGubatManagement() {
 							Filter entries, then edit the selected row in the panel.
 						</CardDescription>
 						<div className="flex flex-wrap gap-2">
-							<Select value={typeFilter} onValueChange={value => setTypeFilter(value ?? "all")}>
+							<Select
+								value={typeFilter}
+								onValueChange={value => {
+									setTypeFilter(value ?? "all")
+									setPage(1)
+								}}
+							>
 								<SelectTrigger className="w-[210px]">
 									<SelectValue />
 								</SelectTrigger>
@@ -383,7 +399,13 @@ export function DiscoverGubatManagement() {
 									))}
 								</SelectContent>
 							</Select>
-							<Select value={statusFilter} onValueChange={value => setStatusFilter(value ?? "all")}>
+							<Select
+								value={statusFilter}
+								onValueChange={value => {
+									setStatusFilter(value ?? "all")
+									setPage(1)
+								}}
+							>
 								<SelectTrigger className="w-[150px]">
 									<SelectValue />
 								</SelectTrigger>
@@ -400,13 +422,16 @@ export function DiscoverGubatManagement() {
 								className="min-w-[220px] flex-1"
 								placeholder="Search title, category, or summary"
 								value={search}
-								onChange={event => setSearch(event.target.value)}
+								onChange={event => {
+									setSearch(event.target.value)
+									setPage(1)
+								}}
 							/>
 						</div>
 					</CardHeader>
 					<CardContent>
 						<DiscoverGubatListTable
-							rows={(listQuery.data ?? []) as DiscoverGubatListRow[]}
+							rows={listRows}
 							isAdmin={isAdmin}
 							isLoading={listQuery.isLoading}
 							isError={listQuery.isError}
@@ -415,6 +440,12 @@ export function DiscoverGubatManagement() {
 							onEdit={row => void loadDetail(row)}
 							onArchive={row => void archiveRow(row)}
 							onPermanentDelete={row => void permanentlyDeleteRow(row)}
+						/>
+						<TablePagination
+							page={page}
+							pageSize={PAGE_SIZE}
+							rowCount={fetchedRows.length}
+							onPageChange={setPage}
 						/>
 					</CardContent>
 				</Card>

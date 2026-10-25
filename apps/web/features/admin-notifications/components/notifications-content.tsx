@@ -48,7 +48,7 @@ function formatDate(value: string | Date | null) {
 }
 
 export function NotificationsContent() {
-	const broadcasts = useEmergencyBroadcastsQuery()
+	const broadcasts = useEmergencyBroadcastsQuery({ limit: 10 })
 	const createBroadcast = useCreateBroadcastMutation()
 	const [title, setTitle] = useState("")
 	const [message, setMessage] = useState("")

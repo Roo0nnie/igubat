@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { FileDown, Lock } from "lucide-react"
 
 import { Button } from "@/core/components/ui/button"
@@ -13,7 +14,10 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/core/components/ui/table"
+import { TablePagination } from "@/core/components/ui/table-pagination"
 import { useAuditLogsQuery } from "@/features/admin-audit/api/audit.hooks"
+
+const PAGE_SIZE = 25
 
 function formatDate(value: string | Date) {
 	return new Date(value).toLocaleString(undefined, {
@@ -53,8 +57,10 @@ function exportAudit(rows: NonNullable<ReturnType<typeof useAuditLogsQuery>["dat
 }
 
 export function AuditContent() {
-	const audit = useAuditLogsQuery()
-	const rows = audit.data ?? []
+	const [page, setPage] = useState(1)
+	const audit = useAuditLogsQuery({ page, limit: PAGE_SIZE })
+	const fetchedRows = audit.data ?? []
+	const rows = fetchedRows.slice(0, PAGE_SIZE)
 
 	return (
 		<div className="mx-auto max-w-7xl space-y-6 p-6 md:p-8">
@@ -67,7 +73,7 @@ export function AuditContent() {
 					</p>
 				</div>
 				<Button variant="outline" disabled={rows.length === 0} onClick={() => exportAudit(rows)}>
-					<FileDown className="size-4" /> Export CSV
+					<FileDown className="size-4" /> Export this page
 				</Button>
 			</div>
 
@@ -115,6 +121,12 @@ export function AuditContent() {
 							</TableBody>
 						</Table>
 					</div>
+					<TablePagination
+						page={page}
+						pageSize={PAGE_SIZE}
+						rowCount={fetchedRows.length}
+						onPageChange={setPage}
+					/>
 				</CardContent>
 			</Card>
 		</div>

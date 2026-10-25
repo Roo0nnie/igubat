@@ -9,7 +9,11 @@ type RequestListInput = V1Inputs["igubat"]["admin"]["requests"]
 type UpdateRequestInput = V1Inputs["igubat"]["admin"]["updateRequestStatus"]
 
 export function useAdminRequestsQuery(input?: RequestListInput) {
-	return useQuery(orpc.igubat.admin.requests.queryOptions({ input }))
+	return useQuery({
+		...orpc.igubat.admin.requests.queryOptions({ input }),
+		staleTime: 60_000,
+		placeholderData: previous => previous,
+	})
 }
 
 export function useAdminRequestQuery(id: number) {

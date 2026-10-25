@@ -3,13 +3,20 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 import { orpc } from "@/services/orpc/client"
+import type { V1Inputs } from "@/services/orpc/contract-types"
+
+type BroadcastListInput = V1Inputs["igubat"]["admin"]["broadcasts"]
 
 export function useAdminEmergencyDirectoryQuery() {
 	return useQuery(orpc.igubat.admin.emergencyDirectory.queryOptions())
 }
 
-export function useEmergencyBroadcastsQuery() {
-	return useQuery(orpc.igubat.admin.broadcasts.queryOptions())
+export function useEmergencyBroadcastsQuery(input?: BroadcastListInput) {
+	return useQuery({
+		...orpc.igubat.admin.broadcasts.queryOptions({ input }),
+		staleTime: 60_000,
+		placeholderData: previous => previous,
+	})
 }
 
 export function useCreateBroadcastMutation() {

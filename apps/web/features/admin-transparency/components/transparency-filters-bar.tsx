@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useRef } from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { Search } from "lucide-react"
 
@@ -35,9 +36,25 @@ export function TransparencyFiltersBar() {
 		rawStatus && TRANSPARENCY_STATUSES.includes(rawStatus as TransparencyStatus) ? rawStatus : "all"
 	const fiscalYear = searchParams.get("fiscalYear") ?? ""
 	const search = searchParams.get("search") ?? ""
+	const searchInputRef = useRef<HTMLInputElement>(null)
+	const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+	useEffect(
+		() => () => {
+			if (searchTimerRef.current) clearTimeout(searchTimerRef.current)
+		},
+		[]
+	)
 
 	function setParam(name: string, value: string) {
+		if (searchTimerRef.current) clearTimeout(searchTimerRef.current)
+		searchTimerRef.current = null
 		const next = new URLSearchParams(searchParams.toString())
+		if (name !== "search") {
+			const draftSearch = searchInputRef.current?.value.trim() ?? ""
+			if (draftSearch) next.set("search", draftSearch)
+			else next.delete("search")
+		}
 		const normalized = value.trim()
 
 		if (!normalized || normalized === "all") {
@@ -96,8 +113,14 @@ export function TransparencyFiltersBar() {
 					aria-label="Search transparency items"
 					className="pl-8"
 					placeholder="Search title or ref. number"
-					value={search}
-					onChange={event => setParam("search", event.target.value)}
+					key={search}
+					defaultValue={search}
+					ref={searchInputRef}
+					onChange={event => {
+						if (searchTimerRef.current) clearTimeout(searchTimerRef.current)
+						const value = event.target.value
+						searchTimerRef.current = setTimeout(() => setParam("search", value), 250)
+					}}
 				/>
 			</div>
 		</div>

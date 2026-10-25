@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useState } from "react"
 import type { Route } from "next"
 import Link from "next/link"
 import { Eye, Filter, MapPin, Search } from "lucide-react"
@@ -31,7 +31,11 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/core/components/ui/table"
+import { TablePagination } from "@/core/components/ui/table-pagination"
+import { useDebouncedValue } from "@/core/hooks/use-debounced-value"
 import { useAdminReportsQuery } from "@/features/admin-reports/api/reports.hooks"
+
+const PAGE_SIZE = 25
 
 const STATUS_OPTIONS = ["all", "received", "in_progress", "resolved", "closed"] as const
 
@@ -57,12 +61,17 @@ function formatDate(value: string | Date) {
 export function ReportsContent() {
 	const [search, setSearch] = useState("")
 	const [status, setStatus] = useState<(typeof STATUS_OPTIONS)[number]>("all")
+	const [page, setPage] = useState(1)
+	const debouncedSearch = useDebouncedValue(search.trim())
 	const reports = useAdminReportsQuery({
-		search: search.trim() || undefined,
+		search: debouncedSearch || undefined,
 		status: status === "all" ? undefined : status,
+		page,
+		limit: PAGE_SIZE,
 	})
 
-	const rows = useMemo(() => reports.data ?? [], [reports.data])
+	const fetchedRows = reports.data ?? []
+	const rows = fetchedRows.slice(0, PAGE_SIZE)
 
 	return (
 		<div className="mx-auto max-w-7xl space-y-6 p-6 md:p-8">
@@ -87,14 +96,20 @@ export function ReportsContent() {
 										placeholder="Search reports..."
 										className="pl-8"
 										value={search}
-										onChange={event => setSearch(event.target.value)}
+										onChange={event => {
+											setSearch(event.target.value)
+											setPage(1)
+										}}
 									/>
 								</div>
 							</div>
 							<div className="flex items-center gap-2">
 								<Select
 									value={status}
-									onValueChange={value => setStatus(value as (typeof STATUS_OPTIONS)[number])}
+									onValueChange={value => {
+										setStatus(value as (typeof STATUS_OPTIONS)[number])
+										setPage(1)
+									}}
 								>
 									<SelectTrigger className="w-[150px]">
 										<SelectValue />
@@ -176,6 +191,12 @@ export function ReportsContent() {
 								</TableBody>
 							</Table>
 						</div>
+						<TablePagination
+							page={page}
+							pageSize={PAGE_SIZE}
+							rowCount={fetchedRows.length}
+							onPageChange={setPage}
+						/>
 					</CardContent>
 				</Card>
 
@@ -183,7 +204,7 @@ export function ReportsContent() {
 					<CardHeader>
 						<CardTitle>Location Summary</CardTitle>
 						<CardDescription>
-							Geographic distribution from the filtered report list.
+							Geographic distribution for the current page of reports.
 						</CardDescription>
 					</CardHeader>
 					<CardContent>

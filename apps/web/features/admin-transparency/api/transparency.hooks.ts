@@ -8,7 +8,11 @@ import type { V1Inputs } from "@/services/orpc/contract-types"
 type TransparencyListInput = V1Inputs["igubat"]["admin"]["transparency"]["list"]
 
 export function useTransparencyListQuery(input?: TransparencyListInput) {
-	return useQuery(orpc.igubat.admin.transparency.list.queryOptions({ input }))
+	return useQuery({
+		...orpc.igubat.admin.transparency.list.queryOptions({ input }),
+		staleTime: 60_000,
+		placeholderData: previous => previous,
+	})
 }
 
 export function useTransparencyDetailQuery(id: number | undefined) {

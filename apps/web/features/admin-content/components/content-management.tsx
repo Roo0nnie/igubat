@@ -1,7 +1,9 @@
 "use client"
 
 import { useState } from "react"
+import { useQueryClient } from "@tanstack/react-query"
 import { Edit, ImageIcon, Plus, Save, Search, Star } from "lucide-react"
+import { toast } from "sonner"
 
 import { Badge } from "@/core/components/ui/badge"
 import { Button } from "@/core/components/ui/button"
@@ -31,14 +33,19 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/core/components/ui/table"
+import { TablePagination } from "@/core/components/ui/table-pagination"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/core/components/ui/tabs"
 import { Textarea } from "@/core/components/ui/textarea"
+import { useDebouncedValue } from "@/core/hooks/use-debounced-value"
+import { orpc } from "@/services/orpc/client"
 import {
 	useAdminArticlesQuery,
 	useUpsertArticleMutation,
 } from "@/features/admin-content/api/content.hooks"
 import { CommunityStatsSettings } from "@/features/admin-content/components/community-stats-settings"
 import { EventsManagement } from "@/features/admin-events/components/events-management"
+
+const PAGE_SIZE = 25
 
 const STATUS_OPTIONS = ["draft", "scheduled", "published", "archived"] as const
 
@@ -82,10 +89,45 @@ function formatDate(value: string | Date | null) {
 }
 
 export function ContentManagement() {
+	const queryClient = useQueryClient()
 	const [search, setSearch] = useState("")
+	const [page, setPage] = useState(1)
+	const [loadingArticleId, setLoadingArticleId] = useState<number | undefined>()
 	const [form, setForm] = useState<ArticleForm>(emptyForm)
-	const articles = useAdminArticlesQuery({ search: search.trim() || undefined })
+	const debouncedSearch = useDebouncedValue(search.trim())
+	const articles = useAdminArticlesQuery({
+		search: debouncedSearch || undefined,
+		page,
+		limit: PAGE_SIZE,
+	})
+	const fetchedArticles = articles.data ?? []
+	const articleRows = fetchedArticles.slice(0, PAGE_SIZE)
 	const upsertArticle = useUpsertArticleMutation()
+
+	async function editArticle(id: number) {
+		setLoadingArticleId(id)
+		try {
+			const article = await queryClient.fetchQuery({
+				...orpc.igubat.admin.article.queryOptions({ input: { id } }),
+				staleTime: 60_000,
+			})
+			setForm({
+				id: article.id,
+				title: article.title,
+				slug: article.slug ?? "",
+				excerpt: article.excerpt ?? "",
+				category: article.category,
+				body: article.body,
+				status: article.status,
+				imageUrl: article.imageUrl ?? "",
+				isFeatured: article.isFeatured,
+			})
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : "Article could not be loaded.")
+		} finally {
+			setLoadingArticleId(undefined)
+		}
+	}
 
 	function submitForm() {
 		upsertArticle.mutate({
@@ -141,7 +183,10 @@ export function ContentManagement() {
 											placeholder="Search articles..."
 											className="pl-8"
 											value={search}
-											onChange={event => setSearch(event.target.value)}
+											onChange={event => {
+												setSearch(event.target.value)
+												setPage(1)
+											}}
 										/>
 									</div>
 								</div>
@@ -164,14 +209,14 @@ export function ContentManagement() {
 												colSpan={6}
 												isLoading={articles.isLoading}
 												isError={articles.isError}
-												isEmpty={(articles.data ?? []).length === 0}
+												isEmpty={articleRows.length === 0}
 												onRetry={() => void articles.refetch()}
 												loadingText="Loading news and announcements..."
 												errorText="Content could not be loaded."
 												emptyText="No articles found."
 												emptyHint="Write your first post using the editor."
 											/>
-											{articles.data?.map(article => (
+											{articleRows.map(article => (
 												<TableRow key={article.id}>
 													<TableCell className="max-w-[300px] font-medium">
 														<div className="truncate">{article.title}</div>
@@ -207,19 +252,9 @@ export function ContentManagement() {
 														<Button
 															variant="outline"
 															size="sm"
-															onClick={() =>
-																setForm({
-																	id: article.id,
-																	title: article.title,
-																	slug: article.slug ?? "",
-																	excerpt: article.excerpt ?? "",
-																	category: article.category,
-																	body: article.body,
-																	status: article.status,
-																	imageUrl: article.imageUrl ?? "",
-																	isFeatured: article.isFeatured,
-																})
-															}
+															disabled={loadingArticleId !== undefined}
+															loading={loadingArticleId === article.id}
+															onClick={() => void editArticle(article.id)}
 														>
 															<Edit className="size-4" /> Edit
 														</Button>
@@ -229,6 +264,12 @@ export function ContentManagement() {
 										</TableBody>
 									</Table>
 								</div>
+								<TablePagination
+									page={page}
+									pageSize={PAGE_SIZE}
+									rowCount={fetchedArticles.length}
+									onPageChange={setPage}
+								/>
 							</CardContent>
 						</Card>
 

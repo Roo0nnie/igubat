@@ -8,7 +8,11 @@ import type { V1Inputs } from "@/services/orpc/contract-types"
 type ArticleListInput = V1Inputs["igubat"]["admin"]["articles"]
 
 export function useAdminArticlesQuery(input?: ArticleListInput) {
-	return useQuery(orpc.igubat.admin.articles.queryOptions({ input }))
+	return useQuery({
+		...orpc.igubat.admin.articles.queryOptions({ input }),
+		staleTime: 60_000,
+		placeholderData: previous => previous,
+	})
 }
 
 export function useUpsertArticleMutation() {
@@ -19,6 +23,7 @@ export function useUpsertArticleMutation() {
 			onSuccess: async () => {
 				await Promise.all([
 					queryClient.invalidateQueries({ queryKey: orpc.igubat.admin.articles.key() }),
+					queryClient.invalidateQueries({ queryKey: orpc.igubat.admin.article.key() }),
 					queryClient.invalidateQueries({ queryKey: orpc.igubat.admin.dashboard.key() }),
 				])
 			},
