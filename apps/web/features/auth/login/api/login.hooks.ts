@@ -42,7 +42,6 @@ export function useLoginMutation() {
 			queryClient.invalidateQueries({ queryKey: sessionKeys.all })
 			// Only staff reach this point — route straight to the portal dashboard.
 			router.push("/dashboard")
-			router.refresh()
 		},
 	})
 }
