@@ -1,6 +1,4 @@
-import { drizzle } from "drizzle-orm/node-postgres"
-
-import { schema } from "@repo/db/schema"
+import { createDBClient } from "@repo/db/client"
 
 import { env } from "@/config/env.config"
 
@@ -17,4 +15,4 @@ import { env } from "@/config/env.config"
  * const todos = await db.select().from(todos)
  * ```
  */
-export const db = drizzle(env.DATABASE_URL, { schema })
+export const db = createDBClient(env.DATABASE_URL)

@@ -78,7 +78,7 @@ export const users = createTable(
 		updatedAt: t.timestamp("updated_at").notNull().defaultNow(),
 	}),
 	t => [
-		index("users_role_idx").on(t.role),
+		index("users_role_name_idx").on(t.role, t.name, t.id),
 		index("users_canonical_role_idx").on(t.canonicalRole),
 		index("users_status_idx").on(t.status),
 		index("users_barangay_idx").on(t.barangay),
@@ -242,6 +242,7 @@ export const newsArticles = createTable(
 	}),
 	t => [
 		index("news_articles_status_published_idx").on(t.status, t.publishedAt),
+		index("news_articles_list_order_idx").on(t.publishedAt, t.createdAt, t.id),
 		index("news_articles_category_idx").on(t.category),
 	]
 )
@@ -267,26 +268,30 @@ export const contentPlacements = createTable("content_placements", t => ({
 	updatedAt: t.timestamp("updated_at").notNull().defaultNow(),
 }))
 
-export const events = createTable("events", t => ({
-	id: t.serial("id").primaryKey(),
-	title: t.text("title").notNull(),
-	slug: t.text("slug").notNull().unique(),
-	description: t.text("description").notNull(),
-	category: t.text("category").notNull(),
-	location: t.text("location").notNull(),
-	imageUrl: t.text("image_url"),
-	status: t.text("status").notNull().default("published").$type<ContentStatus>(),
-	startsAt: t.timestamp("starts_at").notNull(),
-	endsAt: t.timestamp("ends_at"),
-	authorId: t.text("author_id").references(() => users.id, { onDelete: "set null" }),
-	notifyOnPublish: t.boolean("notify_on_publish").notNull().default(false),
-	scheduledAt: t.timestamp("scheduled_at"),
-	publishedAt: t.timestamp("published_at"),
-	archivedAt: t.timestamp("archived_at"),
-	deletedAt: t.timestamp("deleted_at"),
-	createdAt: t.timestamp("created_at").notNull().defaultNow(),
-	updatedAt: t.timestamp("updated_at").notNull().defaultNow(),
-}))
+export const events = createTable(
+	"events",
+	t => ({
+		id: t.serial("id").primaryKey(),
+		title: t.text("title").notNull(),
+		slug: t.text("slug").notNull().unique(),
+		description: t.text("description").notNull(),
+		category: t.text("category").notNull(),
+		location: t.text("location").notNull(),
+		imageUrl: t.text("image_url"),
+		status: t.text("status").notNull().default("published").$type<ContentStatus>(),
+		startsAt: t.timestamp("starts_at").notNull(),
+		endsAt: t.timestamp("ends_at"),
+		authorId: t.text("author_id").references(() => users.id, { onDelete: "set null" }),
+		notifyOnPublish: t.boolean("notify_on_publish").notNull().default(false),
+		scheduledAt: t.timestamp("scheduled_at"),
+		publishedAt: t.timestamp("published_at"),
+		archivedAt: t.timestamp("archived_at"),
+		deletedAt: t.timestamp("deleted_at"),
+		createdAt: t.timestamp("created_at").notNull().defaultNow(),
+		updatedAt: t.timestamp("updated_at").notNull().defaultNow(),
+	}),
+	t => [index("events_starts_at_idx").on(t.startsAt, t.id)]
+)
 
 // ============================================================================
 // TRANSPARENCY & GOOD GOVERNANCE (Module 13)
@@ -342,6 +347,7 @@ export const transparencyItems = createTable(
 	t => [
 		// Drives the public/admin list query: filter by type + status, newest first.
 		index("transparency_items_type_status_published_idx").on(t.type, t.status, t.publishedAt),
+		index("transparency_items_list_order_idx").on(t.publishedAt, t.createdAt, t.id),
 		index("transparency_items_fiscal_year_idx").on(t.fiscalYear),
 	]
 )
@@ -407,6 +413,7 @@ export const discoverGubatEntries = createTable(
 	}),
 	t => [
 		index("discover_gubat_entries_type_status_published_idx").on(t.type, t.status, t.publishedAt),
+		index("discover_gubat_entries_list_order_idx").on(t.publishedAt, t.createdAt, t.id),
 		index("discover_gubat_entries_category_idx").on(t.category),
 	]
 )
@@ -427,45 +434,53 @@ export const discoverGubatPhotos = createTable("discover_gubat_photos", t => ({
 // CITIZEN REPORTS
 // ============================================================================
 
-export const citizenReports = createTable("citizen_reports", t => ({
-	id: t.serial("id").primaryKey(),
-	category: t
-		.text("category")
-		.notNull()
-		.$type<
-			| "Road Damage"
-			| "Flooding"
-			| "Waste Management"
-			| "Street Lighting"
-			| "Public Safety"
-			| "Others"
-		>(),
-	description: t.text("description").notNull(),
-	status: t
-		.text("status")
-		.notNull()
-		.default("received")
-		.$type<"received" | "in_progress" | "resolved" | "closed">(),
-	barangay: t.text("barangay"),
-	locationAddress: t.text("location_address"),
-	latitude: t.numeric("latitude"),
-	longitude: t.numeric("longitude"),
-	locationSource: t.text("location_source").$type<"gps" | "manual_pin" | "staff_adjusted">(),
-	locationAccuracyMeters: t.numeric("location_accuracy_meters"),
-	reverseGeocodedAt: t.timestamp("reverse_geocoded_at"),
-	severity: t.text("severity").notNull().default("normal").$type<"low" | "normal" | "high">(),
-	publicRemarks: t.text("public_remarks"),
-	internalNotes: t.text("internal_notes"),
-	departmentId: t.integer("department_id"),
-	assignedOfficerId: t
-		.text("assigned_officer_id")
-		.references(() => users.id, { onDelete: "set null" }),
-	authorId: t.text("author_id").references(() => users.id, { onDelete: "set null" }),
-	resolvedAt: t.timestamp("resolved_at"),
-	closedAt: t.timestamp("closed_at"),
-	createdAt: t.timestamp("created_at").notNull().defaultNow(),
-	updatedAt: t.timestamp("updated_at").notNull().defaultNow(),
-}))
+export const citizenReports = createTable(
+	"citizen_reports",
+	t => ({
+		id: t.serial("id").primaryKey(),
+		category: t
+			.text("category")
+			.notNull()
+			.$type<
+				| "Road Damage"
+				| "Flooding"
+				| "Waste Management"
+				| "Street Lighting"
+				| "Public Safety"
+				| "Others"
+			>(),
+		description: t.text("description").notNull(),
+		status: t
+			.text("status")
+			.notNull()
+			.default("received")
+			.$type<"received" | "in_progress" | "resolved" | "closed">(),
+		barangay: t.text("barangay"),
+		locationAddress: t.text("location_address"),
+		latitude: t.numeric("latitude"),
+		longitude: t.numeric("longitude"),
+		locationSource: t.text("location_source").$type<"gps" | "manual_pin" | "staff_adjusted">(),
+		locationAccuracyMeters: t.numeric("location_accuracy_meters"),
+		reverseGeocodedAt: t.timestamp("reverse_geocoded_at"),
+		severity: t.text("severity").notNull().default("normal").$type<"low" | "normal" | "high">(),
+		publicRemarks: t.text("public_remarks"),
+		internalNotes: t.text("internal_notes"),
+		departmentId: t.integer("department_id"),
+		assignedOfficerId: t
+			.text("assigned_officer_id")
+			.references(() => users.id, { onDelete: "set null" }),
+		authorId: t.text("author_id").references(() => users.id, { onDelete: "set null" }),
+		resolvedAt: t.timestamp("resolved_at"),
+		closedAt: t.timestamp("closed_at"),
+		createdAt: t.timestamp("created_at").notNull().defaultNow(),
+		updatedAt: t.timestamp("updated_at").notNull().defaultNow(),
+	}),
+	t => [
+		index("citizen_reports_created_idx").on(t.createdAt, t.id),
+		index("citizen_reports_author_created_idx").on(t.authorId, t.createdAt, t.id),
+		index("citizen_reports_status_created_idx").on(t.status, t.createdAt, t.id),
+	]
+)
 
 export const citizenReportAttachments = createTable("citizen_report_attachments", t => ({
 	id: t.serial("id").primaryKey(),
@@ -525,33 +540,37 @@ export const emergencyDirectory = createTable("emergency_directory", t => ({
 	updatedAt: t.timestamp("updated_at").notNull().defaultNow(),
 }))
 
-export const emergencyBroadcasts = createTable("emergency_broadcasts", t => ({
-	id: t.serial("id").primaryKey(),
-	title: t.text("title").notNull(),
-	message: t.text("message").notNull(),
-	severity: t
-		.text("severity")
-		.notNull()
-		.default("warning")
-		.$type<"info" | "warning" | "critical">(),
-	status: t
-		.text("status")
-		.notNull()
-		.default("draft")
-		.$type<"draft" | "scheduled" | "sent" | "cancelled">(),
-	confirmationRequired: t.boolean("confirmation_required").notNull().default(true),
-	confirmedAt: t.timestamp("confirmed_at"),
-	scheduledAt: t.timestamp("scheduled_at"),
-	sentAt: t.timestamp("sent_at"),
-	cancelledAt: t.timestamp("cancelled_at"),
-	senderId: t.text("sender_id").references(() => users.id, { onDelete: "set null" }),
-	cancelledById: t.text("cancelled_by_id").references(() => users.id, { onDelete: "set null" }),
-	recipientCount: t.integer("recipient_count").notNull().default(0),
-	failureCount: t.integer("failure_count").notNull().default(0),
-	deliverySummary: t.json("delivery_summary"),
-	createdAt: t.timestamp("created_at").notNull().defaultNow(),
-	updatedAt: t.timestamp("updated_at").notNull().defaultNow(),
-}))
+export const emergencyBroadcasts = createTable(
+	"emergency_broadcasts",
+	t => ({
+		id: t.serial("id").primaryKey(),
+		title: t.text("title").notNull(),
+		message: t.text("message").notNull(),
+		severity: t
+			.text("severity")
+			.notNull()
+			.default("warning")
+			.$type<"info" | "warning" | "critical">(),
+		status: t
+			.text("status")
+			.notNull()
+			.default("draft")
+			.$type<"draft" | "scheduled" | "sent" | "cancelled">(),
+		confirmationRequired: t.boolean("confirmation_required").notNull().default(true),
+		confirmedAt: t.timestamp("confirmed_at"),
+		scheduledAt: t.timestamp("scheduled_at"),
+		sentAt: t.timestamp("sent_at"),
+		cancelledAt: t.timestamp("cancelled_at"),
+		senderId: t.text("sender_id").references(() => users.id, { onDelete: "set null" }),
+		cancelledById: t.text("cancelled_by_id").references(() => users.id, { onDelete: "set null" }),
+		recipientCount: t.integer("recipient_count").notNull().default(0),
+		failureCount: t.integer("failure_count").notNull().default(0),
+		deliverySummary: t.json("delivery_summary"),
+		createdAt: t.timestamp("created_at").notNull().defaultNow(),
+		updatedAt: t.timestamp("updated_at").notNull().defaultNow(),
+	}),
+	t => [index("emergency_broadcasts_created_idx").on(t.createdAt, t.id)]
+)
 
 // ============================================================================
 // DEPARTMENTS
@@ -606,7 +625,8 @@ export const serviceRequests = createTable(
 	}),
 	t => [
 		index("service_requests_status_created_idx").on(t.status, t.createdAt),
-		index("service_requests_author_idx").on(t.authorId),
+		index("service_requests_created_idx").on(t.createdAt, t.id),
+		index("service_requests_author_created_idx").on(t.authorId, t.createdAt, t.id),
 		index("service_requests_service_status_idx").on(t.serviceType, t.status),
 	]
 )
@@ -758,6 +778,7 @@ export const auditLogs = createTable(
 	t => [
 		index("audit_logs_actor_created_idx").on(t.actorId, t.createdAt),
 		index("audit_logs_action_created_idx").on(t.actionType, t.createdAt),
+		index("audit_logs_created_idx").on(t.createdAt, t.id),
 		index("audit_logs_entity_idx").on(t.entityType, t.entityId),
 	]
 )
@@ -766,35 +787,39 @@ export const auditLogs = createTable(
 // NOTIFICATIONS
 // ============================================================================
 
-export const notifications = createTable("notifications", t => ({
-	id: t.serial("id").primaryKey(),
-	userId: t.text("user_id").references(() => users.id, { onDelete: "cascade" }),
-	title: t.text("title").notNull(),
-	body: t.text("body").notNull(),
-	type: t.text("type").notNull().default("in_app").$type<"in_app" | "push" | "email">(),
-	category: t
-		.text("category")
-		.notNull()
-		.default("general")
-		.$type<
-			| "news"
-			| "service_request"
-			| "issue_report"
-			| "emergency"
-			| "general"
-			| "discover_gubat"
-			| "transparency"
-		>(),
-	priority: t.text("priority").notNull().default("normal").$type<"low" | "normal" | "high">(),
-	deepLink: t.text("deep_link"),
-	isRead: t.boolean("is_read").notNull().default(false),
-	readAt: t.timestamp("read_at"),
-	dismissedAt: t.timestamp("dismissed_at"),
-	scheduledAt: t.timestamp("scheduled_at"),
-	sentAt: t.timestamp("sent_at"),
-	metadata: t.json("metadata"),
-	createdAt: t.timestamp("created_at").notNull().defaultNow(),
-}))
+export const notifications = createTable(
+	"notifications",
+	t => ({
+		id: t.serial("id").primaryKey(),
+		userId: t.text("user_id").references(() => users.id, { onDelete: "cascade" }),
+		title: t.text("title").notNull(),
+		body: t.text("body").notNull(),
+		type: t.text("type").notNull().default("in_app").$type<"in_app" | "push" | "email">(),
+		category: t
+			.text("category")
+			.notNull()
+			.default("general")
+			.$type<
+				| "news"
+				| "service_request"
+				| "issue_report"
+				| "emergency"
+				| "general"
+				| "discover_gubat"
+				| "transparency"
+			>(),
+		priority: t.text("priority").notNull().default("normal").$type<"low" | "normal" | "high">(),
+		deepLink: t.text("deep_link"),
+		isRead: t.boolean("is_read").notNull().default(false),
+		readAt: t.timestamp("read_at"),
+		dismissedAt: t.timestamp("dismissed_at"),
+		scheduledAt: t.timestamp("scheduled_at"),
+		sentAt: t.timestamp("sent_at"),
+		metadata: t.json("metadata"),
+		createdAt: t.timestamp("created_at").notNull().defaultNow(),
+	}),
+	t => [index("notifications_user_created_idx").on(t.userId, t.createdAt, t.id)]
+)
 
 export const notificationPreferences = createTable("notification_preferences", t => ({
 	id: t.serial("id").primaryKey(),

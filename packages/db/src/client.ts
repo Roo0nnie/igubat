@@ -7,6 +7,8 @@ import { schema } from "./schema.js"
  */
 export type DBClient = NodePgDatabase<typeof schema>
 
+const clientsByConnectionString = new Map<string, DBClient>()
+
 /**
  * Creates a Drizzle ORM client with the configured schema
  *
@@ -19,5 +21,11 @@ export function createDBClient(connectionString?: string): DBClient {
 	if (!connString) {
 		throw new Error("DATABASE_URL environment variable is not set")
 	}
-	return drizzle(connString, { schema })
+
+	const existing = clientsByConnectionString.get(connString)
+	if (existing) return existing
+
+	const client = drizzle(connString, { schema })
+	clientsByConnectionString.set(connString, client)
+	return client
 }
