@@ -21,6 +21,7 @@ export const ListQuerySchema = z
 		serviceType: z.string().optional(),
 		dateFrom: z.string().optional(),
 		dateTo: z.string().optional(),
+		page: z.coerce.number().int().positive().optional(),
 		limit: z.coerce.number().int().positive().max(100).optional(),
 	})
 	.optional()
@@ -66,6 +67,12 @@ export const ServiceTypeSchema = z.object({
 	isActive: z.boolean(),
 })
 
+export const ServiceTypeSummarySchema = ServiceTypeSchema.omit({
+	requirements: true,
+	formFields: true,
+	workflowSteps: true,
+})
+
 export const NewsArticleSchema = z.object({
 	id: z.number(),
 	title: z.string(),
@@ -82,6 +89,14 @@ export const NewsArticleSchema = z.object({
 	createdAt: DateLikeSchema,
 	updatedAt: DateLikeSchema,
 })
+
+export const PublicNewsArticleSchema = NewsArticleSchema.omit({
+	body: true,
+	authorId: true,
+	scheduledAt: true,
+})
+
+export const AdminNewsArticleListSchema = PublicNewsArticleSchema
 
 export const ContentPlacementSchema = z.object({
 	id: z.number(),
@@ -107,6 +122,8 @@ export const EventSchema = z.object({
 	endsAt: DateLikeSchema.nullable(),
 	publishedAt: DateLikeSchema.nullable().optional(),
 })
+
+export const EventSummarySchema = EventSchema.omit({ description: true })
 
 export const UpsertEventSchema = z.object({
 	id: z.number().int().positive().optional(),
@@ -404,7 +421,7 @@ export const DashboardSchema = z.object({
 	publishedAnnouncements: z.number(),
 	recentRequests: z.array(ServiceRequestSchema),
 	recentReports: z.array(CitizenReportSchema),
-	upcomingEvents: z.array(EventSchema),
+	upcomingEvents: z.array(EventSummarySchema),
 	/** Enabled stats in admin-configured order (Home → Community Stats). */
 	communityStats: z.array(CommunityStatSchema),
 })
@@ -644,6 +661,7 @@ export const TransparencyListQuerySchema = z
 		fiscalYear: z.coerce.number().int().optional(),
 		barangay: z.string().optional(),
 		search: z.string().optional(),
+		page: z.coerce.number().int().positive().optional(),
 		limit: z.coerce.number().int().positive().max(100).optional(),
 		cursor: z.coerce.number().int().nonnegative().optional(),
 	})
@@ -792,6 +810,7 @@ export const DiscoverGubatListQuerySchema = z
 		status: DiscoverGubatStatusSchema.optional(),
 		category: z.string().optional(),
 		search: z.string().optional(),
+		page: z.coerce.number().int().positive().optional(),
 		limit: z.coerce.number().int().positive().max(100).optional(),
 		cursor: z.coerce.number().int().nonnegative().optional(),
 	})

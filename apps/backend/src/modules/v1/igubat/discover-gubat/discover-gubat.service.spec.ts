@@ -83,10 +83,31 @@ function selectWhere(result: unknown[]) {
 }
 
 function selectOrderBy(result: unknown[]) {
+	let limit = Number.POSITIVE_INFINITY
+	let offset = 0
+	const query: {
+		limit: jest.Mock
+		offset: jest.Mock
+		then: (
+			resolve: (value: unknown[]) => unknown,
+			reject?: (reason: unknown) => unknown
+		) => Promise<unknown>
+	} = {
+		limit: jest.fn((value: number) => {
+			limit = value
+			return query
+		}),
+		offset: jest.fn((value: number) => {
+			offset = value
+			return query
+		}),
+		then: (resolve, reject) =>
+			Promise.resolve(result.slice(offset, offset + limit)).then(resolve, reject),
+	}
 	return {
 		from: jest.fn(() => ({
 			where: jest.fn(() => ({
-				orderBy: jest.fn(async () => result),
+				orderBy: jest.fn(() => query),
 			})),
 		})),
 	}

@@ -262,6 +262,13 @@ export class IgubatController {
 		)
 	}
 
+	@Implement(v1.igubat.admin.article)
+	async adminArticle(@Session() session: UserSession) {
+		return implement(v1.igubat.admin.article).handler(({ input }) =>
+			this.igubatService.getAdminArticle(sessionUser(session), input.id)
+		)
+	}
+
 	@Implement(v1.igubat.admin.upsertArticle)
 	async upsertArticle(@Session() session: UserSession) {
 		return implement(v1.igubat.admin.upsertArticle).handler(({ input }) =>
@@ -273,6 +280,13 @@ export class IgubatController {
 	async adminEvents(@Session() session: UserSession) {
 		return implement(v1.igubat.admin.events).handler(({ input }) =>
 			this.igubatService.listAdminEvents(sessionUser(session), input)
+		)
+	}
+
+	@Implement(v1.igubat.admin.event)
+	async adminEvent(@Session() session: UserSession) {
+		return implement(v1.igubat.admin.event).handler(({ input }) =>
+			this.igubatService.getAdminEvent(sessionUser(session), input.id)
 		)
 	}
 
@@ -320,8 +334,8 @@ export class IgubatController {
 
 	@Implement(v1.igubat.admin.broadcasts)
 	async broadcasts(@Session() session: UserSession) {
-		return implement(v1.igubat.admin.broadcasts).handler(() =>
-			this.igubatService.listBroadcasts(sessionUser(session))
+		return implement(v1.igubat.admin.broadcasts).handler(({ input }) =>
+			this.igubatService.listBroadcasts(sessionUser(session), input)
 		)
 	}
 
@@ -334,8 +348,8 @@ export class IgubatController {
 
 	@Implement(v1.igubat.admin.citizens)
 	async citizens(@Session() session: UserSession) {
-		return implement(v1.igubat.admin.citizens).handler(() =>
-			this.igubatService.listCitizens(sessionUser(session))
+		return implement(v1.igubat.admin.citizens).handler(({ input }) =>
+			this.igubatService.listCitizens(sessionUser(session), input)
 		)
 	}
 
@@ -348,8 +362,8 @@ export class IgubatController {
 
 	@Implement(v1.igubat.admin.staff)
 	async staff(@Session() session: UserSession) {
-		return implement(v1.igubat.admin.staff).handler(() =>
-			this.igubatService.listStaff(sessionUser(session))
+		return implement(v1.igubat.admin.staff).handler(({ input }) =>
+			this.igubatService.listStaff(sessionUser(session), input)
 		)
 	}
 
@@ -369,8 +383,8 @@ export class IgubatController {
 
 	@Implement(v1.igubat.admin.auditLogs)
 	async auditLogs(@Session() session: UserSession) {
-		return implement(v1.igubat.admin.auditLogs).handler(() =>
-			this.igubatService.listAuditLogs(sessionUser(session))
+		return implement(v1.igubat.admin.auditLogs).handler(({ input }) =>
+			this.igubatService.listAuditLogs(sessionUser(session), input)
 		)
 	}
 

@@ -4,7 +4,7 @@ import {
 	Injectable,
 	NotFoundException,
 } from "@nestjs/common"
-import { and, desc, eq, inArray, isNull, lte } from "drizzle-orm"
+import { and, desc, eq, ilike, inArray, isNull, lt, lte, or } from "drizzle-orm"
 
 import {
 	auditLogs,
@@ -25,7 +25,16 @@ type SessionUser = {
 	role?: string | null
 }
 
-type ListQuery = NonNullable<V1Inputs["igubat"]["public"]["transparency"]["list"]>
+type ListQuery = {
+	type?: typeof transparencyItems.$inferSelect.type
+	status?: typeof transparencyItems.$inferSelect.status
+	fiscalYear?: number
+	barangay?: string
+	search?: string
+	page?: number
+	limit?: number
+	cursor?: number
+}
 type CreateInput = V1Inputs["igubat"]["admin"]["transparency"]["create"]
 type UpdateInput = V1Inputs["igubat"]["admin"]["transparency"]["update"]
 type PublishInput = V1Inputs["igubat"]["admin"]["transparency"]["publish"]
@@ -35,6 +44,26 @@ type NotificationFlagInput = {
 }
 
 type TransparencyRow = typeof transparencyItems.$inferSelect
+type TransparencyListRow = Pick<
+	TransparencyRow,
+	| "id"
+	| "type"
+	| "referenceNumber"
+	| "title"
+	| "slug"
+	| "summary"
+	| "fiscalYear"
+	| "effectiveDate"
+	| "barangay"
+	| "status"
+	| "coverImageUrl"
+	| "authorId"
+	| "scheduledAt"
+	| "publishedAt"
+	| "archivedAt"
+	| "createdAt"
+	| "updatedAt"
+>
 type TransparencySummary = V1Outputs["igubat"]["admin"]["transparency"]["list"][number]
 type TransparencyDetail = V1Outputs["igubat"]["admin"]["transparency"]["detail"]
 type TransparencyMetadata = TransparencyDetail["metadata"]
@@ -123,7 +152,7 @@ export class TransparencyService {
 
 	private async authorName(authorId: string | null): Promise<string | null> {
 		if (!authorId) return null
-		const [author] = await db.select().from(users).where(eq(users.id, authorId))
+		const [author] = await db.select({ name: users.name }).from(users).where(eq(users.id, authorId))
 		return author?.name ?? null
 	}
 
@@ -131,7 +160,10 @@ export class TransparencyService {
 		return (metadata ?? null) as TransparencyMetadata
 	}
 
-	private toSummary(row: TransparencyRow, authorName: string | null = null): TransparencySummary {
+	private toSummary(
+		row: TransparencyListRow,
+		authorName: string | null = null
+	): TransparencySummary {
 		return {
 			id: row.id,
 			type: row.type,
@@ -195,45 +227,70 @@ export class TransparencyService {
 		}
 	}
 
-	private applyQueryFilters(rows: TransparencyRow[], query?: ListQuery) {
-		if (!query) return rows
-		const search = query.search?.trim().toLowerCase()
-		const cursor = query.cursor ? this.toId(query.cursor) : undefined
-		return rows.filter(row => {
-			if (cursor && row.id >= cursor) return false
-			if (query.type && row.type !== query.type) return false
-			if (query.status && row.status !== query.status) return false
-			if (query.fiscalYear && row.fiscalYear !== query.fiscalYear) return false
-			if (query.barangay && row.barangay !== query.barangay) return false
-			if (search) {
-				const haystack = [row.title, row.referenceNumber, row.summary]
-					.filter(Boolean)
-					.join(" ")
-					.toLowerCase()
-				if (!haystack.includes(search)) return false
-			}
-			return true
-		})
-	}
-
-	private async rows(includeNonPublic: boolean): Promise<TransparencyRow[]> {
-		const where = includeNonPublic
-			? isNull(transparencyItems.deletedAt)
-			: and(isNull(transparencyItems.deletedAt), eq(transparencyItems.status, "published"))
-		return db
-			.select()
+	private async rows(
+		includeNonPublic: boolean,
+		query?: ListQuery,
+		applyLimit = true
+	): Promise<TransparencyListRow[]> {
+		const search = query?.search?.trim()
+		const cursor = query?.cursor ? this.toId(query.cursor) : undefined
+		const where = and(
+			isNull(transparencyItems.deletedAt),
+			!includeNonPublic ? eq(transparencyItems.status, "published") : undefined,
+			query?.type ? eq(transparencyItems.type, query.type) : undefined,
+			query?.status ? eq(transparencyItems.status, query.status) : undefined,
+			query?.fiscalYear ? eq(transparencyItems.fiscalYear, query.fiscalYear) : undefined,
+			query?.barangay ? eq(transparencyItems.barangay, query.barangay) : undefined,
+			cursor ? lt(transparencyItems.id, cursor) : undefined,
+			search
+				? or(
+						ilike(transparencyItems.title, `%${search}%`),
+						ilike(transparencyItems.referenceNumber, `%${search}%`),
+						ilike(transparencyItems.summary, `%${search}%`)
+					)
+				: undefined
+		)
+		const builder = db
+			.select({
+				id: transparencyItems.id,
+				type: transparencyItems.type,
+				referenceNumber: transparencyItems.referenceNumber,
+				title: transparencyItems.title,
+				slug: transparencyItems.slug,
+				summary: transparencyItems.summary,
+				fiscalYear: transparencyItems.fiscalYear,
+				effectiveDate: transparencyItems.effectiveDate,
+				barangay: transparencyItems.barangay,
+				status: transparencyItems.status,
+				coverImageUrl: transparencyItems.coverImageUrl,
+				authorId: transparencyItems.authorId,
+				scheduledAt: transparencyItems.scheduledAt,
+				publishedAt: transparencyItems.publishedAt,
+				archivedAt: transparencyItems.archivedAt,
+				createdAt: transparencyItems.createdAt,
+				updatedAt: transparencyItems.updatedAt,
+			})
 			.from(transparencyItems)
 			.where(where)
-			.orderBy(desc(transparencyItems.publishedAt), desc(transparencyItems.createdAt))
+			.orderBy(
+				desc(transparencyItems.publishedAt),
+				desc(transparencyItems.createdAt),
+				desc(transparencyItems.id)
+			)
+		if (!applyLimit) return builder
+		if (query?.page !== undefined) {
+			const limit = Math.min(query.limit ?? 25, 100)
+			return builder.limit(limit + 1).offset((query.page - 1) * limit)
+		}
+		return query?.limit ? builder.limit(Number(query.limit)) : builder
 	}
 
 	// Public
 
 	async listPublic(query?: ListQuery) {
-		const filtered = this.applyQueryFilters(await this.rows(false), query)
-		const limited = query?.limit ? filtered.slice(0, Number(query.limit)) : filtered
-		const authors = await this.authorMap(limited)
-		return limited.map(row => this.toSummary(row, authors.get(row.authorId ?? "") ?? null))
+		const rows = await this.rows(false, query)
+		const authors = await this.authorMap(rows)
+		return rows.map(row => this.toSummary(row, authors.get(row.authorId ?? "") ?? null))
 	}
 
 	async getPublicBySlug(slug: string) {
@@ -247,10 +304,13 @@ export class TransparencyService {
 		return this.toDetail(row)
 	}
 
-	private async authorMap(rows: TransparencyRow[]) {
+	private async authorMap(rows: TransparencyListRow[]) {
 		const ids = [...new Set(rows.map(row => row.authorId).filter(Boolean))] as string[]
 		if (ids.length === 0) return new Map<string, string>()
-		const authors = await db.select().from(users).where(inArray(users.id, ids))
+		const authors = await db
+			.select({ id: users.id, name: users.name })
+			.from(users)
+			.where(inArray(users.id, ids))
 		return new Map(authors.map(author => [author.id, author.name]))
 	}
 
@@ -258,10 +318,9 @@ export class TransparencyService {
 
 	async listAdmin(user: SessionUser, query?: ListQuery) {
 		this.assertStaff(user)
-		const filtered = this.applyQueryFilters(await this.rows(true), query)
-		const limited = query?.limit ? filtered.slice(0, Number(query.limit)) : filtered
-		const authors = await this.authorMap(limited)
-		return limited.map(row => this.toSummary(row, authors.get(row.authorId ?? "") ?? null))
+		const rows = await this.rows(true, query)
+		const authors = await this.authorMap(rows)
+		return rows.map(row => this.toSummary(row, authors.get(row.authorId ?? "") ?? null))
 	}
 
 	async getAdminById(user: SessionUser, id: unknown) {
@@ -479,7 +538,7 @@ export class TransparencyService {
 
 	async exportCsv(user: SessionUser, query?: ListQuery) {
 		this.requireAdmin(user)
-		const filtered = this.applyQueryFilters(await this.rows(true), query)
+		const filtered = await this.rows(true, query, false)
 		const header = ["id", "referenceNumber", "title", "type", "fiscalYear", "status", "publishedAt"]
 		const lines = [header.join(",")]
 		for (const row of filtered) {

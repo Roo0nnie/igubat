@@ -5,7 +5,7 @@ import {
 	NotFoundException,
 } from "@nestjs/common"
 import { randomBytes, scryptSync } from "node:crypto"
-import { and, asc, desc, eq, gte, isNull, or } from "drizzle-orm"
+import { and, asc, count, desc, eq, gte, ilike, inArray, isNull, or } from "drizzle-orm"
 import { z } from "zod"
 
 import {
@@ -47,7 +47,17 @@ type SessionUser = {
 	role?: string | null
 }
 
-type PublicListQuery = NonNullable<V1Inputs["igubat"]["public"]["news"]>
+type PublicListQuery = {
+	search?: string
+	status?: string
+	category?: string
+	barangay?: string
+	serviceType?: string
+	dateFrom?: string
+	dateTo?: string
+	page?: number
+	limit?: number
+}
 type CreateRequestInput = V1Inputs["igubat"]["me"]["createRequest"]
 type CreateReportInput = V1Inputs["igubat"]["me"]["createReport"]
 type UpdateRequestStatusInput = V1Inputs["igubat"]["admin"]["updateRequestStatus"]
@@ -58,6 +68,29 @@ type UpsertEventInput = V1Inputs["igubat"]["admin"]["upsertEvent"]
 type UpdateCommunityStatsInput = V1Inputs["igubat"]["admin"]["updateCommunityStats"]
 type CommunityStatConfig = z.infer<typeof CommunityStatConfigSchema>
 type CommunityStatKey = CommunityStatConfig["key"]
+type PublicNewsArticle = Pick<
+	typeof newsArticles.$inferSelect,
+	| "id"
+	| "title"
+	| "slug"
+	| "excerpt"
+	| "category"
+	| "status"
+	| "imageUrl"
+	| "isFeatured"
+	| "publishedAt"
+	| "createdAt"
+	| "updatedAt"
+>
+type AdminNewsArticle = PublicNewsArticle
+
+type ListWindow = { limit: number; offset: number }
+
+function listWindow(query?: { page?: number; limit?: number }): ListWindow | undefined {
+	if (query?.page === undefined) return undefined
+	const limit = Math.min(query.limit ?? 25, 100)
+	return { limit, offset: (query.page - 1) * limit }
+}
 
 const ADMIN_ROLES = new Set(["ict_admin", "super_admin"])
 const STAFF_ROLES = new Set([
@@ -133,95 +166,181 @@ export class IgubatService {
 		})
 	}
 
-	private async usersById() {
-		const allUsers = await db.select().from(users)
-		return new Map(allUsers.map(user => [user.id, user]))
+	private requestSelection() {
+		return {
+			id: serviceRequests.id,
+			trackingNumber: serviceRequests.trackingNumber,
+			serviceTypeId: serviceRequests.serviceTypeId,
+			serviceType: serviceRequests.serviceType,
+			description: serviceRequests.description,
+			preferredDate: serviceRequests.preferredDate,
+			status: serviceRequests.status,
+			departmentId: serviceRequests.departmentId,
+			assignedOfficerId: serviceRequests.assignedOfficerId,
+			authorId: serviceRequests.authorId,
+			publicRemarks: serviceRequests.publicRemarks,
+			internalNotes: serviceRequests.internalNotes,
+			createdAt: serviceRequests.createdAt,
+			updatedAt: serviceRequests.updatedAt,
+			citizenName: users.name,
+			barangay: users.barangay,
+		}
 	}
 
-	private async requestRows() {
-		const [rows, userMap] = await Promise.all([
-			db.select().from(serviceRequests).orderBy(desc(serviceRequests.createdAt)),
-			this.usersById(),
-		])
-		return rows.map(row => {
-			const citizen = row.authorId ? userMap.get(row.authorId) : undefined
-			return {
-				...row,
-				citizenName: citizen?.name ?? null,
-				barangay: citizen?.barangay ?? null,
-			}
-		})
+	private async requestRows(options: { query?: PublicListQuery; authorId?: string } = {}) {
+		const { query, authorId } = options
+		const search = query?.search?.trim()
+		const filters = [
+			authorId ? eq(serviceRequests.authorId, authorId) : undefined,
+			query?.status ? eq(serviceRequests.status, query.status as never) : undefined,
+			query?.serviceType ? eq(serviceRequests.serviceType, query.serviceType) : undefined,
+			query?.barangay ? eq(users.barangay, query.barangay) : undefined,
+			search
+				? or(
+						ilike(serviceRequests.trackingNumber, `%${search}%`),
+						ilike(serviceRequests.serviceType, `%${search}%`),
+						ilike(users.name, `%${search}%`)
+					)
+				: undefined,
+		]
+		const window = listWindow(query)
+		const request = db
+			.select(this.requestSelection())
+			.from(serviceRequests)
+			.leftJoin(users, eq(serviceRequests.authorId, users.id))
+			.where(and(...filters))
+			.orderBy(desc(serviceRequests.createdAt), desc(serviceRequests.id))
+		if (window) return request.limit(window.limit + 1).offset(window.offset)
+		if (query?.limit) return request.limit(query.limit)
+		return request
 	}
 
-	private async reportRows() {
-		const [rows, userMap] = await Promise.all([
-			db.select().from(citizenReports).orderBy(desc(citizenReports.createdAt)),
-			this.usersById(),
-		])
-		return rows.map(row => {
-			const citizen = row.authorId ? userMap.get(row.authorId) : undefined
-			return {
-				...row,
-				citizenName: citizen?.name ?? null,
-			}
-		})
+	private reportSelection() {
+		return {
+			id: citizenReports.id,
+			category: citizenReports.category,
+			description: citizenReports.description,
+			status: citizenReports.status,
+			barangay: citizenReports.barangay,
+			locationAddress: citizenReports.locationAddress,
+			latitude: citizenReports.latitude,
+			longitude: citizenReports.longitude,
+			publicRemarks: citizenReports.publicRemarks,
+			internalNotes: citizenReports.internalNotes,
+			departmentId: citizenReports.departmentId,
+			assignedOfficerId: citizenReports.assignedOfficerId,
+			authorId: citizenReports.authorId,
+			createdAt: citizenReports.createdAt,
+			updatedAt: citizenReports.updatedAt,
+			citizenName: users.name,
+		}
 	}
 
-	private filterRows<
-		T extends {
-			status?: string
-			category?: string
-			serviceType?: string
-			barangay?: string | null
-		},
-	>(rows: T[], query?: PublicListQuery) {
-		if (!query) return rows
-		return rows.filter(row => {
-			if (query.status && row.status !== query.status) return false
-			if (query.category && row.category !== query.category) return false
-			if (query.serviceType && row.serviceType !== query.serviceType) return false
-			if (query.barangay && row.barangay !== query.barangay) return false
-			return true
-		})
+	private async reportRows(options: { query?: PublicListQuery; authorId?: string } = {}) {
+		const { query, authorId } = options
+		const search = query?.search?.trim()
+		const filters = [
+			authorId ? eq(citizenReports.authorId, authorId) : undefined,
+			query?.status ? eq(citizenReports.status, query.status as never) : undefined,
+			query?.category ? eq(citizenReports.category, query.category as never) : undefined,
+			query?.barangay ? eq(citizenReports.barangay, query.barangay) : undefined,
+			search
+				? or(
+						ilike(citizenReports.category, `%${search}%`),
+						ilike(citizenReports.description, `%${search}%`),
+						ilike(citizenReports.locationAddress, `%${search}%`),
+						ilike(users.name, `%${search}%`)
+					)
+				: undefined,
+		]
+		const window = listWindow(query)
+		const request = db
+			.select(this.reportSelection())
+			.from(citizenReports)
+			.leftJoin(users, eq(citizenReports.authorId, users.id))
+			.where(and(...filters))
+			.orderBy(desc(citizenReports.createdAt), desc(citizenReports.id))
+		if (window) return request.limit(window.limit + 1).offset(window.offset)
+		if (query?.limit) return request.limit(query.limit)
+		return request
 	}
 
 	async publicDashboard() {
-		const [allUsers, requests, reports, articles, services, upcomingEvents, statsConfig] =
-			await Promise.all([
-				db.select().from(users),
-				this.requestRows(),
-				this.reportRows(),
-				db
-					.select()
-					.from(newsArticles)
-					.where(and(eq(newsArticles.status, "published"), isNull(newsArticles.deletedAt))),
-				db.select().from(serviceTypes).where(eq(serviceTypes.isActive, true)),
-				this.listEvents(),
-				this.communityStatsConfig(),
-			])
+		return this.dashboardSummary(false)
+	}
 
+	private async dashboardSummary(includeRecentActivity: boolean) {
+		const [
+			[userCount],
+			requestCounts,
+			reportCounts,
+			[activeServices],
+			[publishedAnnouncements],
+			recentRequests,
+			recentReports,
+			upcomingEvents,
+			[upcomingEventCount],
+			statsConfig,
+		] = await Promise.all([
+			db.select({ value: count() }).from(users).where(eq(users.role, "registered_citizen")),
+			db
+				.select({ status: serviceRequests.status, value: count() })
+				.from(serviceRequests)
+				.groupBy(serviceRequests.status),
+			db
+				.select({ status: citizenReports.status, value: count() })
+				.from(citizenReports)
+				.groupBy(citizenReports.status),
+			db.select({ value: count() }).from(serviceTypes).where(eq(serviceTypes.isActive, true)),
+			db
+				.select({ value: count() })
+				.from(newsArticles)
+				.where(and(eq(newsArticles.status, "published"), isNull(newsArticles.deletedAt))),
+			includeRecentActivity
+				? db
+						.select(this.requestSelection())
+						.from(serviceRequests)
+						.leftJoin(users, eq(serviceRequests.authorId, users.id))
+						.orderBy(desc(serviceRequests.createdAt), desc(serviceRequests.id))
+						.limit(5)
+				: Promise.resolve([]),
+			includeRecentActivity
+				? db
+						.select(this.reportSelection())
+						.from(citizenReports)
+						.leftJoin(users, eq(citizenReports.authorId, users.id))
+						.orderBy(desc(citizenReports.createdAt), desc(citizenReports.id))
+						.limit(5)
+				: Promise.resolve([]),
+			includeRecentActivity ? this.listEvents(5) : Promise.resolve([]),
+			db.select({ value: count() }).from(events).where(this.upcomingEventsCondition(new Date())),
+			this.communityStatsConfig(),
+		])
+
+		const requestCountByStatus = new Map(requestCounts.map(row => [row.status, row.value]))
+		const reportCountByStatus = new Map(reportCounts.map(row => [row.status, row.value]))
 		const totals = {
-			totalUsers: allUsers.filter(user => user.role === "registered_citizen").length,
-			pendingRequests: requests.filter(request => request.status === "pending").length,
-			activeServices: services.length,
-			newReports: reports.filter(report => report.status === "received").length,
-			publishedAnnouncements: articles.length,
+			totalUsers: userCount?.value ?? 0,
+			pendingRequests: requestCountByStatus.get("pending") ?? 0,
+			activeServices: activeServices?.value ?? 0,
+			newReports: reportCountByStatus.get("received") ?? 0,
+			publishedAnnouncements: publishedAnnouncements?.value ?? 0,
 		}
 		const values: Record<CommunityStatKey, number> = {
 			registered_citizens: totals.totalUsers,
 			pending_requests: totals.pendingRequests,
-			completed_requests: requests.filter(request => request.status === "completed").length,
+			completed_requests: requestCountByStatus.get("completed") ?? 0,
 			active_services: totals.activeServices,
 			new_reports: totals.newReports,
 			published_news: totals.publishedAnnouncements,
-			upcoming_events: upcomingEvents.length,
+			upcoming_events: upcomingEventCount?.value ?? 0,
 		}
 
 		return {
 			...totals,
-			recentRequests: requests.slice(0, 5),
-			recentReports: reports.slice(0, 5),
-			upcomingEvents: upcomingEvents.slice(0, 5),
+			recentRequests,
+			recentReports,
+			upcomingEvents,
 			communityStats: statsConfig
 				.filter(stat => stat.enabled)
 				.map(stat => ({ key: stat.key, label: stat.label, value: values[stat.key] })),
@@ -269,15 +388,71 @@ export class IgubatService {
 			.onConflictDoUpdate({ target: systemSettings.key, set: payload })
 	}
 
-	async listNews(query?: PublicListQuery, includeDrafts = false) {
-		const rows = await db
-			.select()
-			.from(newsArticles)
-			.orderBy(desc(newsArticles.publishedAt), desc(newsArticles.createdAt))
-		const visible = includeDrafts
-			? rows
-			: rows.filter(row => row.status === "published" && row.deletedAt === null)
-		return this.filterRows(visible, query)
+	async listNews(
+		query: PublicListQuery | undefined,
+		includeDrafts: true
+	): Promise<AdminNewsArticle[]>
+	async listNews(query?: PublicListQuery, includeDrafts?: false): Promise<PublicNewsArticle[]>
+	async listNews(
+		query?: PublicListQuery,
+		includeDrafts = false
+	): Promise<AdminNewsArticle[] | PublicNewsArticle[]> {
+		const search = query?.search?.trim()
+		const filters = [
+			!includeDrafts ? eq(newsArticles.status, "published") : undefined,
+			!includeDrafts ? isNull(newsArticles.deletedAt) : undefined,
+			query?.status ? eq(newsArticles.status, query.status as never) : undefined,
+			query?.category ? eq(newsArticles.category, query.category) : undefined,
+			search
+				? or(ilike(newsArticles.title, `%${search}%`), ilike(newsArticles.excerpt, `%${search}%`))
+				: undefined,
+		]
+		const window = listWindow(query)
+		const builder = includeDrafts
+			? db
+					.select({
+						id: newsArticles.id,
+						title: newsArticles.title,
+						slug: newsArticles.slug,
+						excerpt: newsArticles.excerpt,
+						category: newsArticles.category,
+						status: newsArticles.status,
+						imageUrl: newsArticles.imageUrl,
+						isFeatured: newsArticles.isFeatured,
+						publishedAt: newsArticles.publishedAt,
+						createdAt: newsArticles.createdAt,
+						updatedAt: newsArticles.updatedAt,
+					})
+					.from(newsArticles)
+					.where(and(...filters))
+					.orderBy(
+						desc(newsArticles.publishedAt),
+						desc(newsArticles.createdAt),
+						desc(newsArticles.id)
+					)
+			: db
+					.select({
+						id: newsArticles.id,
+						title: newsArticles.title,
+						slug: newsArticles.slug,
+						excerpt: newsArticles.excerpt,
+						category: newsArticles.category,
+						status: newsArticles.status,
+						imageUrl: newsArticles.imageUrl,
+						isFeatured: newsArticles.isFeatured,
+						publishedAt: newsArticles.publishedAt,
+						createdAt: newsArticles.createdAt,
+						updatedAt: newsArticles.updatedAt,
+					})
+					.from(newsArticles)
+					.where(and(...filters))
+					.orderBy(
+						desc(newsArticles.publishedAt),
+						desc(newsArticles.createdAt),
+						desc(newsArticles.id)
+					)
+		if (window) return builder.limit(window.limit + 1).offset(window.offset)
+		return builder.limit(query?.limit ?? 50)
 	}
 
 	async getArticle(slug: string, includeDrafts = false) {
@@ -296,20 +471,33 @@ export class IgubatService {
 			.orderBy(asc(contentPlacements.sortOrder))
 	}
 
+	private upcomingEventsCondition(now: Date) {
+		return and(
+			eq(events.status, "published"),
+			isNull(events.deletedAt),
+			or(gte(events.endsAt, now), and(isNull(events.endsAt), gte(events.startsAt, now)))
+		)
+	}
+
 	/** Published events that haven't ended yet, soonest first. */
-	listEvents() {
-		const now = new Date()
-		return db
-			.select()
+	listEvents(limit?: number) {
+		const query = db
+			.select({
+				id: events.id,
+				title: events.title,
+				slug: events.slug,
+				category: events.category,
+				location: events.location,
+				imageUrl: events.imageUrl,
+				status: events.status,
+				startsAt: events.startsAt,
+				endsAt: events.endsAt,
+				publishedAt: events.publishedAt,
+			})
 			.from(events)
-			.where(
-				and(
-					eq(events.status, "published"),
-					isNull(events.deletedAt),
-					or(gte(events.endsAt, now), and(isNull(events.endsAt), gte(events.startsAt, now)))
-				)
-			)
+			.where(this.upcomingEventsCondition(new Date()))
 			.orderBy(asc(events.startsAt))
+		return query.limit(limit ?? 50)
 	}
 
 	async getEvent(slug: string) {
@@ -322,16 +510,49 @@ export class IgubatService {
 
 	async listAdminEvents(user: SessionUser, query?: PublicListQuery) {
 		this.assertStaff(user)
-		const rows = await db
+		const search = query?.search?.trim()
+		const filters = [
+			isNull(events.deletedAt),
+			query?.status ? eq(events.status, query.status as never) : undefined,
+			query?.category ? eq(events.category, query.category) : undefined,
+			search
+				? or(
+						ilike(events.title, `%${search}%`),
+						ilike(events.location, `%${search}%`),
+						ilike(events.category, `%${search}%`)
+					)
+				: undefined,
+		]
+		const builder = db
+			.select({
+				id: events.id,
+				title: events.title,
+				slug: events.slug,
+				category: events.category,
+				location: events.location,
+				imageUrl: events.imageUrl,
+				status: events.status,
+				startsAt: events.startsAt,
+				endsAt: events.endsAt,
+				publishedAt: events.publishedAt,
+			})
+			.from(events)
+			.where(and(...filters))
+			.orderBy(desc(events.startsAt), desc(events.id))
+		const window = listWindow(query)
+		if (window) return builder.limit(window.limit + 1).offset(window.offset)
+		const limit = Number(query?.limit ?? 100)
+		return builder.limit(Number.isFinite(limit) ? Math.min(Math.max(limit, 1), 100) : 100)
+	}
+
+	async getAdminEvent(user: SessionUser, id: number) {
+		this.assertStaff(user)
+		const [event] = await db
 			.select()
 			.from(events)
-			.where(isNull(events.deletedAt))
-			.orderBy(desc(events.startsAt))
-		const search = query?.search?.trim().toLowerCase()
-		return this.filterRows(rows, query).filter(
-			row =>
-				!search || `${row.title} ${row.location} ${row.category}`.toLowerCase().includes(search)
-		)
+			.where(and(eq(events.id, id), isNull(events.deletedAt)))
+			.limit(1)
+		return requireRow(event, "Event not found")
 	}
 
 	async upsertEvent(user: SessionUser, input: UpsertEventInput) {
@@ -413,15 +634,39 @@ export class IgubatService {
 	}
 
 	async listServices(query?: PublicListQuery) {
-		const rows = await db
-			.select()
+		const search = query?.search?.trim()
+		const categoryId =
+			query?.category && Number.isInteger(Number(query.category))
+				? Number(query.category)
+				: undefined
+		const builder = db
+			.select({
+				id: serviceTypes.id,
+				categoryId: serviceTypes.categoryId,
+				name: serviceTypes.name,
+				slug: serviceTypes.slug,
+				description: serviceTypes.description,
+				processingDays: serviceTypes.processingDays,
+				icon: serviceTypes.icon,
+				imageUrl: serviceTypes.imageUrl,
+				isPopular: serviceTypes.isPopular,
+				isActive: serviceTypes.isActive,
+			})
 			.from(serviceTypes)
-			.where(eq(serviceTypes.isActive, true))
+			.where(
+				and(
+					eq(serviceTypes.isActive, true),
+					categoryId !== undefined ? eq(serviceTypes.categoryId, categoryId) : undefined,
+					search
+						? or(
+								ilike(serviceTypes.name, `%${search}%`),
+								ilike(serviceTypes.description, `%${search}%`)
+							)
+						: undefined
+				)
+			)
 			.orderBy(asc(serviceTypes.name))
-		return this.filterRows(
-			rows.map(row => ({ ...row, category: row.categoryId?.toString() })),
-			query
-		)
+		return builder.limit(query?.limit ?? 100)
 	}
 
 	async getService(slug: string) {
@@ -432,7 +677,15 @@ export class IgubatService {
 
 	listEmergencyDirectory() {
 		return db
-			.select()
+			.select({
+				id: emergencyDirectory.id,
+				name: emergencyDirectory.name,
+				type: emergencyDirectory.type,
+				contactNumber: emergencyDirectory.contactNumber,
+				address: emergencyDirectory.address,
+				hours: emergencyDirectory.hours,
+				isActive: emergencyDirectory.isActive,
+			})
 			.from(emergencyDirectory)
 			.where(eq(emergencyDirectory.isActive, true))
 			.orderBy(asc(emergencyDirectory.type), asc(emergencyDirectory.name))
@@ -453,7 +706,25 @@ export class IgubatService {
 	}
 
 	async getProfile(user: SessionUser) {
-		const [profile] = await db.select().from(users).where(eq(users.id, user.id))
+		const [profile] = await db
+			.select({
+				id: users.id,
+				name: users.name,
+				email: users.email,
+				image: users.image,
+				role: users.role,
+				status: users.status,
+				mobileNumber: users.mobileNumber,
+				barangay: users.barangay,
+				address: users.address,
+				departmentId: users.departmentId,
+				createdAt: users.createdAt,
+				updatedAt: users.updatedAt,
+				lastLoginAt: users.lastLoginAt,
+				forcePasswordReset: users.forcePasswordReset,
+			})
+			.from(users)
+			.where(eq(users.id, user.id))
 		if (!profile) throw new NotFoundException("Profile not found")
 		return profile
 	}
@@ -463,7 +734,22 @@ export class IgubatService {
 			.update(users)
 			.set({ ...input, updatedAt: new Date() })
 			.where(eq(users.id, user.id))
-			.returning()
+			.returning({
+				id: users.id,
+				name: users.name,
+				email: users.email,
+				image: users.image,
+				role: users.role,
+				status: users.status,
+				mobileNumber: users.mobileNumber,
+				barangay: users.barangay,
+				address: users.address,
+				departmentId: users.departmentId,
+				createdAt: users.createdAt,
+				updatedAt: users.updatedAt,
+				lastLoginAt: users.lastLoginAt,
+				forcePasswordReset: users.forcePasswordReset,
+			})
 		if (!profile) throw new NotFoundException("Profile not found")
 		await this.audit(user.id, "profile_update", "user", user.id, input)
 		return profile
@@ -508,14 +794,23 @@ export class IgubatService {
 	}
 
 	async listMyRequests(user: SessionUser) {
-		return (await this.requestRows()).filter(request => request.authorId === user.id)
+		return this.requestRows({ authorId: user.id })
 	}
 
 	async getRequestDetail(id: number, user?: SessionUser, staff = false) {
-		const [request] = await this.requestRows().then(rows => rows.filter(row => row.id === id))
+		if (!staff && !user) throw new ForbiddenException("Cannot view a citizen request")
+		const [request] = await db
+			.select(this.requestSelection())
+			.from(serviceRequests)
+			.leftJoin(users, eq(serviceRequests.authorId, users.id))
+			.where(
+				and(
+					eq(serviceRequests.id, id),
+					!staff && user ? eq(serviceRequests.authorId, user.id) : undefined
+				)
+			)
+			.limit(1)
 		if (!request) throw new NotFoundException("Request not found")
-		if (!staff && user && request.authorId !== user.id)
-			throw new ForbiddenException("Cannot view another citizen request")
 		const [attachments, history] = await Promise.all([
 			db
 				.select()
@@ -611,14 +906,23 @@ export class IgubatService {
 	}
 
 	async listMyReports(user: SessionUser) {
-		return (await this.reportRows()).filter(report => report.authorId === user.id)
+		return this.reportRows({ authorId: user.id })
 	}
 
 	async getReportDetail(id: number, user?: SessionUser, staff = false) {
-		const [report] = await this.reportRows().then(rows => rows.filter(row => row.id === id))
+		if (!staff && !user) throw new ForbiddenException("Cannot view a citizen report")
+		const [report] = await db
+			.select(this.reportSelection())
+			.from(citizenReports)
+			.leftJoin(users, eq(citizenReports.authorId, users.id))
+			.where(
+				and(
+					eq(citizenReports.id, id),
+					!staff && user ? eq(citizenReports.authorId, user.id) : undefined
+				)
+			)
+			.limit(1)
 		if (!report) throw new NotFoundException("Report not found")
-		if (!staff && user && report.authorId !== user.id)
-			throw new ForbiddenException("Cannot view another citizen report")
 		const [attachments, history] = await Promise.all([
 			db
 				.select()
@@ -704,12 +1008,12 @@ export class IgubatService {
 
 	async adminDashboard(user: SessionUser) {
 		this.assertStaff(user)
-		return this.publicDashboard()
+		return this.dashboardSummary(true)
 	}
 
 	async listAdminRequests(user: SessionUser, query?: PublicListQuery) {
 		this.assertStaff(user)
-		return this.filterRows(await this.requestRows(), query)
+		return this.requestRows({ query })
 	}
 
 	async updateRequestStatus(user: SessionUser, input: UpdateRequestStatusInput) {
@@ -753,7 +1057,7 @@ export class IgubatService {
 
 	async listAdminReports(user: SessionUser, query?: PublicListQuery) {
 		this.assertStaff(user)
-		return this.filterRows(await this.reportRows(), query)
+		return this.reportRows({ query })
 	}
 
 	async updateReportStatus(user: SessionUser, input: UpdateReportStatusInput) {
@@ -829,6 +1133,12 @@ export class IgubatService {
 		return this.listNews(query, true)
 	}
 
+	async getAdminArticle(user: SessionUser, id: number) {
+		this.assertStaff(user)
+		const [article] = await db.select().from(newsArticles).where(eq(newsArticles.id, id)).limit(1)
+		return requireRow(article, "News article not found")
+	}
+
 	async listAdminEmergencyDirectory(user: SessionUser) {
 		this.assertStaff(user)
 		return this.listEmergencyDirectory()
@@ -865,9 +1175,26 @@ export class IgubatService {
 		return savedEntry
 	}
 
-	listBroadcasts(user: SessionUser) {
+	listBroadcasts(user: SessionUser, query?: PublicListQuery) {
 		this.assertStaff(user)
-		return db.select().from(emergencyBroadcasts).orderBy(desc(emergencyBroadcasts.createdAt))
+		const builder = db
+			.select({
+				id: emergencyBroadcasts.id,
+				title: emergencyBroadcasts.title,
+				message: emergencyBroadcasts.message,
+				severity: emergencyBroadcasts.severity,
+				status: emergencyBroadcasts.status,
+				scheduledAt: emergencyBroadcasts.scheduledAt,
+				sentAt: emergencyBroadcasts.sentAt,
+				senderId: emergencyBroadcasts.senderId,
+				recipientCount: emergencyBroadcasts.recipientCount,
+				createdAt: emergencyBroadcasts.createdAt,
+			})
+			.from(emergencyBroadcasts)
+			.orderBy(desc(emergencyBroadcasts.createdAt), desc(emergencyBroadcasts.id))
+		const window = listWindow(query)
+		if (window) return builder.limit(window.limit + 1).offset(window.offset)
+		return builder.limit(query?.limit ?? 50)
 	}
 
 	async createBroadcast(user: SessionUser, input: CreateBroadcastInput) {
@@ -884,7 +1211,12 @@ export class IgubatService {
 				sentAt: sendNow ? new Date() : null,
 				senderId: user.id,
 				recipientCount: sendNow
-					? (await db.select().from(users)).filter(row => row.role === "registered_citizen").length
+					? ((
+							await db
+								.select({ value: count() })
+								.from(users)
+								.where(eq(users.role, "registered_citizen"))
+						)[0]?.value ?? 0)
 					: 0,
 			})
 			.returning()
@@ -899,27 +1231,108 @@ export class IgubatService {
 		return broadcast
 	}
 
-	async listCitizens(user: SessionUser) {
+	async listCitizens(user: SessionUser, query?: PublicListQuery) {
 		this.assertAdmin(user)
-		return db
-			.select()
+		const search = query?.search?.trim()
+		const filters = [
+			eq(users.role, "registered_citizen"),
+			query?.status ? eq(users.status, query.status as never) : undefined,
+			search
+				? or(
+						ilike(users.name, `%${search}%`),
+						ilike(users.email, `%${search}%`),
+						ilike(users.barangay, `%${search}%`)
+					)
+				: undefined,
+		]
+		const builder = db
+			.select({
+				id: users.id,
+				name: users.name,
+				email: users.email,
+				image: users.image,
+				role: users.role,
+				status: users.status,
+				mobileNumber: users.mobileNumber,
+				barangay: users.barangay,
+				address: users.address,
+				departmentId: users.departmentId,
+				createdAt: users.createdAt,
+				lastLoginAt: users.lastLoginAt,
+				forcePasswordReset: users.forcePasswordReset,
+			})
 			.from(users)
-			.where(eq(users.role, "registered_citizen"))
-			.orderBy(asc(users.name))
+			.where(and(...filters))
+			.orderBy(asc(users.name), asc(users.id))
+		const window = listWindow(query)
+		if (window) return builder.limit(window.limit + 1).offset(window.offset)
+		if (query?.limit) return builder.limit(query.limit)
+		return builder
 	}
 
 	async getCitizen(user: SessionUser, id: string) {
 		this.assertAdmin(user)
-		const [citizen] = await db.select().from(users).where(eq(users.id, id))
+		const [citizen] = await db
+			.select({
+				id: users.id,
+				name: users.name,
+				email: users.email,
+				image: users.image,
+				role: users.role,
+				status: users.status,
+				mobileNumber: users.mobileNumber,
+				barangay: users.barangay,
+				address: users.address,
+				departmentId: users.departmentId,
+				createdAt: users.createdAt,
+				lastLoginAt: users.lastLoginAt,
+				forcePasswordReset: users.forcePasswordReset,
+			})
+			.from(users)
+			.where(and(eq(users.id, id), eq(users.role, "registered_citizen")))
 		if (!citizen || citizen.role !== "registered_citizen")
 			throw new NotFoundException("Citizen not found")
 		return citizen
 	}
 
-	async listStaff(user: SessionUser) {
+	async listStaff(user: SessionUser, query?: PublicListQuery) {
 		this.assertAdmin(user)
-		const rows = await db.select().from(users).orderBy(asc(users.name))
-		return rows.filter(row => STAFF_ROLES.has(row.role))
+		const search = query?.search?.trim()
+		const staffRoles = [...STAFF_ROLES] as (typeof users.$inferSelect)["role"][]
+		const builder = db
+			.select({
+				id: users.id,
+				name: users.name,
+				email: users.email,
+				image: users.image,
+				role: users.role,
+				status: users.status,
+				mobileNumber: users.mobileNumber,
+				barangay: users.barangay,
+				address: users.address,
+				departmentId: users.departmentId,
+				createdAt: users.createdAt,
+				lastLoginAt: users.lastLoginAt,
+				forcePasswordReset: users.forcePasswordReset,
+			})
+			.from(users)
+			.where(
+				and(
+					inArray(users.role, staffRoles),
+					search
+						? or(
+								ilike(users.name, `%${search}%`),
+								ilike(users.email, `%${search}%`),
+								ilike(users.role, `%${search}%`)
+							)
+						: undefined
+				)
+			)
+			.orderBy(asc(users.name), asc(users.id))
+		const window = listWindow(query)
+		if (window) return builder.limit(window.limit + 1).offset(window.offset)
+		if (query?.limit) return builder.limit(query.limit)
+		return builder
 	}
 
 	async createStaff(user: SessionUser, input: CreateStaffInput) {
@@ -957,50 +1370,78 @@ export class IgubatService {
 
 	async analytics(user: SessionUser) {
 		this.assertAdmin(user)
-		const [allUsers, requests, reports, articles] = await Promise.all([
-			db.select().from(users),
-			this.requestRows(),
-			this.reportRows(),
-			db.select().from(newsArticles),
-		])
-		const byRequestStatus = Object.fromEntries(
-			["pending", "in_review", "approved", "rejected", "for_pickup", "completed"].map(status => [
-				status,
-				requests.filter(row => row.status === status).length,
+		const [[userCount], requestCounts, reportCounts, [articleCount], requestCountsByBarangay] =
+			await Promise.all([
+				db.select({ value: count() }).from(users).where(eq(users.role, "registered_citizen")),
+				db
+					.select({ status: serviceRequests.status, value: count() })
+					.from(serviceRequests)
+					.groupBy(serviceRequests.status),
+				db
+					.select({ status: citizenReports.status, value: count() })
+					.from(citizenReports)
+					.groupBy(citizenReports.status),
+				db.select({ value: count() }).from(newsArticles),
+				db
+					.select({ barangay: users.barangay, value: count() })
+					.from(serviceRequests)
+					.leftJoin(users, eq(serviceRequests.authorId, users.id))
+					.groupBy(users.barangay),
 			])
-		)
-		const byReportStatus = Object.fromEntries(
-			["received", "in_progress", "resolved", "closed"].map(status => [
-				status,
-				reports.filter(row => row.status === status).length,
-			])
-		)
+		const byRequestStatus = Object.fromEntries(requestCounts.map(row => [row.status, row.value]))
+		const byReportStatus = Object.fromEntries(reportCounts.map(row => [row.status, row.value]))
 		const byBarangay: Record<string, number> = {}
-		for (const row of requests) {
+		for (const row of requestCountsByBarangay) {
 			const barangay = row.barangay ?? "Unknown"
-			byBarangay[barangay] = (byBarangay[barangay] ?? 0) + 1
+			byBarangay[barangay] = (byBarangay[barangay] ?? 0) + row.value
 		}
+		const requestTotal = requestCounts.reduce((total, row) => total + row.value, 0)
+		const reportTotal = reportCounts.reduce((total, row) => total + row.value, 0)
 		return {
-			users: allUsers.filter(row => row.role === "registered_citizen").length,
-			requests: requests.length,
-			reports: reports.length,
-			articles: articles.length,
+			users: userCount?.value ?? 0,
+			requests: requestTotal,
+			reports: reportTotal,
+			articles: articleCount?.value ?? 0,
 			byRequestStatus,
 			byReportStatus,
 			byBarangay,
 		}
 	}
 
-	async listAuditLogs(user: SessionUser) {
+	async listAuditLogs(user: SessionUser, query?: PublicListQuery) {
 		this.assertAdmin(user)
-		const [logs, userMap] = await Promise.all([
-			db.select().from(auditLogs).orderBy(desc(auditLogs.createdAt)),
-			this.usersById(),
-		])
-		return logs.map(log => {
-			const actor = log.actorId ? userMap.get(log.actorId) : undefined
-			return { ...log, actorName: actor?.name ?? null, actorRole: actor?.role ?? null }
-		})
+		const search = query?.search?.trim()
+		const builder = db
+			.select({
+				id: auditLogs.id,
+				actorId: auditLogs.actorId,
+				actionType: auditLogs.actionType,
+				entityType: auditLogs.entityType,
+				entityId: auditLogs.entityId,
+				details: auditLogs.details,
+				ipAddress: auditLogs.ipAddress,
+				createdAt: auditLogs.createdAt,
+				actorName: users.name,
+				actorRole: users.role,
+			})
+			.from(auditLogs)
+			.leftJoin(users, eq(auditLogs.actorId, users.id))
+			.where(
+				and(
+					search
+						? or(
+								ilike(auditLogs.actionType, `%${search}%`),
+								ilike(auditLogs.entityType, `%${search}%`),
+								ilike(users.name, `%${search}%`)
+							)
+						: undefined
+				)
+			)
+			.orderBy(desc(auditLogs.createdAt), desc(auditLogs.id))
+		const window = listWindow(query)
+		if (window) return builder.limit(window.limit + 1).offset(window.offset)
+		if (query?.limit) return builder.limit(query.limit)
+		return builder
 	}
 
 	listSettings(user: SessionUser) {

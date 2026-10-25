@@ -2,6 +2,7 @@ import { oc } from "@orpc/contract"
 import { z } from "zod"
 
 import {
+	AdminNewsArticleListSchema,
 	AnalyticsSchema,
 	AuditLogSchema,
 	CitizenReportDetailSchema,
@@ -23,6 +24,7 @@ import {
 	EmergencyBroadcastSchema,
 	EmergencyDirectorySchema,
 	EventSchema,
+	EventSummarySchema,
 	HelpArticleSchema,
 	IdParamSchema,
 	ListQuerySchema,
@@ -30,12 +32,14 @@ import {
 	NotificationPreferenceSchema,
 	NotificationSchema,
 	PolicyDocumentSchema,
+	PublicNewsArticleSchema,
 	PublishDiscoverGubatEntrySchema,
 	PublishTransparencyItemSchema,
 	ServiceCategorySchema,
 	ServiceRequestDetailSchema,
 	ServiceRequestSchema,
 	ServiceTypeSchema,
+	ServiceTypeSummarySchema,
 	SlugParamSchema,
 	SystemSettingSchema,
 	TransparencyItemDetailSchema,
@@ -74,7 +78,7 @@ export const igubatContract = oc.prefix("/igubat").router(
 						spec: spec => ({ ...spec, security: [] }),
 					})
 					.input(ListQuerySchema)
-					.output(z.array(NewsArticleSchema)),
+					.output(z.array(PublicNewsArticleSchema)),
 				article: oc
 					.route({
 						method: "GET",
@@ -99,7 +103,7 @@ export const igubatContract = oc.prefix("/igubat").router(
 						tags: ["iGubat Public"],
 						spec: spec => ({ ...spec, security: [] }),
 					})
-					.output(z.array(EventSchema)),
+					.output(z.array(EventSummarySchema)),
 				event: oc
 					.route({
 						method: "GET",
@@ -125,7 +129,7 @@ export const igubatContract = oc.prefix("/igubat").router(
 						spec: spec => ({ ...spec, security: [] }),
 					})
 					.input(ListQuerySchema)
-					.output(z.array(ServiceTypeSchema)),
+					.output(z.array(ServiceTypeSummarySchema)),
 				service: oc
 					.route({
 						method: "GET",
@@ -288,7 +292,11 @@ export const igubatContract = oc.prefix("/igubat").router(
 				articles: oc
 					.route({ method: "GET", path: "/articles", tags: ["iGubat Admin"] })
 					.input(ListQuerySchema)
-					.output(z.array(NewsArticleSchema)),
+					.output(z.array(AdminNewsArticleListSchema)),
+				article: oc
+					.route({ method: "GET", path: "/articles/{id}", tags: ["iGubat Admin"] })
+					.input(IdParamSchema)
+					.output(NewsArticleSchema),
 				upsertArticle: oc
 					.route({ method: "POST", path: "/articles", tags: ["iGubat Admin"] })
 					.input(UpsertArticleSchema)
@@ -296,7 +304,11 @@ export const igubatContract = oc.prefix("/igubat").router(
 				events: oc
 					.route({ method: "GET", path: "/events", tags: ["iGubat Admin"] })
 					.input(ListQuerySchema)
-					.output(z.array(EventSchema)),
+					.output(z.array(EventSummarySchema)),
+				event: oc
+					.route({ method: "GET", path: "/events/{id}", tags: ["iGubat Admin"] })
+					.input(IdParamSchema)
+					.output(EventSchema),
 				upsertEvent: oc
 					.route({ method: "POST", path: "/events", tags: ["iGubat Admin"] })
 					.input(UpsertEventSchema)
@@ -321,6 +333,7 @@ export const igubatContract = oc.prefix("/igubat").router(
 					.output(EmergencyDirectorySchema),
 				broadcasts: oc
 					.route({ method: "GET", path: "/broadcasts", tags: ["iGubat Admin"] })
+					.input(ListQuerySchema)
 					.output(z.array(EmergencyBroadcastSchema)),
 				createBroadcast: oc
 					.route({ method: "POST", path: "/broadcasts", tags: ["iGubat Admin"] })
@@ -336,6 +349,7 @@ export const igubatContract = oc.prefix("/igubat").router(
 					.output(UserSummarySchema),
 				staff: oc
 					.route({ method: "GET", path: "/staff", tags: ["iGubat Admin"] })
+					.input(ListQuerySchema)
 					.output(z.array(UserSummarySchema)),
 				createStaff: oc
 					.route({ method: "POST", path: "/staff", tags: ["iGubat Admin"] })

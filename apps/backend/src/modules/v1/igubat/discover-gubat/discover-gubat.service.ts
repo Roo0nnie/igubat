@@ -4,7 +4,7 @@ import {
 	Injectable,
 	NotFoundException,
 } from "@nestjs/common"
-import { and, desc, eq, inArray, isNull, lte } from "drizzle-orm"
+import { and, desc, eq, ilike, inArray, isNull, lt, lte, or } from "drizzle-orm"
 
 import {
 	auditLogs,
@@ -25,7 +25,15 @@ type SessionUser = {
 	role?: string | null
 }
 
-type ListQuery = NonNullable<V1Inputs["igubat"]["public"]["discoverGubat"]["list"]>
+type ListQuery = {
+	type?: typeof discoverGubatEntries.$inferSelect.type
+	status?: typeof discoverGubatEntries.$inferSelect.status
+	category?: string
+	search?: string
+	page?: number
+	limit?: number
+	cursor?: number
+}
 type CreateInput = V1Inputs["igubat"]["admin"]["discoverGubat"]["create"]
 type UpdateInput = V1Inputs["igubat"]["admin"]["discoverGubat"]["update"]
 type PublishInput = V1Inputs["igubat"]["admin"]["discoverGubat"]["publish"]
@@ -35,6 +43,26 @@ type NotificationFlagInput = {
 }
 
 type DiscoverGubatRow = typeof discoverGubatEntries.$inferSelect
+type DiscoverGubatListRow = Pick<
+	DiscoverGubatRow,
+	| "id"
+	| "type"
+	| "title"
+	| "slug"
+	| "summary"
+	| "category"
+	| "status"
+	| "coverImageUrl"
+	| "mapLocation"
+	| "whereToBuy"
+	| "eventDate"
+	| "authorId"
+	| "scheduledAt"
+	| "publishedAt"
+	| "archivedAt"
+	| "createdAt"
+	| "updatedAt"
+>
 type DiscoverGubatSummary = V1Outputs["igubat"]["admin"]["discoverGubat"]["list"][number]
 type DiscoverGubatDetail = V1Outputs["igubat"]["admin"]["discoverGubat"]["detail"]
 type DiscoverGubatMetadata = DiscoverGubatDetail["metadata"]
@@ -142,7 +170,7 @@ export class DiscoverGubatService {
 
 	private async authorName(authorId: string | null): Promise<string | null> {
 		if (!authorId) return null
-		const [author] = await db.select().from(users).where(eq(users.id, authorId))
+		const [author] = await db.select({ name: users.name }).from(users).where(eq(users.id, authorId))
 		return author?.name ?? null
 	}
 
@@ -150,7 +178,10 @@ export class DiscoverGubatService {
 		return (metadata ?? null) as DiscoverGubatMetadata
 	}
 
-	private toSummary(row: DiscoverGubatRow, authorName: string | null = null): DiscoverGubatSummary {
+	private toSummary(
+		row: DiscoverGubatListRow,
+		authorName: string | null = null
+	): DiscoverGubatSummary {
 		return {
 			id: row.id,
 			type: row.type,
@@ -212,49 +243,76 @@ export class DiscoverGubatService {
 		}
 	}
 
-	private applyQueryFilters(rows: DiscoverGubatRow[], query?: ListQuery) {
-		if (!query) return rows
-		const search = query.search?.trim().toLowerCase()
-		const cursor = query.cursor ? this.toId(query.cursor) : undefined
-		return rows.filter(row => {
-			if (cursor && row.id >= cursor) return false
-			if (query.type && row.type !== query.type) return false
-			if (query.status && row.status !== query.status) return false
-			if (query.category && row.category !== query.category) return false
-			if (search) {
-				const haystack = [row.title, row.category, row.summary, row.body]
-					.filter(Boolean)
-					.join(" ")
-					.toLowerCase()
-				if (!haystack.includes(search)) return false
-			}
-			return true
-		})
-	}
-
-	private async rows(includeNonPublic: boolean): Promise<DiscoverGubatRow[]> {
-		const where = includeNonPublic
-			? isNull(discoverGubatEntries.deletedAt)
-			: and(isNull(discoverGubatEntries.deletedAt), eq(discoverGubatEntries.status, "published"))
-		return db
-			.select()
+	private async rows(
+		includeNonPublic: boolean,
+		query?: ListQuery
+	): Promise<DiscoverGubatListRow[]> {
+		const search = query?.search?.trim()
+		const cursor = query?.cursor ? this.toId(query.cursor) : undefined
+		const builder = db
+			.select({
+				id: discoverGubatEntries.id,
+				type: discoverGubatEntries.type,
+				title: discoverGubatEntries.title,
+				slug: discoverGubatEntries.slug,
+				summary: discoverGubatEntries.summary,
+				category: discoverGubatEntries.category,
+				status: discoverGubatEntries.status,
+				coverImageUrl: discoverGubatEntries.coverImageUrl,
+				mapLocation: discoverGubatEntries.mapLocation,
+				whereToBuy: discoverGubatEntries.whereToBuy,
+				eventDate: discoverGubatEntries.eventDate,
+				authorId: discoverGubatEntries.authorId,
+				scheduledAt: discoverGubatEntries.scheduledAt,
+				publishedAt: discoverGubatEntries.publishedAt,
+				archivedAt: discoverGubatEntries.archivedAt,
+				createdAt: discoverGubatEntries.createdAt,
+				updatedAt: discoverGubatEntries.updatedAt,
+			})
 			.from(discoverGubatEntries)
-			.where(where)
-			.orderBy(desc(discoverGubatEntries.publishedAt), desc(discoverGubatEntries.createdAt))
+			.where(
+				and(
+					isNull(discoverGubatEntries.deletedAt),
+					!includeNonPublic ? eq(discoverGubatEntries.status, "published") : undefined,
+					query?.type ? eq(discoverGubatEntries.type, query.type) : undefined,
+					query?.status ? eq(discoverGubatEntries.status, query.status) : undefined,
+					query?.category ? eq(discoverGubatEntries.category, query.category) : undefined,
+					cursor ? lt(discoverGubatEntries.id, cursor) : undefined,
+					search
+						? or(
+								ilike(discoverGubatEntries.title, `%${search}%`),
+								ilike(discoverGubatEntries.category, `%${search}%`),
+								ilike(discoverGubatEntries.summary, `%${search}%`)
+							)
+						: undefined
+				)
+			)
+			.orderBy(
+				desc(discoverGubatEntries.publishedAt),
+				desc(discoverGubatEntries.createdAt),
+				desc(discoverGubatEntries.id)
+			)
+		if (query?.page !== undefined) {
+			const limit = Math.min(query.limit ?? 25, 100)
+			return builder.limit(limit + 1).offset((query.page - 1) * limit)
+		}
+		return query?.limit ? builder.limit(Number(query.limit)) : builder
 	}
 
-	private async authorMap(rows: DiscoverGubatRow[]) {
+	private async authorMap(rows: DiscoverGubatListRow[]) {
 		const ids = [...new Set(rows.map(row => row.authorId).filter(Boolean))] as string[]
 		if (ids.length === 0) return new Map<string, string>()
-		const authors = await db.select().from(users).where(inArray(users.id, ids))
+		const authors = await db
+			.select({ id: users.id, name: users.name })
+			.from(users)
+			.where(inArray(users.id, ids))
 		return new Map(authors.map(author => [author.id, author.name]))
 	}
 
 	async listPublic(query?: ListQuery) {
-		const filtered = this.applyQueryFilters(await this.rows(false), query)
-		const limited = query?.limit ? filtered.slice(0, Number(query.limit)) : filtered
-		const authors = await this.authorMap(limited)
-		return limited.map(row => this.toSummary(row, authors.get(row.authorId ?? "") ?? null))
+		const rows = await this.rows(false, query)
+		const authors = await this.authorMap(rows)
+		return rows.map(row => this.toSummary(row, authors.get(row.authorId ?? "") ?? null))
 	}
 
 	async getPublicBySlug(slug: string) {
@@ -270,10 +328,9 @@ export class DiscoverGubatService {
 
 	async listAdmin(user: SessionUser, query?: ListQuery) {
 		this.assertStaff(user)
-		const filtered = this.applyQueryFilters(await this.rows(true), query)
-		const limited = query?.limit ? filtered.slice(0, Number(query.limit)) : filtered
-		const authors = await this.authorMap(limited)
-		return limited.map(row => this.toSummary(row, authors.get(row.authorId ?? "") ?? null))
+		const rows = await this.rows(true, query)
+		const authors = await this.authorMap(rows)
+		return rows.map(row => this.toSummary(row, authors.get(row.authorId ?? "") ?? null))
 	}
 
 	async getAdminById(user: SessionUser, id: unknown) {
