@@ -204,6 +204,39 @@ jobs:
           header: test-results
           path: /tmp/pr-comment.md
 
+  flutter:
+    name: Flutter (analyze + test)
+    timeout-minutes: 20
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v6
+
+      # `cache: true` caches both the Flutter SDK and the pub cache.
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      # pubspec.yaml bundles `.env` as an asset; CI uses the committed
+      # placeholder values from .env.example (no secrets).
+      - name: Create .env from example
+        run: cp .env.example .env
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Test
+        run: flutter test
+
   e2e:
     name: E2E Tests (Web)
     timeout-minutes: 20
