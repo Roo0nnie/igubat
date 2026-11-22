@@ -5,14 +5,13 @@ import Link from "next/link"
 import { useForm } from "@tanstack/react-form"
 import { Lock, Mail } from "lucide-react"
 
-import { Button, buttonVariants } from "@/core/components/ui/button"
+import { Button } from "@/core/components/ui/button"
 import { Card, CardContent } from "@/core/components/ui/card"
 import { Field, FieldError, FieldGroup } from "@/core/components/ui/field"
 import { Input } from "@/core/components/ui/input"
 import { useHydrated } from "@/core/hooks/use-hydrated"
 import { cn } from "@/core/lib/utils"
 import { PasswordInput } from "@/features/auth/components/password-input"
-import { TermsPrivacyNote } from "@/features/auth/components/terms-privacy-note"
 
 import { useLoginMutation } from "../api/login.hooks"
 import { LoginSchema } from "../api/login.schema"
@@ -30,7 +29,12 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
 			onSubmit: LoginSchema,
 		},
 		onSubmit: async ({ value }) => {
-			await login(value)
+			try {
+				await login(value)
+			} catch {
+				// The failure is rendered from the mutation's `isError`/`error` state
+				// below; swallowing here prevents an unhandled promise rejection.
+			}
 		},
 	})
 
