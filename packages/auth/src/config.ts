@@ -2,10 +2,13 @@ import { createEnv } from "@t3-oss/env-core"
 import { betterAuth } from "better-auth"
 import { drizzleAdapter } from "better-auth/adapters/drizzle"
 import { emailOTP, openAPI } from "better-auth/plugins"
+import { eq } from "drizzle-orm"
 import { z } from "zod"
 
 import { createDBClient } from "@repo/db/client"
 import { accounts, sessions, users, verifications } from "@repo/db/schema"
+
+import { createLockoutHooks, type LockoutStore } from "./lockout.js"
 
 /**
  * Type-safe environment variable validation for Auth package
@@ -49,6 +52,28 @@ export const AUTH_BASE_PATH = "/auth"
 export function createAuth(): ReturnType<typeof betterAuth> {
 	const db = createDBClient()
 
+	const lockoutStore: LockoutStore = {
+		async findByEmail(email) {
+			const [row] = await db
+				.select({
+					id: users.id,
+					failedLoginAttempts: users.failedLoginAttempts,
+					lockedUntil: users.lockedUntil,
+				})
+				.from(users)
+				.where(eq(users.email, email))
+				.limit(1)
+			return row ?? null
+		},
+		async save(userId, state) {
+			await db
+				.update(users)
+				.set({ ...state, updatedAt: new Date() })
+				.where(eq(users.id, userId))
+		},
+	}
+	const lockoutHooks = createLockoutHooks(lockoutStore)
+
 	return betterAuth({
 		database: drizzleAdapter(db, {
 			provider: "pg",
@@ -61,6 +86,12 @@ export function createAuth(): ReturnType<typeof betterAuth> {
 			usePlural: true,
 		}),
 		basePath: AUTH_BASE_PATH,
+		// Lock an account for 15 minutes after 5 consecutive wrong passwords.
+		// See ./lockout.ts for the policy.
+		hooks: {
+			before: lockoutHooks.before,
+			after: lockoutHooks.after,
+		},
 		secret: authEnv.BETTER_AUTH_SECRET,
 		emailAndPassword: {
 			enabled: true,
