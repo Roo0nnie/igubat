@@ -21,7 +21,16 @@ class _ReportIssueScreenState extends ConsumerState<ReportIssueScreen> {
   final _descriptionController = TextEditingController();
   final _locationController = TextEditingController();
   CitizenReportCategory _category = CitizenReportCategory.roadDamage;
-  String _barangay = SeedData.currentUser.barangay;
+  String _barangay = _initialBarangay();
+
+  /// The dropdown only accepts canonical names from [SeedData.barangays]
+  /// (e.g. "Cogon"), while the profile stores "Barangay Cogon". Normalise it,
+  /// falling back to the first barangay so the dropdown never receives a value
+  /// missing from its items (which throws in debug builds).
+  static String _initialBarangay() {
+    final name = SeedData.currentUser.barangay.replaceFirst('Barangay ', '');
+    return SeedData.barangays.contains(name) ? name : SeedData.barangays.first;
+  }
   bool _submitting = false;
 
   @override
